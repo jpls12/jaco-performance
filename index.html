@@ -32,7 +32,7 @@
       border-radius:20px;padding:17px;margin:13px 0;
       box-shadow:0 14px 40px rgba(0,0,0,.18)
     }
-    .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:17px 0}
+    .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:17px 0}
     button{
       border:0;border-radius:13px;padding:13px;background:var(--green);
       color:#062311;font-size:.96rem;font-weight:850;cursor:pointer
@@ -104,6 +104,17 @@
     .mini-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
     .mini-actions button{padding:9px 8px;font-size:.8rem}
     .notice{border-left:3px solid var(--orange);padding-left:12px;color:#ffd697}
+
+    .race-card{
+      background:#0d1928;border:1px solid #3b2d3d;border-radius:15px;padding:14px
+    }
+    .race-card.a{border-color:#8d3c4b}
+    .race-card.b{border-color:#7c6430}
+    .race-card.c{border-color:#304969}
+    .race-top{display:flex;justify-content:space-between;gap:12px;align-items:start}
+    .race-time{font-size:1.1rem;font-weight:900;color:#ffb8c1}
+    .countdown{color:var(--orange);font-weight:800}
+
     .modal-backdrop{
       display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);
       align-items:flex-end;justify-content:center;padding:12px;z-index:50
@@ -137,6 +148,7 @@
     <button class="tab active" data-view="calendar">Kalender</button>
     <button class="tab" data-view="editor">Nieuwe training</button>
     <button class="tab" data-view="saved">Mijn trainingen</button>
+    <button class="tab" data-view="races">Wedstrijden</button>
   </nav>
 
   <section id="calendar" class="view active">
@@ -305,6 +317,111 @@
       <div id="savedList" class="saved-list"></div>
     </article>
   </section>
+
+  <section id="races" class="view">
+    <article class="card">
+      <p class="label">Wedstrijdkalender</p>
+      <h2>Wedstrijd toevoegen</h2>
+      <p class="help">
+        Voeg al je wedstrijden toe. Ze verschijnen als rode stip in de kalender.
+        Je kunt daarna automatisch een voorbereidingsschema laten maken.
+      </p>
+
+      <form id="raceForm">
+        <input id="raceOriginalId" type="hidden">
+
+        <div class="grid2">
+          <label>Wedstrijdnaam
+            <input id="raceName" type="text" placeholder="Bijv. 5 km Rotterdam" required>
+          </label>
+          <label>Datum
+            <input id="raceDate" type="date" required>
+          </label>
+        </div>
+
+        <div class="grid2">
+          <label>Afstand
+            <select id="raceDistance">
+              <option value="5">5 km</option>
+              <option value="10">10 km</option>
+              <option value="21.0975">Halve marathon</option>
+              <option value="42.195">Marathon</option>
+              <option value="other">Anders</option>
+            </select>
+          </label>
+          <label id="customRaceDistanceLabel" hidden>Afstand in km
+            <input id="customRaceDistance" type="number" min="0.1" step="0.1" value="15">
+          </label>
+        </div>
+
+        <div class="grid2">
+          <label>Streeftijd
+            <input id="raceTargetTime" type="text" placeholder="Bijv. 17:59 of 1:19:59">
+          </label>
+          <label>Prioriteit
+            <select id="racePriority">
+              <option value="A">A-wedstrijd</option>
+              <option value="B">B-wedstrijd</option>
+              <option value="C">C-wedstrijd / training</option>
+            </select>
+          </label>
+        </div>
+
+        <label>Notitie
+          <textarea id="raceNotes" placeholder="Parcours, doel, locatie of bijzonderheden"></textarea>
+        </label>
+
+        <button type="submit">Wedstrijd opslaan</button>
+        <p id="raceFormStatus" class="status"></p>
+      </form>
+    </article>
+
+    <article class="card">
+      <p class="label">Schema maken</p>
+      <h2>Automatisch schema richting wedstrijd</h2>
+      <p class="help">
+        Kies een wedstrijd en geef je trainingsomvang op. De app vult de kalender
+        met rustige duurlopen, kwaliteitstrainingen, lange duurlopen en taper.
+      </p>
+
+      <div class="grid2">
+        <label>Wedstrijd
+          <select id="planRaceSelect"></select>
+        </label>
+        <label>Loopdagen per week
+          <select id="planDays">
+            <option value="3">3 dagen</option>
+            <option value="4" selected>4 dagen</option>
+            <option value="5">5 dagen</option>
+            <option value="6">6 dagen</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="grid2">
+        <label>Huidige weekomvang (km)
+          <input id="planWeeklyKm" type="number" min="15" step="1" value="60">
+        </label>
+        <label>Startdatum schema
+          <input id="planStartDate" type="date">
+        </label>
+      </div>
+
+      <label class="switchrow">
+        <span>Bestaande eigen trainingen in deze periode overschrijven</span>
+        <input id="overwritePlan" type="checkbox">
+      </label>
+
+      <button id="generatePlan" type="button">Genereer wedstrijdschema</button>
+      <p id="planStatus" class="status"></p>
+    </article>
+
+    <article class="card">
+      <p class="label">Mijn wedstrijden</p>
+      <div id="raceList" class="saved-list"></div>
+    </article>
+  </section>
+
 </main>
 
 <div id="duplicateModal" class="modal-backdrop">
@@ -326,11 +443,13 @@
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
+const RACES_KEY = "jp_races_v1";
 
 let serverWorkouts = {};
 let customWorkouts = loadObject(STORAGE_KEY);
 let doneWorkouts = loadObject(DONE_KEY);
 let uploadedWorkouts = loadObject(UPLOAD_KEY);
+let races = loadObject(RACES_KEY);
 
 const today = new Date();
 let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -349,7 +468,27 @@ function saveObject(key,value){
   localStorage.setItem(key,JSON.stringify(value));
 }
 function allWorkouts(){
-  return {...serverWorkouts,...customWorkouts};
+  const raceWorkouts = Object.fromEntries(
+    Object.values(races).map(race => [
+      race.date,
+      {
+        name: race.name,
+        uploadName: race.name,
+        date: race.date,
+        type: "Race",
+        distanceKm: race.distanceKm,
+        rpe: "10/10",
+        status: "planned",
+        displaySteps: [
+          `${formatRaceDistance(race.distanceKm)} wedstrijd`,
+          race.targetTime ? `Streeftijd: ${race.targetTime}` : "Geen streeftijd ingevuld",
+          `${race.priority}-wedstrijd`
+        ],
+        intervalsDescription: ""
+      }
+    ])
+  );
+  return {...serverWorkouts,...customWorkouts,...raceWorkouts};
 }
 function safe(value){
   return String(value ?? "").replace(/[<>]/g,"");
@@ -368,6 +507,10 @@ function switchView(id){
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===id));
   document.getElementById(id).classList.add("active");
   if(id==="saved") renderSaved();
+  if(id==="races"){
+    renderRaces();
+    renderRaceOptions();
+  }
 }
 
 function workoutState(date,workout){
@@ -1295,6 +1438,440 @@ function openSaved(date){
   renderSelected();
 }
 
+
+function raceId(){
+  return `race-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
+}
+
+function formatRaceDistance(distance){
+  const d=Number(distance);
+  if(Math.abs(d-21.0975)<0.01) return "Halve marathon";
+  if(Math.abs(d-42.195)<0.01) return "Marathon";
+  return `${d} km`;
+}
+
+function parseTimeToSeconds(value){
+  const parts=String(value||"").trim().split(":").map(Number);
+  if(parts.some(Number.isNaN)) return null;
+  if(parts.length===2) return parts[0]*60+parts[1];
+  if(parts.length===3) return parts[0]*3600+parts[1]*60+parts[2];
+  return null;
+}
+
+function racePaceSeconds(race){
+  const total=parseTimeToSeconds(race.targetTime);
+  return total ? total/Number(race.distanceKm) : null;
+}
+
+function formatPace(seconds){
+  if(!seconds || !Number.isFinite(seconds)) return null;
+  const s=Math.round(seconds);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`;
+}
+
+function daysUntil(date){
+  const now=new Date();
+  now.setHours(0,0,0,0);
+  const target=new Date(date+"T00:00:00");
+  return Math.ceil((target-now)/86400000);
+}
+
+function selectedRaceDistance(){
+  const value=document.getElementById("raceDistance").value;
+  return value==="other"
+    ? Number(document.getElementById("customRaceDistance").value)
+    : Number(value);
+}
+
+function resetRaceForm(){
+  document.getElementById("raceForm").reset();
+  document.getElementById("raceOriginalId").value="";
+  document.getElementById("raceDistance").value="5";
+  document.getElementById("customRaceDistanceLabel").hidden=true;
+  document.getElementById("racePriority").value="A";
+  document.getElementById("raceFormStatus").textContent="";
+}
+
+function saveRace(event){
+  event.preventDefault();
+
+  const existingId=document.getElementById("raceOriginalId").value;
+  const id=existingId || raceId();
+  const name=safe(document.getElementById("raceName").value).trim();
+  const date=document.getElementById("raceDate").value;
+  const distanceKm=selectedRaceDistance();
+
+  if(!name || !date || !distanceKm){
+    document.getElementById("raceFormStatus").className="status error";
+    document.getElementById("raceFormStatus").textContent="Naam, datum en afstand zijn verplicht.";
+    return;
+  }
+
+  races[id]={
+    id,
+    name,
+    date,
+    distanceKm,
+    targetTime:safe(document.getElementById("raceTargetTime").value).trim(),
+    priority:document.getElementById("racePriority").value,
+    notes:safe(document.getElementById("raceNotes").value).trim()
+  };
+
+  saveObject(RACES_KEY,races);
+  document.getElementById("raceFormStatus").className="status ok";
+  document.getElementById("raceFormStatus").textContent=
+    existingId ? "Wedstrijd bijgewerkt." : "Wedstrijd toegevoegd aan de kalender.";
+
+  renderRaces();
+  renderRaceOptions();
+  renderMonth();
+  renderSelected();
+}
+
+function editRace(id){
+  const race=races[id];
+  if(!race) return;
+
+  document.getElementById("raceOriginalId").value=id;
+  document.getElementById("raceName").value=race.name;
+  document.getElementById("raceDate").value=race.date;
+
+  const standard=["5","10","21.0975","42.195"];
+  const distanceString=String(race.distanceKm);
+  if(standard.includes(distanceString)){
+    document.getElementById("raceDistance").value=distanceString;
+    document.getElementById("customRaceDistanceLabel").hidden=true;
+  }else{
+    document.getElementById("raceDistance").value="other";
+    document.getElementById("customRaceDistance").value=race.distanceKm;
+    document.getElementById("customRaceDistanceLabel").hidden=false;
+  }
+
+  document.getElementById("raceTargetTime").value=race.targetTime || "";
+  document.getElementById("racePriority").value=race.priority || "A";
+  document.getElementById("raceNotes").value=race.notes || "";
+  switchView("races");
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function deleteRace(id){
+  const race=races[id];
+  if(!race) return;
+  if(!confirm(`Wedstrijd "${race.name}" verwijderen?`)) return;
+
+  delete races[id];
+  saveObject(RACES_KEY,races);
+  renderRaces();
+  renderRaceOptions();
+  renderMonth();
+  renderSelected();
+}
+
+function openRace(id){
+  const race=races[id];
+  if(!race) return;
+  selectedDate=race.date;
+  const d=new Date(race.date+"T12:00:00");
+  visibleMonth=new Date(d.getFullYear(),d.getMonth(),1);
+  switchView("calendar");
+  renderMonth();
+  renderSelected();
+}
+
+function renderRaces(){
+  const list=document.getElementById("raceList");
+  if(!list) return;
+
+  const entries=Object.values(races).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!entries.length){
+    list.innerHTML='<p class="help">Je hebt nog geen wedstrijden toegevoegd.</p>';
+    return;
+  }
+
+  list.innerHTML=entries.map(race=>{
+    const remaining=daysUntil(race.date);
+    return `
+      <div class="race-card ${String(race.priority).toLowerCase()}">
+        <div class="race-top">
+          <div>
+            <strong>${safe(race.name)}</strong>
+            <small>
+              ${fullDate.format(new Date(race.date+"T12:00:00"))}
+              · ${formatRaceDistance(race.distanceKm)}
+              · ${safe(race.priority)}-wedstrijd
+            </small>
+          </div>
+          <div class="race-time">${safe(race.targetTime || "—")}</div>
+        </div>
+        <p class="countdown">
+          ${remaining>=0 ? `Nog ${remaining} dagen` : `${Math.abs(remaining)} dagen geleden`}
+        </p>
+        ${race.notes ? `<p class="help">${safe(race.notes)}</p>` : ""}
+        <div class="mini-actions">
+          <button class="secondary" onclick="openRace('${race.id}')">Open</button>
+          <button class="secondary" onclick="editRace('${race.id}')">Bewerk</button>
+          <button class="danger" onclick="deleteRace('${race.id}')">Verwijder</button>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function renderRaceOptions(){
+  const select=document.getElementById("planRaceSelect");
+  if(!select) return;
+  const future=Object.values(races)
+    .filter(r=>daysUntil(r.date)>=0)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+
+  select.innerHTML=future.length
+    ? future.map(r=>`<option value="${r.id}">${safe(r.name)} — ${r.date}</option>`).join("")
+    : '<option value="">Voeg eerst een wedstrijd toe</option>';
+}
+
+function addDays(dateString,days){
+  const d=new Date(dateString+"T12:00:00");
+  d.setDate(d.getDate()+days);
+  return ymd(d);
+}
+
+function mondayOf(dateString){
+  const d=new Date(dateString+"T12:00:00");
+  const day=(d.getDay()+6)%7;
+  d.setDate(d.getDate()-day);
+  return ymd(d);
+}
+
+function makeWorkout(date,name,distanceKm,rpe,displaySteps,description){
+  return{
+    name,
+    uploadName:`Jaco - ${name}`,
+    date,
+    type:"Run",
+    distanceKm:Math.round(distanceKm*10)/10,
+    rpe,
+    status:"planned",
+    displaySteps,
+    intervalsDescription:description
+  };
+}
+
+function createQualityWorkout(date,race,weekIndex,weeksTotal){
+  const distance=Number(race.distanceKm);
+  const pace=racePaceSeconds(race);
+
+  if(distance<=5){
+    if(weekIndex%2===0){
+      const target=pace ? `${formatPace(pace-8)}-${formatPace(pace-3)}/km` : "3:13-3:18/km";
+      return makeWorkout(
+        date,"12 × 400 m",12.2,"8/10",
+        ["3 km inlopen","12 × 400 m op 5 km-tempo of iets sneller","200 m dribbel","2 km uitlopen"],
+        `5 km-specifieke snelheidstraining.
+
+Warmup
+- 3km Z1 Pace
+
+Main set 12x
+- 400mtr ${target} Pace
+- 200mtr Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`
+      );
+    }
+    const target=pace ? `${formatPace(pace-3)}-${formatPace(pace+1)}/km` : "3:28-3:30/km";
+    return makeWorkout(
+      date,"5 × 1000 m VO₂max",12,"8/10",
+      ["3 km inlopen","5 × 1000 m op 5 km-tempo","2 min dribbel","2 km uitlopen"],
+      `5 km-specifieke VO2max-training.
+
+Warmup
+- 3km Z1 Pace
+
+Main set 5x
+- 1km ${target} Pace
+- 2m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`
+    );
+  }
+
+  if(distance<=10){
+    const target=pace ? `${formatPace(pace+5)}-${formatPace(pace+10)}/km` : "3:42-3:48/km";
+    return makeWorkout(
+      date,"3 × 2 km drempel",13,"7/10",
+      ["3 km inlopen","3 × 2 km rond drempeltempo","2 min dribbel","2 km uitlopen"],
+      `10 km-specifieke drempeltraining.
+
+Warmup
+- 3km Z1 Pace
+
+Main set 3x
+- 2km ${target} Pace
+- 2m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`
+    );
+  }
+
+  if(distance<30){
+    const target=pace ? `${formatPace(pace)}-${formatPace(pace+5)}/km` : "3:48-3:52/km";
+    return makeWorkout(
+      date,"3 × 3 km halve-marathontempo",15,"7/10",
+      ["3 km inlopen","3 × 3 km op halve-marathontempo","3 min dribbel","2 km uitlopen"],
+      `Halve-marathonspecifieke training.
+
+Warmup
+- 3km Z1 Pace
+
+Main set 3x
+- 3km ${target} Pace
+- 3m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`
+    );
+  }
+
+  const target=pace ? `${formatPace(pace)}-${formatPace(pace+5)}/km` : "4:15-4:20/km";
+  return makeWorkout(
+    date,"2 × 5 km marathontempo",18,"7/10",
+    ["4 km inlopen","2 × 5 km op marathontempo","1 km rustig tussenin","3 km uitlopen"],
+    `Marathonspecifieke training.
+
+Warmup
+- 4km Z1 Pace
+
+Main set 2x
+- 5km ${target} Pace
+- 1km Z1 Pace
+
+Cooldown
+- 3km Z1 Pace`
+  );
+}
+
+function createEasyWorkout(date,km,recovery=false){
+  const pace=recovery ? "5:10-5:35/km" : "5:00-5:25/km";
+  const name=recovery ? `Herstelloop ${km} km` : `Rustige duurloop ${km} km`;
+  return makeWorkout(
+    date,name,km,recovery?"2/10":"3/10",
+    [`${km} km rustig lopen`,recovery?"Zeer lage inspanning":"Zone 2 aanhouden"],
+    `${recovery?"Hersteltraining":"Rustige duurloop"}.
+
+Easy
+- ${km}km ${pace} Pace`
+  );
+}
+
+function createLongRun(date,km,race){
+  const distance=Number(race.distanceKm);
+  let note="Volledig rustig lopen";
+  let description=`Lange rustige duurloop.
+
+Easy
+- ${km}km 4:55-5:20/km Pace`;
+
+  if(distance>=21 && km>=16){
+    note="Laatste 3 km beheerst versnellen indien fris";
+    description=`Lange duurloop met gecontroleerde finish.
+
+Easy
+- ${Math.max(1,km-3)}km 4:55-5:20/km Pace
+
+Progression
+- 3km 4:05-4:20/km Pace`;
+  }
+
+  return makeWorkout(
+    date,`Lange duurloop ${km} km`,km,"4/10",
+    [`${km} km totale duur`,note],
+    description
+  );
+}
+
+function generateRacePlan(){
+  const raceIdValue=document.getElementById("planRaceSelect").value;
+  const race=races[raceIdValue];
+  const status=document.getElementById("planStatus");
+
+  if(!race){
+    status.className="status error";
+    status.textContent="Voeg eerst een wedstrijd toe.";
+    return;
+  }
+
+  const start=document.getElementById("planStartDate").value || ymd(today);
+  const weeklyKm=Number(document.getElementById("planWeeklyKm").value);
+  const days=Number(document.getElementById("planDays").value);
+  const overwrite=document.getElementById("overwritePlan").checked;
+  const raceDate=new Date(race.date+"T12:00:00");
+  const startDate=new Date(start+"T12:00:00");
+  const totalDays=Math.floor((raceDate-startDate)/86400000);
+
+  if(totalDays<7){
+    status.className="status error";
+    status.textContent="De wedstrijd is minder dan één week verwijderd.";
+    return;
+  }
+
+  const weeks=Math.max(1,Math.ceil(totalDays/7));
+  let created=0;
+  const firstMonday=mondayOf(start);
+
+  for(let week=0;week<weeks;week++){
+    const weekStart=addDays(firstMonday,week*7);
+    const daysToRace=Math.floor((raceDate-new Date(weekStart+"T12:00:00"))/86400000);
+    if(daysToRace<0) break;
+
+    const taperFactor=daysToRace<=7 ? 0.55 : daysToRace<=14 ? 0.75 : 1;
+    const km=Math.round(weeklyKm*taperFactor);
+    const longKm=Math.max(8,Math.round(km*(Number(race.distanceKm)>=21 ? 0.30 : 0.24)));
+    const easyKm=Math.max(6,Math.round((km-longKm-12)/Math.max(1,days-2)));
+
+    const schedule=[];
+    if(days===3){
+      schedule.push([1,"quality"],[3,"easy"],[5,"long"]);
+    }else if(days===4){
+      schedule.push([1,"quality"],[3,"easy"],[5,"long"],[6,"recovery"]);
+    }else if(days===5){
+      schedule.push([0,"easy"],[1,"quality"],[3,"easy"],[5,"long"],[6,"recovery"]);
+    }else{
+      schedule.push([0,"easy"],[1,"quality"],[2,"recovery"],[3,"easy"],[5,"long"],[6,"recovery"]);
+    }
+
+    for(const [offset,type] of schedule){
+      const date=addDays(weekStart,offset);
+      if(date>=race.date) continue;
+      if(customWorkouts[date] && !overwrite) continue;
+
+      let workout;
+      if(type==="quality") workout=createQualityWorkout(date,race,week,weeks);
+      if(type==="easy") workout=createEasyWorkout(date,easyKm,false);
+      if(type==="recovery") workout=createEasyWorkout(date,Math.max(6,easyKm-2),true);
+      if(type==="long") workout=createLongRun(date,longKm,race);
+
+      customWorkouts[date]=workout;
+      created++;
+    }
+  }
+
+  // Race day marker is already provided by races.
+  saveObject(STORAGE_KEY,customWorkouts);
+
+  selectedDate=race.date;
+  visibleMonth=new Date(raceDate.getFullYear(),raceDate.getMonth(),1);
+
+  renderRaces();
+  renderMonth();
+  renderSelected();
+  renderSaved();
+
+  status.className="status ok";
+  status.textContent=`Schema aangemaakt: ${created} trainingen richting ${race.name}.`;
+}
+
 async function loadServer(){
   try{
     const response=await fetch("/api/workouts");
@@ -1353,10 +1930,21 @@ document.getElementById("duplicateModal").onclick=event=>{
   if(event.target.id==="duplicateModal") closeDuplicate();
 };
 
+
+document.getElementById("raceForm").onsubmit=saveRace;
+document.getElementById("raceDistance").onchange=()=>{
+  document.getElementById("customRaceDistanceLabel").hidden=
+    document.getElementById("raceDistance").value!=="other";
+};
+document.getElementById("generatePlan").onclick=generateRacePlan;
+document.getElementById("planStartDate").value=ymd(today);
+
 document.getElementById("greeting").textContent=
   (today.getHours()<12?"Goedemorgen":today.getHours()<18?"Goedemiddag":"Goedenavond")+" Jaco";
 
 setDefaultForm(ymd(today));
+renderRaces();
+renderRaceOptions();
 loadServer();
 </script>
 </body>
