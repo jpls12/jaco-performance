@@ -6,23 +6,125 @@
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
   <style>
-    :root{color-scheme:dark;--bg:#07111f;--panel:#101d2e;--line:#263a55;--text:#f5f8fc;--muted:#95a8c2;--green:#36c36f;--blue:#56b8ff;--red:#ff7777;--orange:#ffb55e;--yellow:#ffd76a}
-    *{box-sizing:border-box}body{margin:0;min-height:100vh;background:linear-gradient(180deg,#07111f,#0b1626 55%,#07111f);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-    main{max-width:860px;margin:auto;padding:20px 14px 72px}h1,h2,h3,p{margin-top:0}h1{font-size:2rem;margin-bottom:7px}
-    .eyebrow,.label{color:var(--blue);font-size:.75rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase}.subtitle,.help{color:var(--muted);line-height:1.45}
-    .card{background:rgba(16,29,46,.98);border:1px solid var(--line);border-radius:20px;padding:17px;margin:13px 0;box-shadow:0 14px 40px rgba(0,0,0,.18)}
-    .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:17px 0}button{border:0;border-radius:13px;padding:13px;background:var(--green);color:#062311;font-size:.96rem;font-weight:850;cursor:pointer}
-    button.secondary,.tab{background:#182b42;color:#dce8f8;border:1px solid #304a69}.tab.active{background:#204263;color:white;border-color:#57a6dc}.view{display:none}.view.active{display:block}
-    .calendar-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}.calendar-head button{width:46px;padding:11px}.month-title{text-align:center;font-size:1.15rem;font-weight:900;text-transform:capitalize}
-    .weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}.weekdays div{text-align:center;color:var(--muted);font-size:.72rem;font-weight:800;padding:4px 0}
-    .day{min-height:72px;background:#0c1828;border:1px solid #223750;border-radius:13px;padding:7px;position:relative;text-align:left;color:white}.day.empty{visibility:hidden}.day.today{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange)}.day.selected{background:#1b3957;border-color:var(--blue)}
-    .day-number{font-weight:850;font-size:.88rem}.day-name{font-size:.66rem;color:#c7d6ea;margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.dot{position:absolute;right:7px;top:8px;width:9px;height:9px;border-radius:50%}.dot.planned{background:var(--blue)}.dot.done{background:var(--green)}.dot.race{background:var(--red)}.dot.custom{background:var(--yellow)}
-    .legend{display:flex;gap:13px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:.75rem}.legend span{display:flex;align-items:center;gap:6px}.legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
-    .workout-title{font-size:1.5rem;font-weight:900;margin:8px 0}.meta{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.pill{padding:6px 9px;border:1px solid #314965;border-radius:999px;background:#17293e;font-size:.8rem}
-    ul.steps{list-style:none;padding:0;margin:14px 0}ul.steps li{display:flex;gap:10px;padding:11px 0;border-top:1px solid #22344c;line-height:1.4}.step{min-width:25px;color:var(--blue);font-weight:900}.actions{display:grid;gap:10px;margin-top:15px}.status{min-height:22px;margin:10px 0 0}.ok{color:#8de5ad}.error{color:#ff9494}
-    form{display:grid;gap:13px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}label{display:grid;gap:6px;color:#dce8f8;font-weight:700;font-size:.9rem}input,select,textarea{width:100%;border:1px solid #304968;border-radius:12px;padding:12px;background:#0d1928;color:white;font:inherit;outline:none}textarea{min-height:86px;resize:vertical}.section{padding-top:13px;border-top:1px solid #263a55}
-    .saved-list{display:grid;gap:10px}.saved-row{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:13px}.saved-row strong{display:block}.saved-row small{color:var(--muted)}.mini-actions{display:flex;gap:8px;margin-top:10px}.mini-actions button{padding:9px 11px;font-size:.82rem}.danger{background:#4a2027;color:#ffd9df;border:1px solid #78404b}.notice{border-left:3px solid var(--orange);padding-left:12px;color:#ffd697}
-    @media(max-width:650px){.tabs{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}.day{min-height:61px;padding:6px}.day-name{display:none}h1{font-size:1.8rem}}
+    :root{
+      color-scheme:dark;
+      --bg:#07111f;--panel:#101d2e;--panel2:#13243a;--line:#263a55;
+      --text:#f5f8fc;--muted:#95a8c2;--green:#36c36f;--blue:#56b8ff;
+      --red:#ff7777;--orange:#ffb55e;--yellow:#ffd76a
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;min-height:100vh;
+      background:linear-gradient(180deg,#07111f,#0b1626 55%,#07111f);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif
+    }
+    main{max-width:880px;margin:auto;padding:20px 14px 78px}
+    h1,h2,h3,p{margin-top:0}
+    h1{font-size:2rem;margin-bottom:7px}
+    .eyebrow,.label{
+      color:var(--blue);font-size:.75rem;font-weight:850;
+      letter-spacing:.12em;text-transform:uppercase
+    }
+    .subtitle,.help{color:var(--muted);line-height:1.45}
+    .card{
+      background:rgba(16,29,46,.98);border:1px solid var(--line);
+      border-radius:20px;padding:17px;margin:13px 0;
+      box-shadow:0 14px 40px rgba(0,0,0,.18)
+    }
+    .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:17px 0}
+    button{
+      border:0;border-radius:13px;padding:13px;background:var(--green);
+      color:#062311;font-size:.96rem;font-weight:850;cursor:pointer
+    }
+    button.secondary,.tab{background:#182b42;color:#dce8f8;border:1px solid #304a69}
+    button.danger{background:#4a2027;color:#ffd9df;border:1px solid #78404b}
+    button.warning{background:#4a3b20;color:#ffe0a4;border:1px solid #765d28}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .tab.active{background:#204263;color:white;border-color:#57a6dc}
+    .view{display:none}.view.active{display:block}
+
+    .calendar-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+    .calendar-head button{width:46px;padding:11px}
+    .month-title{text-align:center;font-size:1.15rem;font-weight:900;text-transform:capitalize}
+    .weekdays,.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+    .weekdays div{text-align:center;color:var(--muted);font-size:.72rem;font-weight:800;padding:4px 0}
+    .day{
+      min-height:74px;background:#0c1828;border:1px solid #223750;
+      border-radius:13px;padding:7px;position:relative;text-align:left;color:white
+    }
+    .day.empty{visibility:hidden}
+    .day.today{border-color:var(--orange);box-shadow:inset 0 0 0 1px var(--orange)}
+    .day.selected{background:#1b3957;border-color:var(--blue)}
+    .day-number{font-weight:850;font-size:.88rem}
+    .day-name{
+      font-size:.66rem;color:#c7d6ea;margin-top:5px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+    }
+    .dot{position:absolute;right:7px;top:8px;width:9px;height:9px;border-radius:50%}
+    .dot.planned{background:var(--blue)}
+    .dot.done{background:var(--green)}
+    .dot.race{background:var(--red)}
+    .dot.custom{background:var(--yellow)}
+    .dot.uploaded{box-shadow:0 0 0 3px rgba(54,195,111,.18)}
+    .legend{display:flex;gap:13px;flex-wrap:wrap;margin-top:12px;color:var(--muted);font-size:.75rem}
+    .legend span{display:flex;align-items:center;gap:6px}
+    .legend i{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+    .workout-title{font-size:1.5rem;font-weight:900;margin:8px 0}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+    .pill{padding:6px 9px;border:1px solid #314965;border-radius:999px;background:#17293e;font-size:.8rem}
+    ul.steps{list-style:none;padding:0;margin:14px 0}
+    ul.steps li{display:flex;gap:10px;padding:11px 0;border-top:1px solid #22344c;line-height:1.4}
+    .step{min-width:25px;color:var(--blue);font-weight:900}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:15px}
+    .actions .wide{grid-column:1/-1}
+    .status{min-height:22px;margin:10px 0 0}.ok{color:#8de5ad}.error{color:#ff9494}
+
+    form{display:grid;gap:13px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{display:grid;gap:6px;color:#dce8f8;font-weight:700;font-size:.9rem}
+    input,select,textarea{
+      width:100%;border:1px solid #304968;border-radius:12px;
+      padding:12px;background:#0d1928;color:white;font:inherit;outline:none
+    }
+    textarea{min-height:86px;resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+    .section{padding-top:13px;border-top:1px solid #263a55}
+    .form-mode{
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:11px;border-radius:13px;background:#0d1928;border:1px solid #243a55
+    }
+
+    .saved-list{display:grid;gap:10px}
+    .saved-row{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:13px}
+    .saved-row-top{display:flex;justify-content:space-between;gap:12px;align-items:start}
+    .saved-row strong{display:block}
+    .saved-row small{color:var(--muted)}
+    .mini-actions{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+    .mini-actions button{padding:9px 8px;font-size:.8rem}
+    .notice{border-left:3px solid var(--orange);padding-left:12px;color:#ffd697}
+    .modal-backdrop{
+      display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);
+      align-items:flex-end;justify-content:center;padding:12px;z-index:50
+    }
+    .modal-backdrop.open{display:flex}
+    .modal{
+      width:min(620px,100%);background:#101d2e;border:1px solid #304969;
+      border-radius:20px;padding:18px;box-shadow:0 20px 80px rgba(0,0,0,.5)
+    }
+    .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+
+    @media(max-width:650px){
+      .tabs{grid-template-columns:1fr}
+      .grid2{grid-template-columns:1fr}
+      .day{min-height:61px;padding:6px}
+      .day-name{display:none}
+      .actions{grid-template-columns:1fr}
+      .actions .wide{grid-column:auto}
+      .mini-actions{grid-template-columns:1fr}
+      h1{font-size:1.8rem}
+    }
   </style>
 </head>
 <body>
@@ -33,7 +135,7 @@
 
   <nav class="tabs">
     <button class="tab active" data-view="calendar">Kalender</button>
-    <button class="tab" data-view="new">Nieuwe training</button>
+    <button class="tab" data-view="editor">Nieuwe training</button>
     <button class="tab" data-view="saved">Mijn trainingen</button>
   </nav>
 
@@ -44,8 +146,12 @@
         <div class="month-title" id="monthTitle"></div>
         <button class="secondary" id="nextMonth">→</button>
       </div>
-      <div class="weekdays"><div>Ma</div><div>Di</div><div>Wo</div><div>Do</div><div>Vr</div><div>Za</div><div>Zo</div></div>
+
+      <div class="weekdays">
+        <div>Ma</div><div>Di</div><div>Wo</div><div>Do</div><div>Vr</div><div>Za</div><div>Zo</div>
+      </div>
       <div id="calendarGrid" class="calendar-grid"></div>
+
       <div class="legend">
         <span><i style="background:var(--blue)"></i> Gepland</span>
         <span><i style="background:var(--green)"></i> Voltooid</span>
@@ -53,62 +159,746 @@
         <span><i style="background:var(--red)"></i> Wedstrijd</span>
       </div>
     </article>
-    <article class="card"><div id="workoutCard"><p class="subtitle">Trainingen laden…</p></div></article>
+
+    <article class="card">
+      <div id="workoutCard"><p class="subtitle">Trainingen laden…</p></div>
+    </article>
   </section>
 
-  <section id="new" class="view">
+  <section id="editor" class="view">
     <article class="card">
-      <p class="label">Training toevoegen zonder code</p>
-      <h2>Nieuwe hardlooptraining</h2>
+      <div class="form-mode">
+        <div>
+          <p class="label" id="editorLabel">Nieuwe training</p>
+          <strong id="editorTitle">Training toevoegen</strong>
+        </div>
+        <button id="cancelEdit" class="secondary" type="button" hidden>Annuleer</button>
+      </div>
+
+      <p class="help" style="margin-top:14px">
+        Maak een training, wijzig een bestaande training of sla een kopie op een andere datum op.
+      </p>
+
       <form id="workoutForm">
+        <input id="originalDate" type="hidden">
+
         <div class="grid2">
-          <label>Datum<input id="date" type="date" required></label>
-          <label>Naam<input id="name" type="text" placeholder="Bijv. 6 × 800 m" required></label>
+          <label>Datum
+            <input id="date" type="date" required>
+          </label>
+          <label>Naam
+            <input id="name" type="text" placeholder="Bijv. 6 × 800 m" required>
+          </label>
         </div>
+
         <div class="grid2">
-          <label>Geschatte afstand (km)<input id="distanceKm" type="number" min="0" step="0.1" placeholder="12" required></label>
-          <label>RPE<select id="rpe"><option>2/10</option><option>3/10</option><option>4/10</option><option>5/10</option><option>6/10</option><option>7/10</option><option selected>8/10</option><option>9/10</option></select></label>
+          <label>Geschatte afstand (km)
+            <input id="distanceKm" type="number" min="0" step="0.1" placeholder="12" required>
+          </label>
+          <label>RPE
+            <select id="rpe">
+              <option>2/10</option><option>3/10</option><option>4/10</option>
+              <option>5/10</option><option>6/10</option><option>7/10</option>
+              <option selected>8/10</option><option>9/10</option>
+            </select>
+          </label>
         </div>
-        <div class="section"><h3>Inlopen</h3><div class="grid2"><label>Afstand (km)<input id="warmupKm" type="number" min="0" step="0.1" value="3"></label><label>Tempo<input id="warmupPace" type="text" value="5:00-5:30/km"></label></div></div>
-        <div class="section"><h3>Hoofdblok</h3><div class="grid2"><label>Herhalingen<input id="repeats" type="number" min="1" step="1" value="5"></label><label>Intervalafstand (meter)<input id="workMeters" type="number" min="50" step="50" value="1000"></label></div><label>Doeltempo interval<input id="targetPace" type="text" value="3:28-3:30/km"></label><div class="grid2"><label>Herstelsoort<select id="recoveryType"><option value="time">Tijd</option><option value="distance">Afstand</option></select></label><label id="recoveryValueLabel">Herstel (minuten)<input id="recoveryValue" type="number" min="0.5" step="0.5" value="2"></label></div></div>
-        <div class="section"><h3>Uitlopen</h3><label>Afstand (km)<input id="cooldownKm" type="number" min="0" step="0.1" value="2"></label></div>
-        <label>Coachnotitie (optioneel)<textarea id="notes" placeholder="Bijv. eerste herhalingen gecontroleerd lopen."></textarea></label>
-        <button type="submit">Training opslaan</button><p id="formStatus" class="status"></p>
+
+        <div class="section">
+          <h3>Inlopen</h3>
+          <div class="grid2">
+            <label>Afstand (km)
+              <input id="warmupKm" type="number" min="0" step="0.1" value="3">
+            </label>
+            <label>Tempo
+              <input id="warmupPace" type="text" value="5:00-5:30/km">
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Hoofdblok</h3>
+          <div class="grid2">
+            <label>Herhalingen
+              <input id="repeats" type="number" min="1" step="1" value="5">
+            </label>
+            <label>Intervalafstand (meter)
+              <input id="workMeters" type="number" min="50" step="50" value="1000">
+            </label>
+          </div>
+
+          <label>Doeltempo interval
+            <input id="targetPace" type="text" value="3:28-3:30/km">
+          </label>
+
+          <div class="grid2">
+            <label>Herstelsoort
+              <select id="recoveryType">
+                <option value="time">Tijd</option>
+                <option value="distance">Afstand</option>
+              </select>
+            </label>
+            <label id="recoveryValueLabel">Herstel (minuten)
+              <input id="recoveryValue" type="number" min="0.5" step="0.5" value="2">
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Uitlopen</h3>
+          <label>Afstand (km)
+            <input id="cooldownKm" type="number" min="0" step="0.1" value="2">
+          </label>
+        </div>
+
+        <label>Coachnotitie (optioneel)
+          <textarea id="notes" placeholder="Bijv. eerste herhalingen gecontroleerd lopen."></textarea>
+        </label>
+
+        <button id="saveButton" type="submit">Training opslaan</button>
+        <p id="formStatus" class="status"></p>
       </form>
     </article>
-    <article class="card"><p class="label">Voorbeeld Intervals.icu</p><pre id="preview" style="white-space:pre-wrap;color:#c9d9ed;font:inherit;margin:0"></pre></article>
+
+    <article class="card">
+      <p class="label">Voorbeeld Intervals.icu</p>
+      <pre id="preview" style="white-space:pre-wrap;color:#c9d9ed;font:inherit;margin:0"></pre>
+    </article>
   </section>
 
-  <section id="saved" class="view"><article class="card"><p class="label">Op dit toestel opgeslagen</p><h2>Mijn trainingen</h2><p class="notice">Eigen trainingen staan lokaal op deze iPhone. Cloudopslag volgt later.</p><div id="savedList" class="saved-list"></div></article></section>
+  <section id="saved" class="view">
+    <article class="card">
+      <p class="label">Op dit toestel opgeslagen</p>
+      <h2>Mijn trainingen</h2>
+      <p class="notice">
+        Je eigen trainingen staan lokaal op deze iPhone. Je kunt ze openen, bewerken,
+        dupliceren, verplaatsen en verwijderen.
+      </p>
+      <div id="savedList" class="saved-list"></div>
+    </article>
+  </section>
 </main>
+
+<div id="duplicateModal" class="modal-backdrop">
+  <div class="modal">
+    <p class="label">Training dupliceren</p>
+    <h2 id="duplicateTitle">Kopie maken</h2>
+    <label>Nieuwe datum
+      <input id="duplicateDate" type="date">
+    </label>
+    <div class="modal-actions">
+      <button class="secondary" id="closeDuplicate">Annuleer</button>
+      <button id="confirmDuplicate">Dupliceer</button>
+    </div>
+    <p id="duplicateStatus" class="status"></p>
+  </div>
+</div>
+
 <script>
-const STORAGE_KEY="jp_custom_workouts_v1",DONE_KEY="jp_done_workouts_v1";
-let serverWorkouts={},customWorkouts=loadObject(STORAGE_KEY),doneWorkouts=loadObject(DONE_KEY);
-const today=new Date();let visibleMonth=new Date(today.getFullYear(),today.getMonth(),1);let selectedDate="2026-08-04";
-const fullDate=new Intl.DateTimeFormat("nl-NL",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-const monthFmt=new Intl.DateTimeFormat("nl-NL",{month:"long",year:"numeric"});
-function loadObject(key){try{return JSON.parse(localStorage.getItem(key)||"{}")}catch{return {}}}
-function saveObject(key,value){localStorage.setItem(key,JSON.stringify(value))}
-function allWorkouts(){return {...serverWorkouts,...customWorkouts}}
-function safe(value){return String(value??"").replace(/[<>]/g,"")}
-function ymd(date){return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`}
-function workoutState(date,w){if(doneWorkouts[date]||w?.status==="done")return"done";if(w?.type==="Race"||/wedstrijd|race/i.test(w?.name||""))return"race";if(customWorkouts[date])return"custom";return"planned"}
-function renderMonth(){const grid=document.getElementById("calendarGrid"),title=document.getElementById("monthTitle");title.textContent=monthFmt.format(visibleMonth);const year=visibleMonth.getFullYear(),month=visibleMonth.getMonth(),first=new Date(year,month,1),lastDay=new Date(year,month+1,0).getDate(),mondayIndex=(first.getDay()+6)%7,workouts=allWorkouts();let html="";for(let i=0;i<mondayIndex;i++)html+='<button class="day empty"></button>';for(let day=1;day<=lastDay;day++){const dateObj=new Date(year,month,day),date=ymd(dateObj),w=workouts[date],isToday=date===ymd(today),isSelected=date===selectedDate,state=w?workoutState(date,w):"";html+=`<button class="day ${isToday?"today":""} ${isSelected?"selected":""}" onclick="selectDate('${date}')"><span class="day-number">${day}</span>${w?`<span class="dot ${state}"></span><div class="day-name">${safe(w.name)}</div>`:""}</button>`}grid.innerHTML=html}
-function renderSelected(){const w=allWorkouts()[selectedDate],card=document.getElementById("workoutCard");if(!w){card.innerHTML=`<p class="label">${fullDate.format(new Date(selectedDate+"T12:00:00"))}</p><div class="workout-title">Geen training gepland</div><p class="help">Maak voor deze dag een training via Nieuwe training.</p><button onclick="newForSelected()">Training toevoegen</button>`;return}const done=workoutState(selectedDate,w)==="done";card.innerHTML=`<p class="label">${fullDate.format(new Date(selectedDate+"T12:00:00"))}</p><div class="workout-title">${safe(w.name)}</div><div class="meta"><span class="pill">${safe(w.type||"Run")}</span><span class="pill">± ${safe(w.distanceKm)} km</span><span class="pill">RPE ${safe(w.rpe)}</span><span class="pill">${done?"Voltooid":customWorkouts[selectedDate]?"Eigen training":"Gepland"}</span></div><ul class="steps">${(w.displaySteps||[]).map((step,i)=>`<li><span class="step">${i+1}</span><span>${safe(step)}</span></li>`).join("")}</ul><div class="actions"><button onclick="toggleDone()">${done?"Markeer als gepland":"Markeer als voltooid"}</button><button class="secondary" onclick="uploadSelected()">Zet in Intervals.icu</button>${customWorkouts[selectedDate]?'<button class="secondary" onclick="editSelected()">Bewerk training</button>':""}</div><p id="uploadStatus" class="status"></p>`}
-function selectDate(date){selectedDate=date;renderMonth();renderSelected()}
-function toggleDone(){doneWorkouts[selectedDate]=!doneWorkouts[selectedDate];saveObject(DONE_KEY,doneWorkouts);renderMonth();renderSelected()}
-async function uploadSelected(){const w=allWorkouts()[selectedDate];if(!w)return;const pin=prompt("Voer je Jaco Performance app-pincode in:");if(pin===null)return;const status=document.getElementById("uploadStatus");status.className="status";status.textContent="Workout wordt verstuurd…";try{const payload={workoutDate:selectedDate,pin};if(customWorkouts[selectedDate])payload.customWorkout=w;const response=await fetch("/api/upload-workout",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});const data=await response.json();if(!response.ok)throw new Error(data.error||"Upload mislukt");status.className="status ok";status.textContent="Gelukt: workout staat in Intervals.icu."}catch(error){status.className="status error";status.textContent=error.message}}
-function buildWorkout(){const recoveryType=document.getElementById("recoveryType").value,recoveryValue=Number(document.getElementById("recoveryValue").value),warmupKm=Number(document.getElementById("warmupKm").value||0),cooldownKm=Number(document.getElementById("cooldownKm").value||0),repeats=Number(document.getElementById("repeats").value),workMeters=Number(document.getElementById("workMeters").value),target=safe(document.getElementById("targetPace").value).trim()||"Z1",notes=safe(document.getElementById("notes").value).trim(),displaySteps=[],lines=[];if(notes)lines.push(notes,"");if(warmupKm>0){displaySteps.push(`${warmupKm} km rustig inlopen`);lines.push("Warmup",`- ${warmupKm}km ${safe(document.getElementById("warmupPace").value)} Pace`,"")}displaySteps.push(`${repeats} × ${workMeters} m @ ${target}, ${recoveryType==="time"?`${recoveryValue} min herstel`:`${recoveryValue} m herstel`}`);lines.push(`Main set ${repeats}x`,`- ${workMeters}mtr ${target} Pace`);lines.push(recoveryType==="time"?`- ${recoveryValue}m Z1 Pace`:`- ${recoveryValue}mtr Z1 Pace`,"");if(cooldownKm>0){displaySteps.push(`${cooldownKm} km rustig uitlopen`);lines.push("Cooldown",`- ${cooldownKm}km Z1 Pace`)}const name=safe(document.getElementById("name").value).trim();return{name,uploadName:`Jaco - ${name}`,date:document.getElementById("date").value,type:"Run",distanceKm:Number(document.getElementById("distanceKm").value),rpe:document.getElementById("rpe").value,status:"planned",displaySteps,intervalsDescription:lines.join("\n")}}
-function updatePreview(){try{document.getElementById("preview").textContent=buildWorkout().intervalsDescription||"Vul de training in."}catch{document.getElementById("preview").textContent="Vul de training in."}}
-function newForSelected(){document.getElementById("workoutForm").reset();document.getElementById("date").value=selectedDate;document.getElementById("warmupKm").value=3;document.getElementById("warmupPace").value="5:00-5:30/km";document.getElementById("repeats").value=5;document.getElementById("workMeters").value=1000;document.getElementById("targetPace").value="3:28-3:30/km";document.getElementById("recoveryValue").value=2;document.getElementById("cooldownKm").value=2;switchView("new");updatePreview()}
-function editSelected(){const w=customWorkouts[selectedDate];if(!w)return;document.getElementById("date").value=w.date;document.getElementById("name").value=w.name;document.getElementById("distanceKm").value=w.distanceKm;document.getElementById("rpe").value=w.rpe;switchView("new");document.getElementById("formStatus").textContent="Pas de velden aan en sla opnieuw op."}
-function renderSaved(){const list=document.getElementById("savedList"),entries=Object.entries(customWorkouts).sort(([a],[b])=>a.localeCompare(b));if(!entries.length){list.innerHTML='<p class="help">Je hebt nog geen eigen trainingen opgeslagen.</p>';return}list.innerHTML=entries.map(([date,w])=>`<div class="saved-row"><strong>${safe(w.name)}</strong><small>${fullDate.format(new Date(date+"T12:00:00"))} · ${w.distanceKm} km · RPE ${safe(w.rpe)}</small><div class="mini-actions"><button class="secondary" onclick="openSaved('${date}')">Open</button><button class="danger" onclick="removeSaved('${date}')">Verwijder</button></div></div>`).join("")}
-function openSaved(date){selectedDate=date;const d=new Date(date+"T12:00:00");visibleMonth=new Date(d.getFullYear(),d.getMonth(),1);switchView("calendar");renderMonth();renderSelected()}
-function removeSaved(date){if(!confirm("Deze training verwijderen?"))return;delete customWorkouts[date];saveObject(STORAGE_KEY,customWorkouts);renderSaved();renderMonth();renderSelected()}
-function switchView(id){document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===id));document.getElementById(id).classList.add("active");if(id==="saved")renderSaved()}
-document.querySelectorAll(".tab").forEach(tab=>tab.onclick=()=>switchView(tab.dataset.view));document.getElementById("prevMonth").onclick=()=>{visibleMonth=new Date(visibleMonth.getFullYear(),visibleMonth.getMonth()-1,1);renderMonth()};document.getElementById("nextMonth").onclick=()=>{visibleMonth=new Date(visibleMonth.getFullYear(),visibleMonth.getMonth()+1,1);renderMonth()};document.getElementById("recoveryType").onchange=()=>{const time=document.getElementById("recoveryType").value==="time";document.getElementById("recoveryValueLabel").firstChild.textContent=time?"Herstel (minuten)":"Herstel (meter)";document.getElementById("recoveryValue").step=time?"0.5":"50";document.getElementById("recoveryValue").value=time?"2":"200";updatePreview()};document.getElementById("workoutForm").addEventListener("input",updatePreview);document.getElementById("workoutForm").onsubmit=e=>{e.preventDefault();const w=buildWorkout();if(!w.date||!w.name)return;customWorkouts[w.date]=w;saveObject(STORAGE_KEY,customWorkouts);selectedDate=w.date;const d=new Date(w.date+"T12:00:00");visibleMonth=new Date(d.getFullYear(),d.getMonth(),1);document.getElementById("formStatus").className="status ok";document.getElementById("formStatus").textContent="Training opgeslagen en toegevoegd aan de kalender.";renderMonth();renderSelected();renderSaved()};
-async function loadServer(){try{const response=await fetch("/api/workouts");const data=await response.json();if(!response.ok)throw new Error(data.error||"Laden mislukt");serverWorkouts=data.workouts||{}}catch(error){console.error(error);serverWorkouts={}}renderMonth();renderSelected()}
-document.getElementById("date").value=ymd(today);document.getElementById("greeting").textContent=(today.getHours()<12?"Goedemorgen":today.getHours()<18?"Goedemiddag":"Goedenavond")+" Jaco";updatePreview();loadServer();
+const STORAGE_KEY = "jp_custom_workouts_v1";
+const DONE_KEY = "jp_done_workouts_v1";
+const UPLOAD_KEY = "jp_uploaded_workouts_v1";
+
+let serverWorkouts = {};
+let customWorkouts = loadObject(STORAGE_KEY);
+let doneWorkouts = loadObject(DONE_KEY);
+let uploadedWorkouts = loadObject(UPLOAD_KEY);
+
+const today = new Date();
+let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+let selectedDate = "2026-08-04";
+let duplicateSourceDate = null;
+
+const fullDate = new Intl.DateTimeFormat("nl-NL",{
+  weekday:"long",day:"numeric",month:"long",year:"numeric"
+});
+const monthFmt = new Intl.DateTimeFormat("nl-NL",{month:"long",year:"numeric"});
+
+function loadObject(key){
+  try{return JSON.parse(localStorage.getItem(key) || "{}")}catch{return {}}
+}
+function saveObject(key,value){
+  localStorage.setItem(key,JSON.stringify(value));
+}
+function allWorkouts(){
+  return {...serverWorkouts,...customWorkouts};
+}
+function safe(value){
+  return String(value ?? "").replace(/[<>]/g,"");
+}
+function ymd(date){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,"0");
+  const d=String(date.getDate()).padStart(2,"0");
+  return `${y}-${m}-${d}`;
+}
+function clone(value){
+  return JSON.parse(JSON.stringify(value));
+}
+function switchView(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===id));
+  document.getElementById(id).classList.add("active");
+  if(id==="saved") renderSaved();
+}
+
+function workoutState(date,workout){
+  if(doneWorkouts[date] || workout?.status==="done") return "done";
+  if(workout?.type==="Race" || /wedstrijd|race/i.test(workout?.name || "")) return "race";
+  if(customWorkouts[date]) return "custom";
+  return "planned";
+}
+
+function renderMonth(){
+  const grid=document.getElementById("calendarGrid");
+  document.getElementById("monthTitle").textContent=monthFmt.format(visibleMonth);
+
+  const year=visibleMonth.getFullYear();
+  const month=visibleMonth.getMonth();
+  const first=new Date(year,month,1);
+  const lastDay=new Date(year,month+1,0).getDate();
+  const mondayIndex=(first.getDay()+6)%7;
+  const workouts=allWorkouts();
+
+  let html="";
+  for(let i=0;i<mondayIndex;i++){
+    html+=`<button class="day empty" type="button"></button>`;
+  }
+
+  for(let day=1;day<=lastDay;day++){
+    const dateObj=new Date(year,month,day);
+    const date=ymd(dateObj);
+    const workout=workouts[date];
+    const isToday=date===ymd(today);
+    const isSelected=date===selectedDate;
+    const state=workout ? workoutState(date,workout) : "";
+    const uploaded=uploadedWorkouts[date] ? "uploaded" : "";
+
+    html+=`
+      <button class="day ${isToday?"today":""} ${isSelected?"selected":""}"
+        type="button" onclick="selectDate('${date}')">
+        <span class="day-number">${day}</span>
+        ${workout?`
+          <span class="dot ${state} ${uploaded}"></span>
+          <div class="day-name">${safe(workout.name)}</div>
+        `:""}
+      </button>`;
+  }
+  grid.innerHTML=html;
+}
+
+function renderSelected(){
+  const workout=allWorkouts()[selectedDate];
+  const card=document.getElementById("workoutCard");
+
+  if(!workout){
+    card.innerHTML=`
+      <p class="label">${fullDate.format(new Date(selectedDate+"T12:00:00"))}</p>
+      <div class="workout-title">Geen training gepland</div>
+      <p class="help">Maak voor deze dag een training.</p>
+      <button type="button" onclick="newForSelected()">Training toevoegen</button>`;
+    return;
+  }
+
+  const isCustom=Boolean(customWorkouts[selectedDate]);
+  const done=workoutState(selectedDate,workout)==="done";
+  const uploaded=Boolean(uploadedWorkouts[selectedDate]);
+
+  card.innerHTML=`
+    <p class="label">${fullDate.format(new Date(selectedDate+"T12:00:00"))}</p>
+    <div class="workout-title">${safe(workout.name)}</div>
+
+    <div class="meta">
+      <span class="pill">${safe(workout.type || "Run")}</span>
+      <span class="pill">± ${safe(workout.distanceKm)} km</span>
+      <span class="pill">RPE ${safe(workout.rpe)}</span>
+      <span class="pill">${done?"Voltooid":isCustom?"Eigen training":"Schema"}</span>
+      ${uploaded?`<span class="pill">In Intervals ✓</span>`:""}
+    </div>
+
+    <ul class="steps">
+      ${(workout.displaySteps||[]).map((step,index)=>`
+        <li><span class="step">${index+1}</span><span>${safe(step)}</span></li>
+      `).join("")}
+    </ul>
+
+    <div class="actions">
+      <button type="button" onclick="toggleDone()">
+        ${done?"Markeer als gepland":"Markeer als voltooid"}
+      </button>
+
+      <button class="secondary" type="button" onclick="uploadSelected()">
+        ${uploaded?"Opnieuw naar Intervals":"Zet in Intervals.icu"}
+      </button>
+
+      ${isCustom?`
+        <button class="secondary" type="button" onclick="editWorkout('${selectedDate}')">Bewerken</button>
+        <button class="secondary" type="button" onclick="openDuplicate('${selectedDate}')">Dupliceren</button>
+        <button class="danger wide" type="button" onclick="deleteWorkout('${selectedDate}')">Verwijderen</button>
+      `:`
+        <button class="secondary wide" type="button" onclick="copyServerWorkout('${selectedDate}')">
+          Maak bewerkbare kopie
+        </button>
+      `}
+    </div>
+
+    <p id="uploadStatus" class="status"></p>`;
+}
+
+function selectDate(date){
+  selectedDate=date;
+  renderMonth();
+  renderSelected();
+}
+
+function toggleDone(){
+  doneWorkouts[selectedDate]=!doneWorkouts[selectedDate];
+  saveObject(DONE_KEY,doneWorkouts);
+  renderMonth();
+  renderSelected();
+}
+
+async function uploadSelected(){
+  const workout=allWorkouts()[selectedDate];
+  if(!workout) return;
+
+  const pin=prompt("Voer je Jaco Performance app-pincode in:");
+  if(pin===null) return;
+
+  const status=document.getElementById("uploadStatus");
+  status.className="status";
+  status.textContent="Workout wordt verstuurd…";
+
+  try{
+    const payload={workoutDate:selectedDate,pin};
+    if(customWorkouts[selectedDate]){
+      payload.customWorkout=workout;
+    }
+
+    const response=await fetch("/api/upload-workout",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload)
+    });
+
+    const data=await response.json();
+    if(!response.ok){
+      throw new Error(data.error || "Upload mislukt");
+    }
+
+    uploadedWorkouts[selectedDate]={
+      uploadedAt:new Date().toISOString(),
+      name:workout.name
+    };
+    saveObject(UPLOAD_KEY,uploadedWorkouts);
+
+    status.className="status ok";
+    status.textContent="Gelukt: workout staat in Intervals.icu.";
+    renderMonth();
+  }catch(error){
+    status.className="status error";
+    status.textContent=error.message;
+  }
+}
+
+function setDefaultForm(date=ymd(today)){
+  document.getElementById("workoutForm").reset();
+  document.getElementById("originalDate").value="";
+  document.getElementById("date").value=date;
+  document.getElementById("rpe").value="8/10";
+  document.getElementById("warmupKm").value=3;
+  document.getElementById("warmupPace").value="5:00-5:30/km";
+  document.getElementById("repeats").value=5;
+  document.getElementById("workMeters").value=1000;
+  document.getElementById("targetPace").value="3:28-3:30/km";
+  document.getElementById("recoveryType").value="time";
+  document.getElementById("recoveryValue").value=2;
+  document.getElementById("cooldownKm").value=2;
+  document.getElementById("notes").value="";
+  document.getElementById("editorLabel").textContent="Nieuwe training";
+  document.getElementById("editorTitle").textContent="Training toevoegen";
+  document.getElementById("saveButton").textContent="Training opslaan";
+  document.getElementById("cancelEdit").hidden=true;
+  document.getElementById("formStatus").textContent="";
+  updateRecoveryLabel();
+  updatePreview();
+}
+
+function newForSelected(){
+  setDefaultForm(selectedDate);
+  switchView("editor");
+}
+
+function buildWorkout(){
+  const recoveryType=document.getElementById("recoveryType").value;
+  const recoveryValue=Number(document.getElementById("recoveryValue").value);
+  const warmupKm=Number(document.getElementById("warmupKm").value || 0);
+  const cooldownKm=Number(document.getElementById("cooldownKm").value || 0);
+  const repeats=Number(document.getElementById("repeats").value);
+  const workMeters=Number(document.getElementById("workMeters").value);
+  const target=safe(document.getElementById("targetPace").value).trim() || "Z1";
+  const notes=safe(document.getElementById("notes").value).trim();
+  const displaySteps=[];
+  const lines=[];
+
+  if(notes){
+    lines.push(notes,"");
+  }
+
+  if(warmupKm>0){
+    const warmupPace=safe(document.getElementById("warmupPace").value).trim() || "Z1";
+    displaySteps.push(`${warmupKm} km rustig inlopen`);
+    lines.push("Warmup",`- ${warmupKm}km ${warmupPace} Pace`,"");
+  }
+
+  displaySteps.push(
+    `${repeats} × ${workMeters} m @ ${target}, ${
+      recoveryType==="time"
+        ? `${recoveryValue} min herstel`
+        : `${recoveryValue} m herstel`
+    }`
+  );
+
+  lines.push(`Main set ${repeats}x`);
+  lines.push(`- ${workMeters}mtr ${target} Pace`);
+  lines.push(
+    recoveryType==="time"
+      ? `- ${recoveryValue}m Z1 Pace`
+      : `- ${recoveryValue}mtr Z1 Pace`,
+    ""
+  );
+
+  if(cooldownKm>0){
+    displaySteps.push(`${cooldownKm} km rustig uitlopen`);
+    lines.push("Cooldown",`- ${cooldownKm}km Z1 Pace`);
+  }
+
+  const name=safe(document.getElementById("name").value).trim();
+
+  return{
+    name,
+    uploadName:`Jaco - ${name}`,
+    date:document.getElementById("date").value,
+    type:"Run",
+    distanceKm:Number(document.getElementById("distanceKm").value),
+    rpe:document.getElementById("rpe").value,
+    status:"planned",
+    editorData:{
+      warmupKm,
+      warmupPace:document.getElementById("warmupPace").value,
+      repeats,
+      workMeters,
+      targetPace:document.getElementById("targetPace").value,
+      recoveryType,
+      recoveryValue,
+      cooldownKm,
+      notes:document.getElementById("notes").value
+    },
+    displaySteps,
+    intervalsDescription:lines.join("\n")
+  };
+}
+
+function fillEditor(workout,originalDate){
+  const editor=workout.editorData || inferEditorData(workout);
+
+  document.getElementById("originalDate").value=originalDate || "";
+  document.getElementById("date").value=workout.date;
+  document.getElementById("name").value=workout.name || "";
+  document.getElementById("distanceKm").value=workout.distanceKm ?? "";
+  document.getElementById("rpe").value=workout.rpe || "8/10";
+  document.getElementById("warmupKm").value=editor.warmupKm ?? 3;
+  document.getElementById("warmupPace").value=editor.warmupPace || "5:00-5:30/km";
+  document.getElementById("repeats").value=editor.repeats ?? 5;
+  document.getElementById("workMeters").value=editor.workMeters ?? 1000;
+  document.getElementById("targetPace").value=editor.targetPace || "3:28-3:30/km";
+  document.getElementById("recoveryType").value=editor.recoveryType || "time";
+  document.getElementById("recoveryValue").value=editor.recoveryValue ?? 2;
+  document.getElementById("cooldownKm").value=editor.cooldownKm ?? 2;
+  document.getElementById("notes").value=editor.notes || "";
+
+  document.getElementById("editorLabel").textContent="Training bewerken";
+  document.getElementById("editorTitle").textContent=workout.name;
+  document.getElementById("saveButton").textContent="Wijzigingen opslaan";
+  document.getElementById("cancelEdit").hidden=false;
+  document.getElementById("formStatus").textContent="";
+  updateRecoveryLabel();
+  updatePreview();
+}
+
+function inferEditorData(workout){
+  return{
+    warmupKm:3,
+    warmupPace:"5:00-5:30/km",
+    repeats:5,
+    workMeters:1000,
+    targetPace:"3:28-3:30/km",
+    recoveryType:"time",
+    recoveryValue:2,
+    cooldownKm:2,
+    notes:""
+  };
+}
+
+function editWorkout(date){
+  const workout=customWorkouts[date];
+  if(!workout) return;
+  fillEditor(workout,date);
+  switchView("editor");
+}
+
+function copyServerWorkout(date){
+  const workout=serverWorkouts[date];
+  if(!workout) return;
+
+  const copy=clone(workout);
+  copy.date=date;
+  copy.uploadName=copy.uploadName || `Jaco - ${copy.name}`;
+  copy.intervalsDescription=copy.intervalsDescription || "";
+  copy.editorData=inferEditorData(copy);
+
+  customWorkouts[date]=copy;
+  saveObject(STORAGE_KEY,customWorkouts);
+
+  selectedDate=date;
+  renderMonth();
+  renderSelected();
+  editWorkout(date);
+}
+
+function updatePreview(){
+  try{
+    document.getElementById("preview").textContent=
+      buildWorkout().intervalsDescription || "Vul de training in.";
+  }catch{
+    document.getElementById("preview").textContent="Vul de training in.";
+  }
+}
+
+function updateRecoveryLabel(){
+  const isTime=document.getElementById("recoveryType").value==="time";
+  document.getElementById("recoveryValueLabel").firstChild.textContent=
+    isTime ? "Herstel (minuten)" : "Herstel (meter)";
+  document.getElementById("recoveryValue").step=isTime ? "0.5" : "50";
+}
+
+function saveWorkout(event){
+  event.preventDefault();
+
+  const workout=buildWorkout();
+  const originalDate=document.getElementById("originalDate").value;
+
+  if(!workout.date || !workout.name){
+    document.getElementById("formStatus").className="status error";
+    document.getElementById("formStatus").textContent="Datum en naam zijn verplicht.";
+    return;
+  }
+
+  if(originalDate && originalDate!==workout.date){
+    delete customWorkouts[originalDate];
+    delete doneWorkouts[originalDate];
+    delete uploadedWorkouts[originalDate];
+  }
+
+  customWorkouts[workout.date]=workout;
+  saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
+
+  selectedDate=workout.date;
+  const dateObj=new Date(workout.date+"T12:00:00");
+  visibleMonth=new Date(dateObj.getFullYear(),dateObj.getMonth(),1);
+
+  document.getElementById("originalDate").value=workout.date;
+  document.getElementById("formStatus").className="status ok";
+  document.getElementById("formStatus").textContent=
+    originalDate && originalDate!==workout.date
+      ? "Training gewijzigd en naar de nieuwe datum verplaatst."
+      : "Training opgeslagen.";
+
+  document.getElementById("editorLabel").textContent="Training bewerken";
+  document.getElementById("editorTitle").textContent=workout.name;
+  document.getElementById("saveButton").textContent="Wijzigingen opslaan";
+  document.getElementById("cancelEdit").hidden=false;
+
+  renderMonth();
+  renderSelected();
+  renderSaved();
+}
+
+function openDuplicate(date){
+  duplicateSourceDate=date;
+  const workout=allWorkouts()[date];
+  if(!workout) return;
+
+  const source=new Date(date+"T12:00:00");
+  source.setDate(source.getDate()+7);
+
+  document.getElementById("duplicateTitle").textContent=`Kopie van ${workout.name}`;
+  document.getElementById("duplicateDate").value=ymd(source);
+  document.getElementById("duplicateStatus").textContent="";
+  document.getElementById("duplicateModal").classList.add("open");
+}
+
+function closeDuplicate(){
+  duplicateSourceDate=null;
+  document.getElementById("duplicateModal").classList.remove("open");
+}
+
+function duplicateWorkout(){
+  const newDate=document.getElementById("duplicateDate").value;
+  const source=allWorkouts()[duplicateSourceDate];
+  const status=document.getElementById("duplicateStatus");
+
+  if(!source || !newDate){
+    status.className="status error";
+    status.textContent="Kies een geldige datum.";
+    return;
+  }
+
+  if(allWorkouts()[newDate]){
+    status.className="status error";
+    status.textContent="Op deze datum staat al een training.";
+    return;
+  }
+
+  const copy=clone(source);
+  copy.date=newDate;
+  copy.status="planned";
+  copy.uploadName=copy.uploadName || `Jaco - ${copy.name}`;
+  copy.editorData=copy.editorData || inferEditorData(copy);
+
+  customWorkouts[newDate]=copy;
+  saveObject(STORAGE_KEY,customWorkouts);
+
+  selectedDate=newDate;
+  const dateObj=new Date(newDate+"T12:00:00");
+  visibleMonth=new Date(dateObj.getFullYear(),dateObj.getMonth(),1);
+
+  closeDuplicate();
+  switchView("calendar");
+  renderMonth();
+  renderSelected();
+}
+
+function deleteWorkout(date){
+  if(!customWorkouts[date]) return;
+  if(!confirm(`Training "${customWorkouts[date].name}" verwijderen?`)) return;
+
+  delete customWorkouts[date];
+  delete doneWorkouts[date];
+  delete uploadedWorkouts[date];
+
+  saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
+
+  renderMonth();
+  renderSelected();
+  renderSaved();
+}
+
+function renderSaved(){
+  const list=document.getElementById("savedList");
+  const entries=Object.entries(customWorkouts).sort(([a],[b])=>a.localeCompare(b));
+
+  if(!entries.length){
+    list.innerHTML=`<p class="help">Je hebt nog geen eigen trainingen opgeslagen.</p>`;
+    return;
+  }
+
+  list.innerHTML=entries.map(([date,workout])=>`
+    <div class="saved-row">
+      <div class="saved-row-top">
+        <div>
+          <strong>${safe(workout.name)}</strong>
+          <small>
+            ${fullDate.format(new Date(date+"T12:00:00"))}
+            · ${safe(workout.distanceKm)} km
+            · RPE ${safe(workout.rpe)}
+            ${uploadedWorkouts[date] ? " · In Intervals ✓" : ""}
+          </small>
+        </div>
+      </div>
+
+      <div class="mini-actions">
+        <button class="secondary" type="button" onclick="openSaved('${date}')">Open</button>
+        <button class="secondary" type="button" onclick="editWorkout('${date}');switchView('editor')">Bewerk</button>
+        <button class="secondary" type="button" onclick="openDuplicate('${date}')">Dupliceer</button>
+        <button class="danger" type="button" onclick="deleteWorkout('${date}')">Verwijder</button>
+      </div>
+    </div>
+  `).join("");
+}
+
+function openSaved(date){
+  selectedDate=date;
+  const dateObj=new Date(date+"T12:00:00");
+  visibleMonth=new Date(dateObj.getFullYear(),dateObj.getMonth(),1);
+  switchView("calendar");
+  renderMonth();
+  renderSelected();
+}
+
+async function loadServer(){
+  try{
+    const response=await fetch("/api/workouts");
+    const data=await response.json();
+
+    if(!response.ok){
+      throw new Error(data.error || "Laden mislukt");
+    }
+
+    serverWorkouts=data.workouts || {};
+  }catch(error){
+    console.error(error);
+    serverWorkouts={};
+  }
+
+  renderMonth();
+  renderSelected();
+}
+
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.onclick=()=>{
+    if(tab.dataset.view==="editor"){
+      setDefaultForm(selectedDate);
+    }
+    switchView(tab.dataset.view);
+  };
+});
+
+document.getElementById("prevMonth").onclick=()=>{
+  visibleMonth=new Date(visibleMonth.getFullYear(),visibleMonth.getMonth()-1,1);
+  renderMonth();
+};
+document.getElementById("nextMonth").onclick=()=>{
+  visibleMonth=new Date(visibleMonth.getFullYear(),visibleMonth.getMonth()+1,1);
+  renderMonth();
+};
+document.getElementById("recoveryType").onchange=()=>{
+  const isTime=document.getElementById("recoveryType").value==="time";
+  updateRecoveryLabel();
+  document.getElementById("recoveryValue").value=isTime ? "2" : "200";
+  updatePreview();
+};
+document.getElementById("workoutForm").addEventListener("input",updatePreview);
+document.getElementById("workoutForm").onsubmit=saveWorkout;
+document.getElementById("cancelEdit").onclick=()=>{
+  setDefaultForm(selectedDate);
+  switchView("calendar");
+};
+document.getElementById("closeDuplicate").onclick=closeDuplicate;
+document.getElementById("confirmDuplicate").onclick=duplicateWorkout;
+document.getElementById("duplicateModal").onclick=event=>{
+  if(event.target.id==="duplicateModal") closeDuplicate();
+};
+
+document.getElementById("greeting").textContent=
+  (today.getHours()<12?"Goedemorgen":today.getHours()<18?"Goedemiddag":"Goedenavond")+" Jaco";
+
+setDefaultForm(ymd(today));
+loadServer();
 </script>
 </body>
 </html>
