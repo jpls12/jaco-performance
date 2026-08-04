@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jaco Performance</title>
+<style>
+body{
+font-family:Arial,sans-serif;
+background:#111827;
+color:white;
+padding:30px;
+max-width:700px;
+margin:auto;
+}
+button{
+width:100%;
+padding:15px;
+margin-top:15px;
+font-size:18px;
+border:none;
+border-radius:10px;
+background:#16a34a;
+color:white;
+}
+textarea{
+width:100%;
+height:300px;
+margin-top:20px;
+background:#1f2937;
+color:white;
+padding:15px;
+border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🏃 Jaco Performance</h1>
+
+<p>Kies een training.</p>
+
+<button onclick="easy()">Easy + Strides</button>
+
+<button onclick="vo2()">5×1000 VO₂max</button>
+
+<textarea id="workout"></textarea>
+
+<script>
+
+function easy(){
+
+document.getElementById("workout").value=
+`Easy
+
+8 km @ 5:05-5:20/km
+
+6x
+
+100m @ 3:15-3:25/km
+
+100m Easy
+
+Cooldown
+
+5 min`;
+
+}
+
+function vo2(){
+
+document.getElementById("workout").value=
+`Warmup
+
+3 km Easy
+
+4x100m strides
+
+5x
+
+1000m @ 3:28-3:30/km
+
+2 min jog
+
+4x
+
+200m Fast
+
+200m Easy
+
+Cooldown
+
+2 km`;
+
+}
+
+</script>
+
+</body>
+</html>
