@@ -178,14 +178,19 @@
         <textarea id="smartInput" placeholder="Bijv. vrijdag 10 x 800 m in 2:45 met 400 m dribbel, 3 km inlopen en 2 km uitlopen"></textarea>
       </label>
 
-      <button id="parseSmartInput" type="button">Vul training automatisch in</button>
+      <div class="grid2">
+        <button id="parseSmartInput" type="button">Lees exacte training uit</button>
+        <button id="generateSmartWorkout" class="secondary" type="button">Maak passende training</button>
+      </div>
       <p id="smartStatus" class="status"></p>
 
       <p class="help" style="margin-top:12px">
         Voorbeelden:<br>
         • morgen 8 km herstel in 5:15/km<br>
         • zaterdag 12 x 400 m in 78 sec met 200 m dribbel<br>
-        • 5 x 1000 m in 3:28 met 2 min herstel, 3 km inlopen en 2 km uitlopen
+        • 5 x 1000 m in 3:28 met 2 min herstel, 3 km inlopen en 2 km uitlopen<br>
+        • maak vrijdag een pittige 5 km-training voor sub 18<br>
+        • maak zondag een rustige duurloop van 18 km
       </p>
     </article>
 
@@ -597,6 +602,290 @@ function parseDateFromText(text){
   }
 
   return document.getElementById("date").value || ymd(base);
+}
+
+
+function paceToSeconds(pace){
+  const match=String(pace).match(/(\d+):(\d{2})/);
+  if(!match) return null;
+  return Number(match[1])*60+Number(match[2]);
+}
+
+function secondsToPace(seconds){
+  const rounded=Math.max(1,Math.round(seconds));
+  return `${Math.floor(rounded/60)}:${String(rounded%60).padStart(2,"0")}`;
+}
+
+function estimateRacePaceSeconds(text, distanceKm){
+  const lower=text.toLowerCase();
+
+  const subMatch=lower.match(/sub\s*(\d{1,2})(?::(\d{2}))?/);
+  if(subMatch){
+    const minutes=Number(subMatch[1]);
+    const seconds=Number(subMatch[2] || 0);
+    return Math.round((minutes*60+seconds)/distanceKm);
+  }
+
+  const timeMatch=lower.match(/(?:in|doel|richting)\s*(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  if(timeMatch){
+    const a=Number(timeMatch[1]);
+    const b=Number(timeMatch[2]);
+    const c=Number(timeMatch[3] || 0);
+    const total=timeMatch[3] ? a*3600+b*60+c : a*60+b;
+    return Math.round(total/distanceKm);
+  }
+
+  return null;
+}
+
+function chooseGeneratedWorkout(text){
+  const lower=text.toLowerCase();
+  const date=parseDateFromText(text);
+
+  const explicitDistance=lower.match(/\b(\d+(?:[.,]\d+)?)\s*km\b/);
+  const requestedKm=explicitDistance ? Number(explicitDistance[1].replace(",",".")) : null;
+
+  const isRecovery=/herstel|zeer rustig|loslopen/.test(lower);
+  const isEasy=/rustig|easy|duurloop/.test(lower);
+  const isLong=/lange duur|lange duurloop|lang duur/.test(lower) || (requestedKm && requestedKm>=16);
+  const isThreshold=/drempel|threshold|tempo/.test(lower);
+  const isFiveK=/5\s*km|vijf kilometer/.test(lower);
+  const isTenK=/10\s*km|tien kilometer/.test(lower);
+  const isHalf=/halve marathon|21[.,]?1\s*km/.test(lower);
+  const isMarathon=/marathon/.test(lower) && !isHalf;
+  const isHard=/pittig|zwaar|hard|kwaliteit|intensief/.test(lower);
+
+  let raceDistance=5;
+  if(isTenK) raceDistance=10;
+  else if(isHalf) raceDistance=21.0975;
+  else if(isMarathon) raceDistance=42.195;
+
+  const racePace=estimateRacePaceSeconds(lower,raceDistance);
+
+  if(isRecovery){
+    const km=requestedKm || 8;
+    return {
+      date,
+      name:`Herstelloop ${km} km`,
+      distanceKm:km,
+      rpe:"2/10",
+      warmupKm:km,
+      warmupPace:"5:10-5:35/km",
+      repeats:1,
+      workMeters:100,
+      targetPace:"5:10-5:35/km",
+      recoveryType:"time",
+      recoveryValue:1,
+      cooldownKm:0,
+      notes:"Zeer ontspannen lopen. Hartslag laag houden en niet versnellen."
+    };
+  }
+
+  if(isLong){
+    const km=requestedKm || 18;
+    return {
+      date,
+      name:`Lange duurloop ${km} km`,
+      distanceKm:km,
+      rpe:"4/10",
+      warmupKm:km,
+      warmupPace:"4:55-5:20/km",
+      repeats:1,
+      workMeters:100,
+      targetPace:"4:55-5:20/km",
+      recoveryType:"time",
+      recoveryValue:1,
+      cooldownKm:0,
+      notes:"Rustig en gecontroleerd. Alleen versnellen als je fris bent."
+    };
+  }
+
+  if(isThreshold || (isTenK && isHard)){
+    const target=racePace ? secondsToPace(racePace+8) : "3:42-3:48";
+    return {
+      date,
+      name:"3 × 2 km drempel",
+      distanceKm:13,
+      rpe:"7/10",
+      warmupKm:3,
+      warmupPace:"5:00-5:25/km",
+      repeats:3,
+      workMeters:2000,
+      targetPace:`${target}/km`,
+      recoveryType:"time",
+      recoveryValue:2,
+      cooldownKm:2,
+      notes:"Drempeltraining: gecontroleerd starten en alle herhalingen gelijkmatig lopen."
+    };
+  }
+
+  if(isFiveK || isHard){
+    let repeats=5;
+    let meters=1000;
+    let recovery=2;
+    let target="3:28-3:30/km";
+
+    if(racePace){
+      const fast=racePace-3;
+      const slow=racePace+1;
+      target=`${secondsToPace(fast)}-${secondsToPace(slow)}/km`;
+    }
+
+    if(/kort|snelheid|400/.test(lower)){
+      repeats=12;
+      meters=400;
+      recovery=200;
+      target=racePace
+        ? `${secondsToPace(racePace-8)}-${secondsToPace(racePace-3)}/km`
+        : "3:13-3:18/km";
+
+      return {
+        date,
+        name:"12 × 400 m",
+        distanceKm:12.2,
+        rpe:"8/10",
+        warmupKm:3,
+        warmupPace:"5:00-5:25/km",
+        repeats,
+        workMeters:meters,
+        targetPace:target,
+        recoveryType:"distance",
+        recoveryValue:recovery,
+        cooldownKm:2,
+        notes:"Vlot maar technisch ontspannen. De laatste herhalingen mogen zwaar zijn."
+      };
+    }
+
+    return {
+      date,
+      name:`${repeats} × ${meters} m VO₂max`,
+      distanceKm:12,
+      rpe:"8/10",
+      warmupKm:3,
+      warmupPace:"5:00-5:25/km",
+      repeats,
+      workMeters:meters,
+      targetPace:target,
+      recoveryType:"time",
+      recoveryValue:recovery,
+      cooldownKm:2,
+      notes:"5 km-specifieke kwaliteitstraining. Eerste herhaling gecontroleerd openen."
+    };
+  }
+
+  if(isHalf){
+    const target=racePace ? secondsToPace(racePace+3) : "3:48-3:52";
+    return {
+      date,
+      name:"2 × 5 km halve-marathontempo",
+      distanceKm:16,
+      rpe:"7/10",
+      warmupKm:3,
+      warmupPace:"5:00-5:20/km",
+      repeats:2,
+      workMeters:5000,
+      targetPace:`${target}/km`,
+      recoveryType:"time",
+      recoveryValue:3,
+      cooldownKm:2,
+      notes:"Halve-marathonspecifiek. Tempo beheerst houden en niet boven drempel lopen."
+    };
+  }
+
+  if(isMarathon){
+    const target=racePace ? secondsToPace(racePace) : "4:15-4:20";
+    return {
+      date,
+      name:"Marathonduur met tempoblok",
+      distanceKm:22,
+      rpe:"6/10",
+      warmupKm:8,
+      warmupPace:"5:00-5:20/km",
+      repeats:2,
+      workMeters:5000,
+      targetPace:`${target}/km`,
+      recoveryType:"distance",
+      recoveryValue:1000,
+      cooldownKm:3,
+      notes:"Marathonspecifiek. Voeding en drinken oefenen zoals op wedstrijddag."
+    };
+  }
+
+  if(isEasy || requestedKm){
+    const km=requestedKm || 10;
+    return {
+      date,
+      name:`Rustige duurloop ${km} km`,
+      distanceKm:km,
+      rpe:"3/10",
+      warmupKm:km,
+      warmupPace:"5:00-5:25/km",
+      repeats:1,
+      workMeters:100,
+      targetPace:"5:00-5:25/km",
+      recoveryType:"time",
+      recoveryValue:1,
+      cooldownKm:0,
+      notes:"Volledig ontspannen duurloop in zone 2."
+    };
+  }
+
+  return {
+    date,
+    name:"5 × 1000 m VO₂max",
+    distanceKm:12,
+    rpe:"8/10",
+    warmupKm:3,
+    warmupPace:"5:00-5:25/km",
+    repeats:5,
+    workMeters:1000,
+    targetPace:"3:28-3:30/km",
+    recoveryType:"time",
+    recoveryValue:2,
+    cooldownKm:2,
+    notes:"Algemene 5 km-specifieke kwaliteitstraining."
+  };
+}
+
+function applyGeneratedWorkout(workout){
+  document.getElementById("date").value=workout.date;
+  document.getElementById("name").value=workout.name;
+  document.getElementById("distanceKm").value=workout.distanceKm;
+  document.getElementById("rpe").value=workout.rpe;
+  document.getElementById("warmupKm").value=workout.warmupKm;
+  document.getElementById("warmupPace").value=workout.warmupPace;
+  document.getElementById("repeats").value=workout.repeats;
+  document.getElementById("workMeters").value=workout.workMeters;
+  document.getElementById("targetPace").value=workout.targetPace;
+  document.getElementById("recoveryType").value=workout.recoveryType;
+  document.getElementById("recoveryValue").value=workout.recoveryValue;
+  document.getElementById("cooldownKm").value=workout.cooldownKm;
+  document.getElementById("notes").value=workout.notes;
+
+  updateRecoveryLabel();
+  updatePreview();
+}
+
+function generateSmartWorkout(){
+  const input=document.getElementById("smartInput").value.trim();
+  const status=document.getElementById("smartStatus");
+
+  if(!input){
+    status.className="status error";
+    status.textContent="Beschrijf eerst wat voor training je wilt.";
+    return;
+  }
+
+  try{
+    const generated=chooseGeneratedWorkout(input);
+    applyGeneratedWorkout(generated);
+    status.className="status ok";
+    status.textContent=
+      `Training voorgesteld: ${generated.name}. Controleer tempo, afstand en herstel en tik daarna op Opslaan.`;
+  }catch(error){
+    status.className="status error";
+    status.textContent="De training kon niet worden gegenereerd.";
+  }
 }
 
 function parseSmartTraining(){
@@ -1050,6 +1339,7 @@ document.getElementById("recoveryType").onchange=()=>{
 };
 
 document.getElementById("parseSmartInput").onclick=parseSmartTraining;
+document.getElementById("generateSmartWorkout").onclick=generateSmartWorkout;
 
 document.getElementById("workoutForm").addEventListener("input",updatePreview);
 document.getElementById("workoutForm").onsubmit=saveWorkout;
