@@ -2,7 +2,7 @@
 <html lang="nl">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
   <style>
@@ -10,284 +10,450 @@
       color-scheme:dark;
       --bg:#07111f;--panel:#101d2e;--panel2:#13243a;--line:#263a55;
       --text:#f5f8fc;--muted:#95a8c2;--green:#36c36f;--blue:#56b8ff;
-      --orange:#ffb454;--red:#ff7272;
+      --red:#ff8585;--orange:#ffbe66
     }
     *{box-sizing:border-box}
     body{margin:0;min-height:100vh;background:linear-gradient(180deg,#07111f,#0b1626 55%,#07111f);
       color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-    main{max-width:780px;margin:auto;padding:22px 16px 68px}
-    header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
-    .eyebrow{margin:0 0 6px;color:var(--blue);font-size:.75rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
-    h1{margin:0;font-size:2rem;line-height:1.1}.subtitle{margin:8px 0 0;color:var(--muted);line-height:1.45}
-    .badge{white-space:nowrap;background:#142840;border:1px solid #2b4667;color:#dbeafe;border-radius:999px;
-      padding:8px 11px;font-size:.78rem;font-weight:700}
-    .card{background:rgba(16,29,46,.96);border:1px solid var(--line);border-radius:20px;padding:18px;margin:14px 0;
-      box-shadow:0 16px 42px rgba(0,0,0,.18)}
-    .hero{background:linear-gradient(135deg,#11263c,#133925)}
-    .label{color:var(--muted);font-size:.76rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
-    .race{display:flex;justify-content:space-between;gap:14px;align-items:end;margin-top:12px}
-    .race h2{margin:0;font-size:1.35rem}.count{color:var(--green);font-size:2.35rem;font-weight:900;line-height:1;text-align:right}
-    .count small{display:block;margin-top:5px;color:var(--muted);font-size:.75rem;font-weight:700}
-    .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}
-    .tab{padding:11px 8px;border-radius:12px;background:#13243a;border:1px solid #263a55;color:#b9c8dc;font-weight:800;
-      font-size:.82rem;text-align:center;cursor:pointer}
-    .tab.active{background:#1b3653;color:white;border-color:#4d7fac}
+    main{max-width:780px;margin:auto;padding:22px 16px 72px}
+    h1,h2,h3,p{margin-top:0}
+    h1{font-size:2rem;margin-bottom:7px}
+    .eyebrow,.label{color:var(--blue);font-size:.76rem;font-weight:850;letter-spacing:.12em;text-transform:uppercase}
+    .subtitle,.help{color:var(--muted);line-height:1.45}
+    .card{background:rgba(16,29,46,.97);border:1px solid var(--line);border-radius:20px;padding:18px;margin:14px 0;
+      box-shadow:0 14px 40px rgba(0,0,0,.18)}
+    .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin:18px 0}
+    button{border:0;border-radius:13px;padding:14px;background:var(--green);color:#062311;font-size:1rem;font-weight:850;cursor:pointer}
+    button.secondary,.tab{background:#182b42;color:#dce8f8;border:1px solid #304a69}
+    .tab.active{background:#204263;color:white;border-color:#57a6dc}
     .view{display:none}.view.active{display:block}
-    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
-    .toolbar button{width:auto;margin:0;padding:10px 13px}
-    .date-title{font-size:1.15rem;font-weight:850;text-align:center}
-    .workout-title{margin:7px 0 0;font-size:1.45rem;font-weight:850}
-    .meta{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
-    .pill{padding:6px 9px;border:1px solid #314965;border-radius:999px;background:#17293e;color:#dbe7f5;font-size:.78rem}
-    ul.steps{list-style:none;padding:0;margin:14px 0 0}
-    ul.steps li{display:flex;gap:10px;padding:10px 0;border-top:1px solid #22344c;line-height:1.4}
-    .step{min-width:24px;color:var(--blue);font-weight:850}
-    button{width:100%;border:0;border-radius:13px;padding:14px;margin-top:15px;background:var(--green);color:#062311;
-      font-size:1rem;font-weight:850;cursor:pointer}
-    button.secondary{background:#1c3047;color:#eef6ff;border:1px solid #354f70}
-    button.warn{background:var(--orange);color:#321d00}
-    button.done{background:#183d2b;color:#8de5ad;border:1px solid #2b6c48}
-    .weekgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
-    .metric{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:12px}
-    .metric strong{display:block;margin-top:4px;font-size:1.15rem}.metric span{color:var(--muted);font-size:.74rem}
-    .progress{height:10px;background:#0a1421;border:1px solid #203149;border-radius:999px;overflow:hidden;margin-top:12px}
-    .progress>span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));width:0}
-    .list{display:grid;gap:10px;margin-top:12px}
-    .row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#0d1928;border:1px solid #223650;
-      border-radius:14px;padding:13px}
-    .row strong{display:block}.row small{color:var(--muted)}
-    .status-ok{color:#8de5ad}.status-plan{color:#9fc9ff}.status-rest{color:#ffcf8b}
-    .goals{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .goal{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:14px}
-    .goal b{font-size:1.2rem}.goal p{margin:6px 0 0;color:var(--muted);font-size:.84rem}
-    footer{margin-top:24px;text-align:center;color:#667b97;font-size:.78rem}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
+    .toolbar button{width:auto}
+    .date-title{text-align:center;font-weight:850;font-size:1.12rem}
+    .workout-title{font-size:1.55rem;font-weight:900;margin:8px 0}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
+    .pill{padding:6px 9px;border:1px solid #314965;border-radius:999px;background:#17293e;font-size:.8rem}
+    ul.steps{list-style:none;padding:0;margin:14px 0}
+    ul.steps li{display:flex;gap:10px;padding:11px 0;border-top:1px solid #22344c;line-height:1.4}
+    .step{min-width:25px;color:var(--blue);font-weight:900}
+    .actions{display:grid;gap:10px;margin-top:15px}
+    .status{min-height:22px;margin:10px 0 0}.ok{color:#8de5ad}.error{color:var(--red)}
+    form{display:grid;gap:13px}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    label{display:grid;gap:6px;color:#dce8f8;font-weight:700;font-size:.9rem}
+    input,select,textarea{width:100%;border:1px solid #304968;border-radius:12px;padding:12px;background:#0d1928;
+      color:white;font:inherit;outline:none}
+    textarea{min-height:90px;resize:vertical}
+    input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+    .section{padding-top:13px;border-top:1px solid #263a55}
+    .switchrow{display:flex;align-items:center;justify-content:space-between;gap:14px}
+    .switchrow input{width:22px;height:22px}
+    .saved-list{display:grid;gap:10px}
+    .saved-row{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:13px}
+    .saved-row-top{display:flex;justify-content:space-between;gap:12px;align-items:start}
+    .saved-row strong{display:block}.saved-row small{color:var(--muted)}
+    .mini-actions{display:flex;gap:8px;margin-top:10px}
+    .mini-actions button{padding:9px 11px;font-size:.82rem}
+    .danger{background:#4a2027;color:#ffd9df;border:1px solid #78404b}
+    .notice{border-left:3px solid var(--orange);padding-left:12px;color:#ffd697}
     @media(max-width:650px){
-      .weekgrid{grid-template-columns:1fr 1fr}.goals{grid-template-columns:1fr}.badge{display:none}
-      h1{font-size:1.8rem}.tabs{grid-template-columns:repeat(2,1fr)}
+      .tabs{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}
+      h1{font-size:1.8rem}
     }
   </style>
 </head>
 <body>
 <main>
-  <header>
-    <div>
-      <p class="eyebrow">Persoonlijke running coach</p>
-      <h1>Jaco Performance</h1>
-      <p class="subtitle" id="greeting">Goedemiddag Jaco</p>
-    </div>
-    <span class="badge">Sprint 2</span>
-  </header>
-
-  <section class="card hero">
-    <div class="label">Volgende A-wedstrijd</div>
-    <div class="race">
-      <div>
-        <h2>5 km – 25 augustus 2026</h2>
-        <p class="subtitle">Doel: persoonlijk record · richting sub 18:00</p>
-      </div>
-      <div class="count"><span id="days">–</span><small>dagen</small></div>
-    </div>
-  </section>
+  <p class="eyebrow">Persoonlijke running coach</p>
+  <h1>Jaco Performance</h1>
+  <p class="subtitle" id="greeting">Hallo Jaco</p>
 
   <nav class="tabs">
-    <button class="tab active" data-view="today">Vandaag</button>
-    <button class="tab" data-view="calendar">Kalender</button>
-    <button class="tab" data-view="history">Historie</button>
-    <button class="tab" data-view="goals">Doelen</button>
+    <button class="tab active" data-view="calendar">Kalender</button>
+    <button class="tab" data-view="new">Nieuwe training</button>
+    <button class="tab" data-view="saved">Mijn trainingen</button>
   </nav>
 
-  <section id="today" class="view active">
-    <article class="card" id="todayCard"></article>
-
-    <section class="card">
-      <div class="label">Weekdashboard</div>
-      <h2 style="margin:7px 0 0">Snelheid prikkelen, herstel beschermen</h2>
-      <div class="weekgrid">
-        <div class="metric"><span>Gepland</span><strong id="plannedKm">58 km</strong></div>
-        <div class="metric"><span>Voltooid</span><strong id="doneKm">0 km</strong></div>
-        <div class="metric"><span>Kwaliteit</span><strong>2 sessies</strong></div>
-        <div class="metric"><span>Doeltempo</span><strong>3:36/km</strong></div>
-      </div>
-      <div class="progress"><span id="weekProgress"></span></div>
-      <p class="subtitle" id="progressText">0% van de geplande week voltooid.</p>
-    </section>
-  </section>
-
-  <section id="calendar" class="view">
-    <section class="card">
+  <section id="calendar" class="view active">
+    <article class="card">
       <div class="toolbar">
         <button class="secondary" id="prevDay">←</button>
         <div class="date-title" id="calendarDate"></div>
         <button class="secondary" id="nextDay">→</button>
       </div>
-      <div id="calendarWorkout"></div>
-    </section>
+      <div id="workoutCard"><p class="subtitle">Trainingen laden…</p></div>
+    </article>
   </section>
 
-  <section id="history" class="view">
-    <section class="card">
-      <div class="label">Trainingsgeschiedenis</div>
-      <h2 style="margin:7px 0 0">Deze week</h2>
-      <div class="list" id="historyList"></div>
-    </section>
+  <section id="new" class="view">
+    <article class="card">
+      <p class="label">Training toevoegen zonder code</p>
+      <h2>Nieuwe hardlooptraining</h2>
+      <p class="help">Vul de training in. De app maakt zelf de kalenderkaart en de Intervals.icu-workout.</p>
 
-    <section class="card">
-      <div class="label">Persoonlijke records</div>
-      <div class="list">
-        <div class="row"><div><strong>5 km</strong><small>Huidig PR</small></div><b>18:16</b></div>
-        <div class="row"><div><strong>10 km</strong><small>Huidig PR</small></div><b>38:03</b></div>
-        <div class="row"><div><strong>Halve marathon</strong><small>Huidig PR</small></div><b>1:22:xx</b></div>
-        <div class="row"><div><strong>Marathon</strong><small>Rotterdam 2026</small></div><b>3:04:23</b></div>
-      </div>
-    </section>
+      <form id="workoutForm">
+        <div class="grid2">
+          <label>Datum
+            <input id="date" type="date" required>
+          </label>
+          <label>Naam
+            <input id="name" type="text" placeholder="Bijv. 6 × 800 m" required>
+          </label>
+        </div>
+
+        <div class="grid2">
+          <label>Geschatte afstand (km)
+            <input id="distanceKm" type="number" min="0" step="0.1" placeholder="12" required>
+          </label>
+          <label>RPE
+            <select id="rpe">
+              <option>2/10</option><option>3/10</option><option>4/10</option>
+              <option>5/10</option><option>6/10</option><option>7/10</option>
+              <option selected>8/10</option><option>9/10</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="section">
+          <h3>Inlopen</h3>
+          <div class="grid2">
+            <label>Afstand (km)
+              <input id="warmupKm" type="number" min="0" step="0.1" value="3">
+            </label>
+            <label>Tempo
+              <input id="warmupPace" type="text" value="5:00-5:30/km">
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Hoofdblok</h3>
+          <div class="grid2">
+            <label>Herhalingen
+              <input id="repeats" type="number" min="1" step="1" value="5">
+            </label>
+            <label>Intervalafstand (meter)
+              <input id="workMeters" type="number" min="50" step="50" value="1000">
+            </label>
+          </div>
+          <label>Doeltempo interval
+            <input id="targetPace" type="text" value="3:28-3:30/km">
+          </label>
+          <div class="grid2">
+            <label>Herstelsoort
+              <select id="recoveryType">
+                <option value="time">Tijd</option>
+                <option value="distance">Afstand</option>
+              </select>
+            </label>
+            <label id="recoveryValueLabel">Herstel (minuten)
+              <input id="recoveryValue" type="number" min="0.5" step="0.5" value="2">
+            </label>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Extra snelheidsblok</h3>
+          <div class="switchrow">
+            <span class="help">Bijvoorbeeld 4 × 200 m na het hoofdblok</span>
+            <input id="extraEnabled" type="checkbox">
+          </div>
+          <div id="extraFields" hidden>
+            <div class="grid2">
+              <label>Herhalingen
+                <input id="extraRepeats" type="number" min="1" value="4">
+              </label>
+              <label>Afstand (meter)
+                <input id="extraMeters" type="number" min="50" step="50" value="200">
+              </label>
+            </div>
+            <div class="grid2">
+              <label>Doeltempo
+                <input id="extraPace" type="text" value="3:05-3:10/km">
+              </label>
+              <label>Herstelafstand (meter)
+                <input id="extraRecoveryMeters" type="number" min="50" step="50" value="200">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>Uitlopen</h3>
+          <label>Afstand (km)
+            <input id="cooldownKm" type="number" min="0" step="0.1" value="2">
+          </label>
+        </div>
+
+        <label>Coachnotitie (optioneel)
+          <textarea id="notes" placeholder="Bijv. eerste herhalingen gecontroleerd lopen."></textarea>
+        </label>
+
+        <button type="submit">Training opslaan</button>
+        <p id="formStatus" class="status"></p>
+      </form>
+    </article>
+
+    <article class="card">
+      <p class="label">Voorbeeld Intervals.icu</p>
+      <pre id="preview" style="white-space:pre-wrap;color:#c9d9ed;font:inherit;margin:0"></pre>
+    </article>
   </section>
 
-  <section id="goals" class="view">
-    <section class="card">
-      <div class="label">Prestatiepad</div>
-      <h2 style="margin:7px 0 14px">Hoofddoelen</h2>
-      <div class="goals">
-        <div class="goal"><b>Sub 18:00</b><p>5 km · 25 augustus 2026</p></div>
-        <div class="goal"><b>Sub 1:20</b><p>Halve Marathon Amsterdam · 18 oktober 2026</p></div>
-        <div class="goal"><b>Sub 35:00</b><p>10 km · voorjaar 2027</p></div>
-        <div class="goal"><b>Sub 3:00</b><p>Marathon Rotterdam · april 2027</p></div>
-      </div>
-    </section>
+  <section id="saved" class="view">
+    <article class="card">
+      <p class="label">Op dit toestel opgeslagen</p>
+      <h2>Mijn trainingen</h2>
+      <p class="notice">Deze Sprint 5-versie bewaart nieuwe trainingen lokaal op deze iPhone. Ze blijven na verversen behouden, maar staan nog niet automatisch op andere apparaten.</p>
+      <div id="savedList" class="saved-list"></div>
+    </article>
   </section>
-
-  <footer>Jaco Performance · lokale Sprint 2 · gegevens blijven op je toestel</footer>
 </main>
 
 <script>
-const workouts = {
-  "2026-08-02": {title:"Zone 2 duurloop", km:12, rpe:"3/10", type:"Run", status:"done",
-    steps:["12,01 km @ 5:01/km","Gemiddelde hartslag 142 bpm","Warm weer: circa 30 °C"]},
-  "2026-08-03": {title:"Activatie + strides", km:9, rpe:"3/10", type:"Run", status:"done",
-    steps:["6 km rustig inlopen","6 × 100 m strides met 100 m herstel","Rustig uitlopen"]},
-  "2026-08-04": {title:"5 × 1000 m VO₂max", km:14, rpe:"8/10", type:"Run", status:"planned",
-    steps:["3 km rustig inlopen","4 × 100 m versnellen, 100 m herstel","5 × 1000 m @ 3:28–3:30/km, 2 min dribbel","4 × 200 m soepel snel, 200 m herstel","2 km rustig uitlopen"]},
-  "2026-08-05": {title:"Herstelloop", km:8, rpe:"2–3/10", type:"Run", status:"planned",
-    steps:["8 km rustig @ 5:05–5:25/km","Hartslag bij voorkeur onder 145 bpm","Geen strides als de benen zwaar zijn"]},
-  "2026-08-06": {title:"Easy + techniek", km:10, rpe:"3/10", type:"Run", status:"planned",
-    steps:["10 km rustig","6 × 100 m ontspannen strides indien fris"]},
-  "2026-08-07": {title:"12 × 400 m", km:12, rpe:"8/10", type:"Run", status:"planned",
-    steps:["3 km inlopen","12 × 400 m in 77–79 sec","200 m dribbelpauze","2 km uitlopen"]},
-  "2026-08-08": {title:"Lange duur", km:18, rpe:"4/10", type:"Run", status:"planned",
-    steps:["15 km rustig","Laatste 3 km circa 4:05/km"]},
-  "2026-08-09": {title:"Herstel", km:8, rpe:"2/10", type:"Run", status:"planned",
-    steps:["8 km zeer rustig","Geen extra versnellingen"]}
-};
-
-const doneState = JSON.parse(localStorage.getItem("jp_done") || "{}");
-Object.keys(doneState).forEach(k => { if(workouts[k]) workouts[k].status = doneState[k] ? "done" : workouts[k].status; });
-
+const STORAGE_KEY = "jp_custom_workouts_v1";
+let serverWorkouts = {};
+let customWorkouts = loadCustom();
+let selectedDate = "2026-08-04";
 const fmt = new Intl.DateTimeFormat("nl-NL",{weekday:"long",day:"numeric",month:"long"});
-const todayKey = "2026-08-04";
-let calendarKey = todayKey;
 
-function statusText(status){
-  return status==="done" ? "Voltooid" : status==="rest" ? "Rust" : "Gepland";
+function loadCustom(){
+  try{return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}")}catch{return {}}
 }
-function renderWorkout(key, target, includeButton=true){
-  const w = workouts[key];
-  const el = document.getElementById(target);
+function saveCustom(){
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(customWorkouts));
+}
+function allWorkouts(){
+  return {...serverWorkouts,...customWorkouts};
+}
+function safeText(value){
+  return String(value ?? "").replace(/[<>]/g,"");
+}
+function parsePace(value){
+  const pace = safeText(value).trim();
+  return pace || "Z1";
+}
+function buildWorkoutFromForm(){
+  const recoveryType = document.getElementById("recoveryType").value;
+  const recoveryValue = Number(document.getElementById("recoveryValue").value);
+  const extraEnabled = document.getElementById("extraEnabled").checked;
+  const warmupKm = Number(document.getElementById("warmupKm").value || 0);
+  const cooldownKm = Number(document.getElementById("cooldownKm").value || 0);
+  const repeats = Number(document.getElementById("repeats").value);
+  const workMeters = Number(document.getElementById("workMeters").value);
+  const notes = safeText(document.getElementById("notes").value).trim();
+
+  const displaySteps = [];
+  const lines = [];
+
+  if(notes) lines.push(notes,"");
+  if(warmupKm > 0){
+    displaySteps.push(`${warmupKm} km rustig inlopen`);
+    lines.push("Warmup",`- ${warmupKm}km ${parsePace(document.getElementById("warmupPace").value)} Pace`,"");
+  }
+
+  displaySteps.push(
+    `${repeats} × ${workMeters} m @ ${parsePace(document.getElementById("targetPace").value)}, `+
+    (recoveryType==="time" ? `${recoveryValue} min herstel` : `${recoveryValue} m herstel`)
+  );
+  lines.push(`Main set ${repeats}x`);
+  lines.push(`- ${workMeters}mtr ${parsePace(document.getElementById("targetPace").value)} Pace`);
+  if(recoveryType === "time"){
+    lines.push(`- ${recoveryValue}m Z1 Pace`,"");
+  }else{
+    lines.push(`- ${recoveryValue}mtr Z1 Pace`,"");
+  }
+
+  if(extraEnabled){
+    const er = Number(document.getElementById("extraRepeats").value);
+    const em = Number(document.getElementById("extraMeters").value);
+    const erm = Number(document.getElementById("extraRecoveryMeters").value);
+    displaySteps.push(`${er} × ${em} m soepel snel, ${erm} m herstel`);
+    lines.push(`Speed ${er}x`);
+    lines.push(`- ${em}mtr ${parsePace(document.getElementById("extraPace").value)} Pace`);
+    lines.push(`- ${erm}mtr Z1 Pace`,"");
+  }
+
+  if(cooldownKm > 0){
+    displaySteps.push(`${cooldownKm} km rustig uitlopen`);
+    lines.push("Cooldown",`- ${cooldownKm}km Z1 Pace`);
+  }
+
+  return {
+    name:safeText(document.getElementById("name").value).trim(),
+    uploadName:`Jaco - ${safeText(document.getElementById("name").value).trim()}`,
+    date:document.getElementById("date").value,
+    type:"Run",
+    distanceKm:Number(document.getElementById("distanceKm").value),
+    rpe:document.getElementById("rpe").value,
+    status:"planned",
+    displaySteps,
+    intervalsDescription:lines.join("\n")
+  };
+}
+function updatePreview(){
+  try{
+    const w = buildWorkoutFromForm();
+    document.getElementById("preview").textContent = w.intervalsDescription || "Vul de training in.";
+  }catch{
+    document.getElementById("preview").textContent = "Vul de training in.";
+  }
+}
+async function loadServerWorkouts(){
+  try{
+    const response = await fetch("/api/workouts");
+    const data = await response.json();
+    if(!response.ok) throw new Error(data.error || "Trainingen laden mislukt");
+    serverWorkouts = data.workouts || {};
+  }catch(error){
+    console.error(error);
+    serverWorkouts = {};
+  }
+  renderCalendar();
+}
+function renderCalendar(){
+  const workouts = allWorkouts();
+  const w = workouts[selectedDate];
+  document.getElementById("calendarDate").textContent = fmt.format(new Date(selectedDate+"T12:00:00"));
+  const card = document.getElementById("workoutCard");
+
   if(!w){
-    el.innerHTML = `<div class="label">${fmt.format(new Date(key+"T12:00:00"))}</div>
-      <div class="workout-title">Geen training gepland</div><p class="subtitle">Herstel, mobiliteit of vrije invulling.</p>`;
+    card.innerHTML = `<p class="label">${fmt.format(new Date(selectedDate+"T12:00:00"))}</p>
+      <div class="workout-title">Geen training gepland</div>
+      <p class="help">Maak een training via het tabblad Nieuwe training.</p>`;
     return;
   }
-  const done = w.status==="done";
-  el.innerHTML = `
-    <div class="label">${fmt.format(new Date(key+"T12:00:00"))}</div>
-    <div class="workout-title">${w.title}</div>
+
+  card.innerHTML = `
+    <p class="label">${fmt.format(new Date(selectedDate+"T12:00:00"))}</p>
+    <div class="workout-title">${safeText(w.name)}</div>
     <div class="meta">
-      <span class="pill">${w.type}</span><span class="pill">± ${w.km} km</span><span class="pill">RPE ${w.rpe}</span>
-      <span class="pill ${done?'status-ok':'status-plan'}">${statusText(w.status)}</span>
+      <span class="pill">${safeText(w.type)}</span>
+      <span class="pill">± ${safeText(w.distanceKm)} km</span>
+      <span class="pill">RPE ${safeText(w.rpe)}</span>
+      <span class="pill">${customWorkouts[selectedDate] ? "Eigen training" : "Schema"}</span>
     </div>
-    <ul class="steps">${w.steps.map((s,i)=>`<li><span class="step">${i+1}</span><span>${s}</span></li>`).join("")}</ul>
-    ${includeButton ? `<button class="${done?'done':''}" onclick="toggleDone('${key}')">${done?'Training voltooid ✓':'Markeer als voltooid'}</button>
-    <button class="secondary" onclick="uploadToIntervals('${key}')">Zet in Intervals.icu</button>
-    <p id="upload-${key}" class="subtitle" style="min-height:20px"></p>` : ""}
-  `;
+    <ul class="steps">${(w.displaySteps||[]).map((step,i)=>
+      `<li><span class="step">${i+1}</span><span>${safeText(step)}</span></li>`).join("")}</ul>
+    <div class="actions">
+      <button onclick="uploadSelected()">Zet in Intervals.icu</button>
+      ${customWorkouts[selectedDate] ? `<button class="secondary" onclick="openEdit('${selectedDate}')">Bewerk training</button>` : ""}
+    </div>
+    <p id="uploadStatus" class="status"></p>`;
 }
-
-async function uploadToIntervals(key){
-  const status = document.getElementById("upload-"+key);
-  const pin = window.prompt("Voer je Jaco Performance app-pincode in:");
+async function uploadSelected(){
+  const w = allWorkouts()[selectedDate];
+  if(!w) return;
+  const pin = prompt("Voer je Jaco Performance app-pincode in:");
   if(pin === null) return;
-
+  const status = document.getElementById("uploadStatus");
+  status.className = "status";
   status.textContent = "Workout wordt verstuurd…";
-  status.style.color = "var(--muted)";
 
   try{
+    const payload = {workoutDate:selectedDate,pin};
+    if(customWorkouts[selectedDate]) payload.customWorkout = w;
+
     const response = await fetch("/api/upload-workout",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({workoutDate:key,pin})
+      body:JSON.stringify(payload)
     });
-
     const data = await response.json();
-
-    if(!response.ok){
-      throw new Error(data.error || "Upload mislukt.");
-    }
-
+    if(!response.ok) throw new Error(data.error || "Upload mislukt");
+    status.className = "status ok";
     status.textContent = "Gelukt: workout staat in Intervals.icu.";
-    status.style.color = "#8de5ad";
   }catch(error){
+    status.className = "status error";
     status.textContent = error.message;
-    status.style.color = "#ff9494";
   }
 }
-
-function toggleDone(key){
-  workouts[key].status = workouts[key].status==="done" ? "planned" : "done";
-  doneState[key] = workouts[key].status==="done";
-  localStorage.setItem("jp_done",JSON.stringify(doneState));
-  renderAll();
+function renderSaved(){
+  const list = document.getElementById("savedList");
+  const entries = Object.entries(customWorkouts).sort(([a],[b])=>a.localeCompare(b));
+  if(!entries.length){
+    list.innerHTML = `<p class="help">Je hebt nog geen eigen trainingen opgeslagen.</p>`;
+    return;
+  }
+  list.innerHTML = entries.map(([date,w])=>`
+    <div class="saved-row">
+      <div class="saved-row-top">
+        <div><strong>${safeText(w.name)}</strong><small>${fmt.format(new Date(date+"T12:00:00"))} · ${w.distanceKm} km · RPE ${safeText(w.rpe)}</small></div>
+      </div>
+      <div class="mini-actions">
+        <button class="secondary" onclick="showDate('${date}')">Open</button>
+        <button class="secondary" onclick="openEdit('${date}')">Bewerk</button>
+        <button class="danger" onclick="removeWorkout('${date}')">Verwijder</button>
+      </div>
+    </div>`).join("");
 }
-function renderHistory(){
-  const list = document.getElementById("historyList");
-  list.innerHTML = Object.keys(workouts).sort().map(k=>{
-    const w=workouts[k];
-    const cls=w.status==="done"?"status-ok":"status-plan";
-    return `<div class="row"><div><strong>${w.title}</strong><small>${fmt.format(new Date(k+"T12:00:00"))} · ${w.km} km</small></div>
-      <b class="${cls}">${statusText(w.status)}</b></div>`;
-  }).join("");
+function showDate(date){
+  selectedDate=date;
+  switchView("calendar");
+  renderCalendar();
 }
-function renderWeek(){
-  const planned = 58;
-  const done = Object.values(workouts).filter(w=>w.status==="done").reduce((a,w)=>a+w.km,0);
-  const pct = Math.min(100,Math.round(done/planned*100));
-  document.getElementById("doneKm").textContent = done+" km";
-  document.getElementById("weekProgress").style.width = pct+"%";
-  document.getElementById("progressText").textContent = pct+"% van de geplande week voltooid.";
+function openEdit(date){
+  const w=customWorkouts[date];
+  if(!w)return;
+  document.getElementById("date").value=w.date;
+  document.getElementById("name").value=w.name;
+  document.getElementById("distanceKm").value=w.distanceKm;
+  document.getElementById("rpe").value=w.rpe;
+  document.getElementById("formStatus").textContent="Pas de velden aan en tik opnieuw op Training opslaan.";
+  switchView("new");
+  updatePreview();
 }
-function renderAll(){
-  renderWorkout(todayKey,"todayCard");
-  renderWorkout(calendarKey,"calendarWorkout");
-  document.getElementById("calendarDate").textContent = fmt.format(new Date(calendarKey+"T12:00:00"));
-  renderHistory(); renderWeek();
+function removeWorkout(date){
+  if(!confirm("Deze training verwijderen?"))return;
+  delete customWorkouts[date];
+  saveCustom();
+  renderSaved();
+  renderCalendar();
 }
-function shiftDate(days){
-  const d=new Date(calendarKey+"T12:00:00"); d.setDate(d.getDate()+days);
-  calendarKey=d.toISOString().slice(0,10); renderAll();
+function switchView(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===id));
+  document.getElementById(id).classList.add("active");
+  if(id==="saved")renderSaved();
 }
-document.getElementById("prevDay").onclick=()=>shiftDate(-1);
-document.getElementById("nextDay").onclick=()=>shiftDate(1);
-
-document.querySelectorAll(".tab").forEach(btn=>{
-  btn.onclick=()=>{
-    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
-    document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
-    btn.classList.add("active"); document.getElementById(btn.dataset.view).classList.add("active");
-  };
-});
-
+document.querySelectorAll(".tab").forEach(tab=>tab.onclick=()=>switchView(tab.dataset.view));
+document.getElementById("prevDay").onclick=()=>{
+  const d=new Date(selectedDate+"T12:00:00");d.setDate(d.getDate()-1);
+  selectedDate=d.toISOString().slice(0,10);renderCalendar();
+};
+document.getElementById("nextDay").onclick=()=>{
+  const d=new Date(selectedDate+"T12:00:00");d.setDate(d.getDate()+1);
+  selectedDate=d.toISOString().slice(0,10);renderCalendar();
+};
+document.getElementById("recoveryType").onchange=()=>{
+  const isTime=document.getElementById("recoveryType").value==="time";
+  document.getElementById("recoveryValueLabel").firstChild.textContent=isTime?"Herstel (minuten)":"Herstel (meter)";
+  document.getElementById("recoveryValue").step=isTime?"0.5":"50";
+  document.getElementById("recoveryValue").value=isTime?"2":"200";
+  updatePreview();
+};
+document.getElementById("extraEnabled").onchange=()=>{
+  document.getElementById("extraFields").hidden=!document.getElementById("extraEnabled").checked;
+  updatePreview();
+};
+document.getElementById("workoutForm").addEventListener("input",updatePreview);
+document.getElementById("workoutForm").onsubmit=(event)=>{
+  event.preventDefault();
+  const w=buildWorkoutFromForm();
+  if(!w.date||!w.name)return;
+  customWorkouts[w.date]=w;
+  saveCustom();
+  selectedDate=w.date;
+  document.getElementById("formStatus").className="status ok";
+  document.getElementById("formStatus").textContent="Training opgeslagen. Je kunt hem nu openen en naar Intervals.icu sturen.";
+  renderSaved();
+  renderCalendar();
+};
 const now=new Date();
-document.getElementById("days").textContent=Math.max(0,Math.ceil((new Date("2026-08-25T00:00:00+02:00")-now)/86400000));
+document.getElementById("date").value=now.toISOString().slice(0,10);
 document.getElementById("greeting").textContent=(now.getHours()<12?"Goedemorgen":now.getHours()<18?"Goedemiddag":"Goedenavond")+" Jaco";
-renderAll();
+updatePreview();
+loadServerWorkouts();
 </script>
 </body>
 </html>
