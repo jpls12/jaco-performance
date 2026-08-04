@@ -32,7 +32,7 @@
       border-radius:20px;padding:17px;margin:13px 0;
       box-shadow:0 14px 40px rgba(0,0,0,.18)
     }
-    .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:17px 0}
+    .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:17px 0}
     button{
       border:0;border-radius:13px;padding:13px;background:var(--green);
       color:#062311;font-size:.96rem;font-weight:850;cursor:pointer
@@ -105,6 +105,29 @@
     .mini-actions button{padding:9px 8px;font-size:.8rem}
     .notice{border-left:3px solid var(--orange);padding-left:12px;color:#ffd697}
 
+
+    .dashboard-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px
+    }
+    .metric-card{
+      background:#0d1928;border:1px solid #223650;border-radius:15px;padding:14px
+    }
+    .metric-card span{display:block;color:var(--muted);font-size:.75rem}
+    .metric-card strong{display:block;font-size:1.55rem;margin-top:6px}
+    .metric-card small{color:#aebfd4}
+    .form-positive{color:#8de5ad}
+    .form-neutral{color:#ffd697}
+    .form-negative{color:#ff9494}
+    .coach-box{
+      background:linear-gradient(135deg,#12263d,#173622);
+      border:1px solid #315842;border-radius:16px;padding:15px;margin-top:14px
+    }
+    .wellness-list{display:grid;gap:8px;margin-top:12px}
+    .wellness-row{
+      display:flex;justify-content:space-between;gap:12px;
+      background:#0d1928;border:1px solid #223650;border-radius:12px;padding:11px
+    }
+
     .race-card{
       background:#0d1928;border:1px solid #3b2d3d;border-radius:15px;padding:14px
     }
@@ -145,13 +168,74 @@
   <p class="subtitle" id="greeting">Hallo Jaco</p>
 
   <nav class="tabs">
-    <button class="tab active" data-view="calendar">Kalender</button>
+    <button class="tab active" data-view="dashboard">Dashboard</button>
+    <button class="tab" data-view="calendar">Kalender</button>
     <button class="tab" data-view="editor">Nieuwe training</button>
     <button class="tab" data-view="saved">Mijn trainingen</button>
     <button class="tab" data-view="races">Wedstrijden</button>
   </nav>
 
-  <section id="calendar" class="view active">
+
+  <section id="dashboard" class="view active">
+    <article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div>
+          <p class="label">Intervals.icu live</p>
+          <h2>Herstel en trainingsbelasting</h2>
+          <p class="help" id="dashboardUpdated">Data wordt geladen…</p>
+        </div>
+        <button class="secondary" id="refreshDashboard" type="button" style="width:auto">Vernieuw</button>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="metric-card">
+          <span>Fitness · CTL</span>
+          <strong id="metricCtl">—</strong>
+          <small>Langetermijnbelasting</small>
+        </div>
+        <div class="metric-card">
+          <span>Vermoeidheid · ATL</span>
+          <strong id="metricAtl">—</strong>
+          <small>Kortetermijnbelasting</small>
+        </div>
+        <div class="metric-card">
+          <span>Vorm · CTL − ATL</span>
+          <strong id="metricForm">—</strong>
+          <small id="formLabel">Nog geen data</small>
+        </div>
+        <div class="metric-card">
+          <span>HRV</span>
+          <strong id="metricHrv">—</strong>
+          <small id="hrvTrend">Laatste waarde</small>
+        </div>
+        <div class="metric-card">
+          <span>Rusthartslag</span>
+          <strong id="metricRestingHr">—</strong>
+          <small id="restingHrTrend">Laatste waarde</small>
+        </div>
+        <div class="metric-card">
+          <span>Slaap</span>
+          <strong id="metricSleep">—</strong>
+          <small id="sleepScore">Laatste nacht</small>
+        </div>
+      </div>
+
+      <div class="coach-box">
+        <p class="label">Coachadvies</p>
+        <h3 id="coachHeadline">Wellnessdata laden…</h3>
+        <p class="help" id="coachAdvice">Even geduld.</p>
+      </div>
+
+      <p id="dashboardError" class="status error"></p>
+    </article>
+
+    <article class="card">
+      <p class="label">Laatste 7 dagen</p>
+      <div id="wellnessHistory" class="wellness-list"></div>
+    </article>
+  </section>
+
+  <section id="calendar" class="view">
     <article class="card">
       <div class="calendar-head">
         <button class="secondary" id="prevMonth">←</button>
@@ -510,6 +594,9 @@ function switchView(id){
   if(id==="races"){
     renderRaces();
     renderRaceOptions();
+  }
+  if(id==="dashboard"){
+    loadWellnessDashboard();
   }
 }
 
@@ -1872,6 +1959,199 @@ function generateRacePlan(){
   status.textContent=`Schema aangemaakt: ${created} trainingen richting ${race.name}.`;
 }
 
+
+function numberOrNull(value){
+  const n=Number(value);
+  return Number.isFinite(n) ? n : null;
+}
+
+function latestValue(records,key){
+  for(let i=records.length-1;i>=0;i--){
+    const value=numberOrNull(records[i]?.[key]);
+    if(value!==null) return value;
+  }
+  return null;
+}
+
+function averageRecent(records,key,count=7){
+  const values=[];
+  for(let i=records.length-1;i>=0 && values.length<count;i--){
+    const value=numberOrNull(records[i]?.[key]);
+    if(value!==null) values.push(value);
+  }
+  if(!values.length) return null;
+  return values.reduce((a,b)=>a+b,0)/values.length;
+}
+
+function formatMetric(value,digits=0){
+  return value===null || value===undefined ? "—" : Number(value).toFixed(digits);
+}
+
+function formatSleep(seconds){
+  const value=numberOrNull(seconds);
+  if(value===null) return "—";
+  const hours=Math.floor(value/3600);
+  const minutes=Math.round((value%3600)/60);
+  return `${hours}u ${String(minutes).padStart(2,"0")}`;
+}
+
+function trendLabel(latest,average,unit=""){
+  if(latest===null || average===null) return "Geen trend beschikbaar";
+  const difference=latest-average;
+  const sign=difference>0?"+":"";
+  return `${sign}${difference.toFixed(1)}${unit} t.o.v. 7-daags gemiddelde`;
+}
+
+function buildCoachAdvice(latest,averages){
+  const ctl=numberOrNull(latest?.ctl);
+  const atl=numberOrNull(latest?.atl);
+  const form=ctl!==null && atl!==null ? ctl-atl : null;
+  const hrv=numberOrNull(latest?.hrv);
+  const resting=numberOrNull(latest?.restingHR);
+  const readiness=numberOrNull(latest?.readiness);
+  const sleep=numberOrNull(latest?.sleepSecs);
+
+  const warnings=[];
+  const positives=[];
+
+  if(form!==null){
+    if(form<-20) warnings.push("je vormscore wijst op hoge opgebouwde vermoeidheid");
+    else if(form<-10) warnings.push("je vermoeidheid is duidelijk hoger dan je fitness");
+    else if(form>5) positives.push("je vormscore is positief");
+  }
+
+  if(hrv!==null && averages.hrv!==null && hrv<averages.hrv*0.90){
+    warnings.push("je HRV ligt meer dan 10% onder je recente gemiddelde");
+  }else if(hrv!==null && averages.hrv!==null && hrv>averages.hrv*1.05){
+    positives.push("je HRV ligt boven je recente gemiddelde");
+  }
+
+  if(resting!==null && averages.restingHR!==null && resting>averages.restingHR+5){
+    warnings.push("je rusthartslag is duidelijk verhoogd");
+  }
+
+  if(sleep!==null && sleep<6.5*3600){
+    warnings.push("je slaapduur was kort");
+  }
+
+  if(readiness!==null){
+    if(readiness<50) warnings.push("je readiness is laag");
+    else if(readiness>=75) positives.push("je readiness is goed");
+  }
+
+  if(warnings.length>=2){
+    return{
+      headline:"Vandaag liever herstellen",
+      advice:`Ik zie meerdere signalen: ${warnings.join(", ")}. Kies een rustige zone 1–2-training of rust en verplaats intensieve intervallen.`
+    };
+  }
+
+  if(warnings.length===1){
+    return{
+      headline:"Train gecontroleerd",
+      advice:`Let op: ${warnings[0]}. Houd de eerste blokken bewust beheerst en stop als de inspanning onverwacht hoog voelt.`
+    };
+  }
+
+  if(positives.length){
+    return{
+      headline:"Goede dag voor kwaliteit",
+      advice:`Positieve signalen: ${positives.join(", ")}. Je kunt de geplande training uitvoeren, maar blijf binnen de afgesproken tempo’s.`
+    };
+  }
+
+  return{
+    headline:"Train volgens plan",
+    advice:"De beschikbare wellnessdata geeft geen duidelijke reden om je training aan te passen. Gebruik je eigen gevoel als laatste controle."
+  };
+}
+
+function renderWellnessDashboard(data){
+  const records=Array.isArray(data.records)?data.records:[];
+  const latest=data.latest || records[records.length-1] || {};
+  const ctl=latestValue(records,"ctl");
+  const atl=latestValue(records,"atl");
+  const form=ctl!==null && atl!==null ? ctl-atl : null;
+  const hrv=latestValue(records,"hrv");
+  const restingHR=latestValue(records,"restingHR");
+  const sleepSecs=latestValue(records,"sleepSecs");
+  const sleepScore=latestValue(records,"sleepScore");
+
+  const averages={
+    hrv:averageRecent(records,"hrv",7),
+    restingHR:averageRecent(records,"restingHR",7),
+    sleepSecs:averageRecent(records,"sleepSecs",7)
+  };
+
+  document.getElementById("metricCtl").textContent=formatMetric(ctl,1);
+  document.getElementById("metricAtl").textContent=formatMetric(atl,1);
+  document.getElementById("metricForm").textContent=formatMetric(form,1);
+  document.getElementById("metricHrv").textContent=hrv===null?"—":`${formatMetric(hrv,0)} ms`;
+  document.getElementById("metricRestingHr").textContent=restingHR===null?"—":`${formatMetric(restingHR,0)} bpm`;
+  document.getElementById("metricSleep").textContent=formatSleep(sleepSecs);
+  document.getElementById("sleepScore").textContent=sleepScore===null?"Geen slaapscore":`Slaapscore ${formatMetric(sleepScore,0)}`;
+
+  const formEl=document.getElementById("metricForm");
+  formEl.className="";
+  if(form!==null){
+    if(form<-10){
+      formEl.classList.add("form-negative");
+      document.getElementById("formLabel").textContent="Vermoeid";
+    }else if(form>5){
+      formEl.classList.add("form-positive");
+      document.getElementById("formLabel").textContent="Fris";
+    }else{
+      formEl.classList.add("form-neutral");
+      document.getElementById("formLabel").textContent="Neutraal";
+    }
+  }
+
+  document.getElementById("hrvTrend").textContent=trendLabel(hrv,averages.hrv," ms");
+  document.getElementById("restingHrTrend").textContent=trendLabel(restingHR,averages.restingHR," bpm");
+
+  const advice=buildCoachAdvice(latest,averages);
+  document.getElementById("coachHeadline").textContent=advice.headline;
+  document.getElementById("coachAdvice").textContent=advice.advice;
+  document.getElementById("dashboardUpdated").textContent=
+    `Bijgewerkt met Intervals.icu-data t/m ${latest.id || latest.date || "vandaag"}.`;
+
+  const history=records.slice(-7).reverse();
+  document.getElementById("wellnessHistory").innerHTML=history.length
+    ? history.map(record=>{
+        const recordCtl=numberOrNull(record.ctl);
+        const recordAtl=numberOrNull(record.atl);
+        const recordForm=recordCtl!==null && recordAtl!==null ? recordCtl-recordAtl : null;
+        return `
+          <div class="wellness-row">
+            <div>
+              <strong>${record.id || record.date || "Datum onbekend"}</strong>
+              <small>HRV ${record.hrv ?? "—"} · RHR ${record.restingHR ?? "—"} · slaap ${formatSleep(record.sleepSecs)}</small>
+            </div>
+            <div>
+              <strong>${formatMetric(recordForm,1)}</strong>
+              <small>vorm</small>
+            </div>
+          </div>`;
+      }).join("")
+    : '<p class="help">Geen wellnessdata gevonden.</p>';
+}
+
+async function loadWellnessDashboard(){
+  const error=document.getElementById("dashboardError");
+  error.textContent="";
+  document.getElementById("dashboardUpdated").textContent="Intervals.icu-data wordt geladen…";
+
+  try{
+    const response=await fetch("/api/intervals-status");
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error || "Dashboarddata kon niet worden geladen.");
+    renderWellnessDashboard(data);
+  }catch(err){
+    error.textContent=err.message;
+    document.getElementById("dashboardUpdated").textContent="Data niet beschikbaar.";
+  }
+}
+
 async function loadServer(){
   try{
     const response=await fetch("/api/workouts");
@@ -1931,6 +2211,7 @@ document.getElementById("duplicateModal").onclick=event=>{
 };
 
 
+document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
 document.getElementById("raceForm").onsubmit=saveRace;
 document.getElementById("raceDistance").onchange=()=>{
   document.getElementById("customRaceDistanceLabel").hidden=
@@ -1945,6 +2226,7 @@ document.getElementById("greeting").textContent=
 setDefaultForm(ymd(today));
 renderRaces();
 renderRaceOptions();
+loadWellnessDashboard();
 loadServer();
 </script>
 </body>
