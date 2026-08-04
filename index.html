@@ -6,99 +6,257 @@
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
   <style>
-    :root{color-scheme:dark;--bg:#07111f;--panel:#101d2e;--line:#263a55;--text:#f5f8fc;--muted:#95a8c2;--green:#36c36f;--blue:#56b8ff}
+    :root{
+      color-scheme:dark;
+      --bg:#07111f;--panel:#101d2e;--panel2:#13243a;--line:#263a55;
+      --text:#f5f8fc;--muted:#95a8c2;--green:#36c36f;--blue:#56b8ff;
+      --orange:#ffb454;--red:#ff7272;
+    }
     *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#07111f,#0b1626 55%,#07111f);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
-    main{max-width:760px;margin:0 auto;padding:24px 16px 60px}
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#07111f,#0b1626 55%,#07111f);
+      color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+    main{max-width:780px;margin:auto;padding:22px 16px 68px}
     header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:18px}
     .eyebrow{margin:0 0 6px;color:var(--blue);font-size:.75rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase}
     h1{margin:0;font-size:2rem;line-height:1.1}.subtitle{margin:8px 0 0;color:var(--muted);line-height:1.45}
-    .badge{white-space:nowrap;background:#142840;border:1px solid #2b4667;color:#dbeafe;border-radius:999px;padding:8px 11px;font-size:.78rem;font-weight:700}
-    .card{background:rgba(16,29,46,.96);border:1px solid var(--line);border-radius:20px;padding:18px;margin:14px 0;box-shadow:0 16px 42px rgba(0,0,0,.18)}
+    .badge{white-space:nowrap;background:#142840;border:1px solid #2b4667;color:#dbeafe;border-radius:999px;
+      padding:8px 11px;font-size:.78rem;font-weight:700}
+    .card{background:rgba(16,29,46,.96);border:1px solid var(--line);border-radius:20px;padding:18px;margin:14px 0;
+      box-shadow:0 16px 42px rgba(0,0,0,.18)}
     .hero{background:linear-gradient(135deg,#11263c,#133925)}
     .label{color:var(--muted);font-size:.76rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase}
-    .race{display:flex;justify-content:space-between;gap:14px;align-items:end;margin-top:12px}.race h2{margin:0;font-size:1.35rem}
-    .count{color:var(--green);font-size:2.35rem;font-weight:900;line-height:1;text-align:right}.count small{display:block;margin-top:5px;color:var(--muted);font-size:.75rem;font-weight:700}
-    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.workout-title{margin:7px 0 0;font-size:1.45rem;font-weight:850}
-    .meta{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}.pill{padding:6px 9px;border:1px solid #314965;border-radius:999px;background:#17293e;color:#dbe7f5;font-size:.78rem}
-    ul{list-style:none;padding:0;margin:14px 0 0}li{display:flex;gap:10px;padding:10px 0;border-top:1px solid #22344c;line-height:1.4}.step{min-width:24px;color:var(--blue);font-weight:850}
-    button{width:100%;border:0;border-radius:13px;padding:14px;margin-top:15px;background:var(--green);color:#062311;font-size:1rem;font-weight:850;cursor:pointer}
+    .race{display:flex;justify-content:space-between;gap:14px;align-items:end;margin-top:12px}
+    .race h2{margin:0;font-size:1.35rem}.count{color:var(--green);font-size:2.35rem;font-weight:900;line-height:1;text-align:right}
+    .count small{display:block;margin-top:5px;color:var(--muted);font-size:.75rem;font-weight:700}
+    .tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:18px 0}
+    .tab{padding:11px 8px;border-radius:12px;background:#13243a;border:1px solid #263a55;color:#b9c8dc;font-weight:800;
+      font-size:.82rem;text-align:center;cursor:pointer}
+    .tab.active{background:#1b3653;color:white;border-color:#4d7fac}
+    .view{display:none}.view.active{display:block}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+    .toolbar button{width:auto;margin:0;padding:10px 13px}
+    .date-title{font-size:1.15rem;font-weight:850;text-align:center}
+    .workout-title{margin:7px 0 0;font-size:1.45rem;font-weight:850}
+    .meta{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 4px}
+    .pill{padding:6px 9px;border:1px solid #314965;border-radius:999px;background:#17293e;color:#dbe7f5;font-size:.78rem}
+    ul.steps{list-style:none;padding:0;margin:14px 0 0}
+    ul.steps li{display:flex;gap:10px;padding:10px 0;border-top:1px solid #22344c;line-height:1.4}
+    .step{min-width:24px;color:var(--blue);font-weight:850}
+    button{width:100%;border:0;border-radius:13px;padding:14px;margin-top:15px;background:var(--green);color:#062311;
+      font-size:1rem;font-weight:850;cursor:pointer}
     button.secondary{background:#1c3047;color:#eef6ff;border:1px solid #354f70}
-    .week{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}.metric{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:12px}.metric strong{display:block;margin-top:4px;font-size:1.15rem}.metric span{color:var(--muted);font-size:.74rem}
+    button.warn{background:var(--orange);color:#321d00}
+    button.done{background:#183d2b;color:#8de5ad;border:1px solid #2b6c48}
+    .weekgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+    .metric{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:12px}
+    .metric strong{display:block;margin-top:4px;font-size:1.15rem}.metric span{color:var(--muted);font-size:.74rem}
+    .progress{height:10px;background:#0a1421;border:1px solid #203149;border-radius:999px;overflow:hidden;margin-top:12px}
+    .progress>span{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--green));width:0}
+    .list{display:grid;gap:10px;margin-top:12px}
+    .row{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#0d1928;border:1px solid #223650;
+      border-radius:14px;padding:13px}
+    .row strong{display:block}.row small{color:var(--muted)}
+    .status-ok{color:#8de5ad}.status-plan{color:#9fc9ff}.status-rest{color:#ffcf8b}
+    .goals{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .goal{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:14px}
+    .goal b{font-size:1.2rem}.goal p{margin:6px 0 0;color:var(--muted);font-size:.84rem}
     footer{margin-top:24px;text-align:center;color:#667b97;font-size:.78rem}
-    @media (max-width:650px){.grid{grid-template-columns:1fr}.week{grid-template-columns:1fr 1fr}.badge{display:none}h1{font-size:1.8rem}}
+    @media(max-width:650px){
+      .weekgrid{grid-template-columns:1fr 1fr}.goals{grid-template-columns:1fr}.badge{display:none}
+      h1{font-size:1.8rem}.tabs{grid-template-columns:repeat(2,1fr)}
+    }
   </style>
 </head>
 <body>
-  <main>
-    <header>
+<main>
+  <header>
+    <div>
+      <p class="eyebrow">Persoonlijke running coach</p>
+      <h1>Jaco Performance</h1>
+      <p class="subtitle" id="greeting">Goedemiddag Jaco</p>
+    </div>
+    <span class="badge">Sprint 2</span>
+  </header>
+
+  <section class="card hero">
+    <div class="label">Volgende A-wedstrijd</div>
+    <div class="race">
       <div>
-        <p class="eyebrow">Persoonlijke running coach</p>
-        <h1>Jaco Performance</h1>
-        <p class="subtitle" id="greeting">Goedemorgen Jaco</p>
+        <h2>5 km – 25 augustus 2026</h2>
+        <p class="subtitle">Doel: persoonlijk record · richting sub 18:00</p>
       </div>
-      <span class="badge">Sprint 1</span>
-    </header>
+      <div class="count"><span id="days">–</span><small>dagen</small></div>
+    </div>
+  </section>
 
-    <section class="card hero">
-      <div class="label">Volgende A-wedstrijd</div>
-      <div class="race">
-        <div>
-          <h2>5 km – 25 augustus 2026</h2>
-          <p class="subtitle">Doel: persoonlijk record · richting sub 18:00</p>
-        </div>
-        <div class="count"><span id="days">–</span><small>dagen</small></div>
+  <nav class="tabs">
+    <button class="tab active" data-view="today">Vandaag</button>
+    <button class="tab" data-view="calendar">Kalender</button>
+    <button class="tab" data-view="history">Historie</button>
+    <button class="tab" data-view="goals">Doelen</button>
+  </nav>
+
+  <section id="today" class="view active">
+    <article class="card" id="todayCard"></article>
+
+    <section class="card">
+      <div class="label">Weekdashboard</div>
+      <h2 style="margin:7px 0 0">Snelheid prikkelen, herstel beschermen</h2>
+      <div class="weekgrid">
+        <div class="metric"><span>Gepland</span><strong id="plannedKm">58 km</strong></div>
+        <div class="metric"><span>Voltooid</span><strong id="doneKm">0 km</strong></div>
+        <div class="metric"><span>Kwaliteit</span><strong>2 sessies</strong></div>
+        <div class="metric"><span>Doeltempo</span><strong>3:36/km</strong></div>
       </div>
+      <div class="progress"><span id="weekProgress"></span></div>
+      <p class="subtitle" id="progressText">0% van de geplande week voltooid.</p>
     </section>
+  </section>
 
-    <section class="grid">
-      <article class="card">
-        <div class="label">Vandaag · 4 augustus</div>
-        <div class="workout-title">5 × 1000 m VO₂max</div>
-        <div class="meta"><span class="pill">Run</span><span class="pill">± 14 km</span><span class="pill">RPE 8/10</span></div>
-        <ul>
-          <li><span class="step">1</span><span>3 km rustig inlopen</span></li>
-          <li><span class="step">2</span><span>4 × 100 m versnellen, 100 m herstel</span></li>
-          <li><span class="step">3</span><span>5 × 1000 m @ 3:28–3:30/km, 2 min dribbel</span></li>
-          <li><span class="step">4</span><span>4 × 200 m soepel snel, 200 m herstel</span></li>
-          <li><span class="step">5</span><span>2 km rustig uitlopen</span></li>
-        </ul>
-        <button onclick="alert('De Intervals.icu-koppeling voegen we in de volgende stap toe.')">Zet in Intervals.icu</button>
-      </article>
+  <section id="calendar" class="view">
+    <section class="card">
+      <div class="toolbar">
+        <button class="secondary" id="prevDay">←</button>
+        <div class="date-title" id="calendarDate"></div>
+        <button class="secondary" id="nextDay">→</button>
+      </div>
+      <div id="calendarWorkout"></div>
+    </section>
+  </section>
 
-      <article class="card">
-        <div class="label">Morgen · 5 augustus</div>
-        <div class="workout-title">Herstelloop</div>
-        <div class="meta"><span class="pill">Run</span><span class="pill">8 km</span><span class="pill">RPE 2–3/10</span></div>
-        <ul>
-          <li><span class="step">1</span><span>8 km rustig @ 5:05–5:25/km</span></li>
-          <li><span class="step">2</span><span>Hartslag bij voorkeur onder 145 bpm</span></li>
-          <li><span class="step">3</span><span>Geen strides als de benen zwaar zijn</span></li>
-        </ul>
-        <button class="secondary" onclick="alert('De Intervals.icu-koppeling voegen we in de volgende stap toe.')">Zet in Intervals.icu</button>
-      </article>
+  <section id="history" class="view">
+    <section class="card">
+      <div class="label">Trainingsgeschiedenis</div>
+      <h2 style="margin:7px 0 0">Deze week</h2>
+      <div class="list" id="historyList"></div>
     </section>
 
     <section class="card">
-      <div class="label">Weekfocus</div>
-      <h2 style="margin:7px 0 0">Snelheid prikkelen, herstel beschermen</h2>
-      <p class="subtitle">Twee kwaliteitssessies zijn genoeg. Rustige dagen blijven echt rustig, zodat de 5 km-specifieke trainingen tellen.</p>
-      <div class="week">
-        <div class="metric"><span>Loopvolume</span><strong>55–65 km</strong></div>
-        <div class="metric"><span>Kwaliteit</span><strong>2 sessies</strong></div>
-        <div class="metric"><span>Doeltempo</span><strong>3:36/km</strong></div>
-        <div class="metric"><span>Wedstrijddoel</span><strong>Sub 18:00</strong></div>
+      <div class="label">Persoonlijke records</div>
+      <div class="list">
+        <div class="row"><div><strong>5 km</strong><small>Huidig PR</small></div><b>18:16</b></div>
+        <div class="row"><div><strong>10 km</strong><small>Huidig PR</small></div><b>38:03</b></div>
+        <div class="row"><div><strong>Halve marathon</strong><small>Huidig PR</small></div><b>1:22:xx</b></div>
+        <div class="row"><div><strong>Marathon</strong><small>Rotterdam 2026</small></div><b>3:04:23</b></div>
       </div>
     </section>
+  </section>
 
-    <footer>Jaco Performance · richting 25 augustus 2026</footer>
-  </main>
-  <script>
-    const now=new Date();
-    const raceDate=new Date('2026-08-25T00:00:00+02:00');
-    document.getElementById('days').textContent=Math.max(0,Math.ceil((raceDate-now)/86400000));
-    const hour=now.getHours();
-    document.getElementById('greeting').textContent=hour<12?'Goedemorgen Jaco':hour<18?'Goedemiddag Jaco':'Goedenavond Jaco';
-  </script>
+  <section id="goals" class="view">
+    <section class="card">
+      <div class="label">Prestatiepad</div>
+      <h2 style="margin:7px 0 14px">Hoofddoelen</h2>
+      <div class="goals">
+        <div class="goal"><b>Sub 18:00</b><p>5 km · 25 augustus 2026</p></div>
+        <div class="goal"><b>Sub 1:20</b><p>Halve Marathon Amsterdam · 18 oktober 2026</p></div>
+        <div class="goal"><b>Sub 35:00</b><p>10 km · voorjaar 2027</p></div>
+        <div class="goal"><b>Sub 3:00</b><p>Marathon Rotterdam · april 2027</p></div>
+      </div>
+    </section>
+  </section>
+
+  <footer>Jaco Performance · lokale Sprint 2 · gegevens blijven op je toestel</footer>
+</main>
+
+<script>
+const workouts = {
+  "2026-08-02": {title:"Zone 2 duurloop", km:12, rpe:"3/10", type:"Run", status:"done",
+    steps:["12,01 km @ 5:01/km","Gemiddelde hartslag 142 bpm","Warm weer: circa 30 °C"]},
+  "2026-08-03": {title:"Activatie + strides", km:9, rpe:"3/10", type:"Run", status:"done",
+    steps:["6 km rustig inlopen","6 × 100 m strides met 100 m herstel","Rustig uitlopen"]},
+  "2026-08-04": {title:"5 × 1000 m VO₂max", km:14, rpe:"8/10", type:"Run", status:"planned",
+    steps:["3 km rustig inlopen","4 × 100 m versnellen, 100 m herstel","5 × 1000 m @ 3:28–3:30/km, 2 min dribbel","4 × 200 m soepel snel, 200 m herstel","2 km rustig uitlopen"]},
+  "2026-08-05": {title:"Herstelloop", km:8, rpe:"2–3/10", type:"Run", status:"planned",
+    steps:["8 km rustig @ 5:05–5:25/km","Hartslag bij voorkeur onder 145 bpm","Geen strides als de benen zwaar zijn"]},
+  "2026-08-06": {title:"Easy + techniek", km:10, rpe:"3/10", type:"Run", status:"planned",
+    steps:["10 km rustig","6 × 100 m ontspannen strides indien fris"]},
+  "2026-08-07": {title:"12 × 400 m", km:12, rpe:"8/10", type:"Run", status:"planned",
+    steps:["3 km inlopen","12 × 400 m in 77–79 sec","200 m dribbelpauze","2 km uitlopen"]},
+  "2026-08-08": {title:"Lange duur", km:18, rpe:"4/10", type:"Run", status:"planned",
+    steps:["15 km rustig","Laatste 3 km circa 4:05/km"]},
+  "2026-08-09": {title:"Herstel", km:8, rpe:"2/10", type:"Run", status:"planned",
+    steps:["8 km zeer rustig","Geen extra versnellingen"]}
+};
+
+const doneState = JSON.parse(localStorage.getItem("jp_done") || "{}");
+Object.keys(doneState).forEach(k => { if(workouts[k]) workouts[k].status = doneState[k] ? "done" : workouts[k].status; });
+
+const fmt = new Intl.DateTimeFormat("nl-NL",{weekday:"long",day:"numeric",month:"long"});
+const todayKey = "2026-08-04";
+let calendarKey = todayKey;
+
+function statusText(status){
+  return status==="done" ? "Voltooid" : status==="rest" ? "Rust" : "Gepland";
+}
+function renderWorkout(key, target, includeButton=true){
+  const w = workouts[key];
+  const el = document.getElementById(target);
+  if(!w){
+    el.innerHTML = `<div class="label">${fmt.format(new Date(key+"T12:00:00"))}</div>
+      <div class="workout-title">Geen training gepland</div><p class="subtitle">Herstel, mobiliteit of vrije invulling.</p>`;
+    return;
+  }
+  const done = w.status==="done";
+  el.innerHTML = `
+    <div class="label">${fmt.format(new Date(key+"T12:00:00"))}</div>
+    <div class="workout-title">${w.title}</div>
+    <div class="meta">
+      <span class="pill">${w.type}</span><span class="pill">± ${w.km} km</span><span class="pill">RPE ${w.rpe}</span>
+      <span class="pill ${done?'status-ok':'status-plan'}">${statusText(w.status)}</span>
+    </div>
+    <ul class="steps">${w.steps.map((s,i)=>`<li><span class="step">${i+1}</span><span>${s}</span></li>`).join("")}</ul>
+    ${includeButton ? `<button class="${done?'done':''}" onclick="toggleDone('${key}')">${done?'Training voltooid ✓':'Markeer als voltooid'}</button>
+    <button class="secondary" onclick="alert('Intervals.icu-koppeling volgt in Sprint 3.')">Zet in Intervals.icu</button>` : ""}
+  `;
+}
+function toggleDone(key){
+  workouts[key].status = workouts[key].status==="done" ? "planned" : "done";
+  doneState[key] = workouts[key].status==="done";
+  localStorage.setItem("jp_done",JSON.stringify(doneState));
+  renderAll();
+}
+function renderHistory(){
+  const list = document.getElementById("historyList");
+  list.innerHTML = Object.keys(workouts).sort().map(k=>{
+    const w=workouts[k];
+    const cls=w.status==="done"?"status-ok":"status-plan";
+    return `<div class="row"><div><strong>${w.title}</strong><small>${fmt.format(new Date(k+"T12:00:00"))} · ${w.km} km</small></div>
+      <b class="${cls}">${statusText(w.status)}</b></div>`;
+  }).join("");
+}
+function renderWeek(){
+  const planned = 58;
+  const done = Object.values(workouts).filter(w=>w.status==="done").reduce((a,w)=>a+w.km,0);
+  const pct = Math.min(100,Math.round(done/planned*100));
+  document.getElementById("doneKm").textContent = done+" km";
+  document.getElementById("weekProgress").style.width = pct+"%";
+  document.getElementById("progressText").textContent = pct+"% van de geplande week voltooid.";
+}
+function renderAll(){
+  renderWorkout(todayKey,"todayCard");
+  renderWorkout(calendarKey,"calendarWorkout");
+  document.getElementById("calendarDate").textContent = fmt.format(new Date(calendarKey+"T12:00:00"));
+  renderHistory(); renderWeek();
+}
+function shiftDate(days){
+  const d=new Date(calendarKey+"T12:00:00"); d.setDate(d.getDate()+days);
+  calendarKey=d.toISOString().slice(0,10); renderAll();
+}
+document.getElementById("prevDay").onclick=()=>shiftDate(-1);
+document.getElementById("nextDay").onclick=()=>shiftDate(1);
+
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".view").forEach(x=>x.classList.remove("active"));
+    btn.classList.add("active"); document.getElementById(btn.dataset.view).classList.add("active");
+  };
+});
+
+const now=new Date();
+document.getElementById("days").textContent=Math.max(0,Math.ceil((new Date("2026-08-25T00:00:00+02:00")-now)/86400000));
+document.getElementById("greeting").textContent=(now.getHours()<12?"Goedemorgen":now.getHours()<18?"Goedemiddag":"Goedenavond")+" Jaco";
+renderAll();
+</script>
 </body>
 </html>
