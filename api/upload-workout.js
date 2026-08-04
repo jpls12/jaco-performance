@@ -13,7 +13,7 @@ Strides 4x
 - 100mtr Z1 Pace
 
 VO2max 5x
-- 1000mtr 3:28-3:30/km Pace
+- 1km 3:28-3:30/km Pace
 - 2m Z1 Pace
 
 Speed 4x
@@ -89,12 +89,18 @@ Recovery
   }
 };
 
+function sendJson(res, status, payload) {
+  res.status(status);
+  res.setHeader("Content-Type", "application/json; charset=utf-8");
+  return res.end(JSON.stringify(payload));
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({
+    return sendJson(res, 405, {
       error: "Alleen POST is toegestaan."
     });
   }
@@ -103,15 +109,28 @@ export default async function handler(req, res) {
   const appPin = process.env.JACO_APP_PIN;
 
   if (!apiKey || !appPin) {
-    return res.status(500).json({
+    return sendJson(res, 500, {
       error: "INTERVALS_API_KEY of JACO_APP_PIN ontbreekt in Vercel."
     });
   }
 
-  const { workoutDate, pin } = req.body || {};
+  let requestBody = req.body;
 
-  if (String(pin || "") !== String(appPin)) {
-    return res.status(401).json({
+  if (typeof requestBody === "string") {
+    try {
+      requestBody = JSON.parse(requestBody);
+    } catch {
+      return sendJson(res, 400, {
+        error: "De aanvraag bevat geen geldige JSON."
+      });
+    }
+  }
+
+  const workoutDate = requestBody?.workoutDate;
+  const pin = requestBody?.pin;
+
+  if (String(pin ?? "") !== String(appPin)) {
+    return sendJson(res, 401, {
       error: "Onjuiste app-pincode."
     });
   }
@@ -119,7 +138,7 @@ export default async function handler(req, res) {
   const workout = WORKOUTS[workoutDate];
 
   if (!workout) {
-    return res.status(400).json({
+    return sendJson(res, 400, {
       error: "Voor deze datum is geen uploadbare workout ingesteld."
     });
   }
@@ -134,51 +153,66 @@ export default async function handler(req, res) {
   }];
 
   const authorization = Buffer
-    .from(`API_KEY:${apiKey}`)
+    .from(`API_KEY:${apiKey}`, "utf8")
     .toString("base64");
 
   try {
     const response = await fetch(
-      "https://intervals.icu/api/v1/athlete/0/events/bulk?upsert=true&upsertOnUid=false",
+      "https://intervals.icu/api/v1/athlete/0/events/bulk",
       {
         method: "POST",
         headers: {
-          "Authorization": `Basic ${authorization}`,
+          Authorization: `Basic ${authorization}`,
           "Content-Type": "application/json",
-          "Accept": "application/json"
+          Accept: "application/json"
         },
         body: JSON.stringify(event)
       }
     );
 
-    const text = await response.text();
-    let body = {};
+    const responseText = await response.text();
+    let responseBody;
 
     try {
-      body = text ? JSON.parse(text) : {};
+      responseBody = responseText ? JSON.parse(responseText) : {};
     } catch {
-      body = { raw: text };
+      responseBody = { raw: responseText };
     }
 
     if (!response.ok) {
-      console.error("Intervals.icu error:", response.status, body);
+      console.error("Intervals.icu API error", {
+        status: response.status,
+        body: responseBody,
+        workoutDate,
+        description: workout.description
+      });
 
-      return res.status(502).json({
-        error: `Intervals.icu gaf fout ${response.status}.`,
-        details: body
+      const apiMessage =
+        responseBody?.message ||
+        responseBody?.error ||
+        responseBody?.raw ||
+        `HTTP ${response.status}`;
+
+      return sendJson(res, 502, {
+        error: `Intervals.icu weigerde de workout: ${apiMessage}`,
+        status: response.status
       });
     }
 
-    return res.status(200).json({
+    return sendJson(res, 200, {
       ok: true,
       message: "Workout toegevoegd aan Intervals.icu.",
-      result: body
+      workout: {
+        date: workout.date,
+        name: workout.name
+      },
+      result: responseBody
     });
   } catch (error) {
-    console.error("Upload error:", error);
+    console.error("Intervals.icu request failed", error);
 
-    return res.status(500).json({
-      error: "De server kon Intervals.icu niet bereiken."
+    return sendJson(res, 500, {
+      error: `De server kon Intervals.icu niet bereiken: ${error.message}`
     });
   }
 }
