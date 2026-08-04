@@ -4,30 +4,26 @@ const WORKOUTS = {
     date: "2026-08-04",
     type: "Run",
     description: `5 km-specifieke VO2max-training.
-description: `# VO₂max 5 × 1000 m
 
-## Warm-up
-- Run 3.0 km easy
-- Repeat 4x
-  - Run 100 m fast
-  - Run 100 m easy
+Warmup
+- 3km 5:00-5:30/km Pace
 
-## Main Set
-Repeat 5x
-- Run 1000 m @ 3:28-3:30/km
-- Run 2:00 easy
+Strides 4x
+- 100mtr 3:15-3:25/km Pace
+- 100mtr Z1 Pace
 
-## Speed
-Repeat 4x
-- Run 200 m fast
-- Run 200 m easy
+VO2max 5x
+- 1000mtr 3:28-3:30/km Pace
+- 2m Z1 Pace
 
-## Cool-down
-- Run 2.0 km easy
+Speed 4x
+- 200mtr 3:05-3:10/km Pace
+- 200mtr Z1 Pace
 
-Totale afstand: ongeveer 14 km`
-
+Cooldown
+- 2km Z1 Pace`
   },
+
   "2026-08-05": {
     name: "Jaco - Herstelloop 8 km",
     date: "2026-08-05",
@@ -37,6 +33,7 @@ Totale afstand: ongeveer 14 km`
 Easy
 - 8km 5:05-5:25/km Pace`
   },
+
   "2026-08-06": {
     name: "Jaco - Easy plus strides",
     date: "2026-08-06",
@@ -47,9 +44,10 @@ Easy
 - 10km 5:00-5:20/km Pace
 
 Strides 6x
-- 100m 3:15-3:25/km Pace
-- 100m Z1 Pace`
+- 100mtr 3:15-3:25/km Pace
+- 100mtr Z1 Pace`
   },
+
   "2026-08-07": {
     name: "Jaco - 12 x 400 m",
     date: "2026-08-07",
@@ -60,12 +58,13 @@ Warmup
 - 3km Z1 Pace
 
 Main set 12x
-- 400m 3:13-3:18/km Pace
-- 200m Z1 Pace
+- 400mtr 3:13-3:18/km Pace
+- 200mtr Z1 Pace
 
 Cooldown
 - 2km Z1 Pace`
   },
+
   "2026-08-08": {
     name: "Jaco - Lange duur 18 km",
     date: "2026-08-08",
@@ -78,6 +77,7 @@ Easy
 Progression
 - 3km 4:00-4:10/km Pace`
   },
+
   "2026-08-09": {
     name: "Jaco - Herstel 8 km",
     date: "2026-08-09",
@@ -94,7 +94,9 @@ export default async function handler(req, res) {
 
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return res.status(405).json({ error: "Alleen POST is toegestaan." });
+    return res.status(405).json({
+      error: "Alleen POST is toegestaan."
+    });
   }
 
   const apiKey = process.env.INTERVALS_API_KEY;
@@ -109,7 +111,9 @@ export default async function handler(req, res) {
   const { workoutDate, pin } = req.body || {};
 
   if (String(pin || "") !== String(appPin)) {
-    return res.status(401).json({ error: "Onjuiste app-pincode." });
+    return res.status(401).json({
+      error: "Onjuiste app-pincode."
+    });
   }
 
   const workout = WORKOUTS[workoutDate];
@@ -135,7 +139,7 @@ export default async function handler(req, res) {
 
   try {
     const response = await fetch(
-      "https://intervals.icu/api/v1/athlete/0/events/bulk",
+      "https://intervals.icu/api/v1/athlete/0/events/bulk?upsert=true&upsertOnUid=false",
       {
         method: "POST",
         headers: {
@@ -157,6 +161,8 @@ export default async function handler(req, res) {
     }
 
     if (!response.ok) {
+      console.error("Intervals.icu error:", response.status, body);
+
       return res.status(502).json({
         error: `Intervals.icu gaf fout ${response.status}.`,
         details: body
@@ -169,6 +175,8 @@ export default async function handler(req, res) {
       result: body
     });
   } catch (error) {
+    console.error("Upload error:", error);
+
     return res.status(500).json({
       error: "De server kon Intervals.icu niet bereiken."
     });
