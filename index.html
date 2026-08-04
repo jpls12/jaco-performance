@@ -206,9 +206,40 @@ function renderWorkout(key, target, includeButton=true){
     </div>
     <ul class="steps">${w.steps.map((s,i)=>`<li><span class="step">${i+1}</span><span>${s}</span></li>`).join("")}</ul>
     ${includeButton ? `<button class="${done?'done':''}" onclick="toggleDone('${key}')">${done?'Training voltooid ✓':'Markeer als voltooid'}</button>
-    <button class="secondary" onclick="alert('Intervals.icu-koppeling volgt in Sprint 3.')">Zet in Intervals.icu</button>` : ""}
+    <button class="secondary" onclick="uploadToIntervals('${key}')">Zet in Intervals.icu</button>
+    <p id="upload-${key}" class="subtitle" style="min-height:20px"></p>` : ""}
   `;
 }
+
+async function uploadToIntervals(key){
+  const status = document.getElementById("upload-"+key);
+  const pin = window.prompt("Voer je Jaco Performance app-pincode in:");
+  if(pin === null) return;
+
+  status.textContent = "Workout wordt verstuurd…";
+  status.style.color = "var(--muted)";
+
+  try{
+    const response = await fetch("/api/upload-workout",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({workoutDate:key,pin})
+    });
+
+    const data = await response.json();
+
+    if(!response.ok){
+      throw new Error(data.error || "Upload mislukt.");
+    }
+
+    status.textContent = "Gelukt: workout staat in Intervals.icu.";
+    status.style.color = "#8de5ad";
+  }catch(error){
+    status.textContent = error.message;
+    status.style.color = "#ff9494";
+  }
+}
+
 function toggleDone(key){
   workouts[key].status = workouts[key].status==="done" ? "planned" : "done";
   doneState[key] = workouts[key].status==="done";
