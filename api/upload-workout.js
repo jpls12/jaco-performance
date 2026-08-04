@@ -4,24 +4,29 @@ const WORKOUTS = {
     date: "2026-08-04",
     type: "Run",
     description: `5 km-specifieke VO2max-training.
+description: `# VO₂max 5 × 1000 m
 
-Warmup
-- 3km 5:00-5:30/km Pace
+## Warm-up
+- Run 3.0 km easy
+- Repeat 4x
+  - Run 100 m fast
+  - Run 100 m easy
 
-Strides 4x
-- 100m 3:15-3:25/km Pace
-- 100m Z1 Pace
+## Main Set
+Repeat 5x
+- Run 1000 m @ 3:28-3:30/km
+- Run 2:00 easy
 
-VO2max 5x
-- 1000m 3:28-3:30/km Pace
-- 2m Z1 Pace
+## Speed
+Repeat 4x
+- Run 200 m fast
+- Run 200 m easy
 
-Speed 4x
-- 200m 3:05-3:10/km Pace
-- 200m Z1 Pace
+## Cool-down
+- Run 2.0 km easy
 
-Cooldown
-- 2km Z1 Pace`
+Totale afstand: ongeveer 14 km`
+
   },
   "2026-08-05": {
     name: "Jaco - Herstelloop 8 km",
