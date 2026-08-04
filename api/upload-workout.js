@@ -1,93 +1,4 @@
-const WORKOUTS = {
-  "2026-08-04": {
-    name: "Jaco - 5 x 1000 m VO2max",
-    date: "2026-08-04",
-    type: "Run",
-    description: `5 km-specifieke VO2max-training.
-
-Warmup
-- 3km 5:00-5:30/km Pace
-
-Strides 4x
-- 100mtr 3:15-3:25/km Pace
-- 100mtr Z1 Pace
-
-VO2max 5x
-- 1km 3:28-3:30/km Pace
-- 2m Z1 Pace
-
-Speed 4x
-- 200mtr 3:05-3:10/km Pace
-- 200mtr Z1 Pace
-
-Cooldown
-- 2km Z1 Pace`
-  },
-
-  "2026-08-05": {
-    name: "Jaco - Herstelloop 8 km",
-    date: "2026-08-05",
-    type: "Run",
-    description: `Rustige herstelloop na de VO2max-training.
-
-Easy
-- 8km 5:05-5:25/km Pace`
-  },
-
-  "2026-08-06": {
-    name: "Jaco - Easy plus strides",
-    date: "2026-08-06",
-    type: "Run",
-    description: `Rustige duurloop met ontspannen strides indien fris.
-
-Easy
-- 10km 5:00-5:20/km Pace
-
-Strides 6x
-- 100mtr 3:15-3:25/km Pace
-- 100mtr Z1 Pace`
-  },
-
-  "2026-08-07": {
-    name: "Jaco - 12 x 400 m",
-    date: "2026-08-07",
-    type: "Run",
-    description: `5 km-specifieke snelheidstraining.
-
-Warmup
-- 3km Z1 Pace
-
-Main set 12x
-- 400mtr 3:13-3:18/km Pace
-- 200mtr Z1 Pace
-
-Cooldown
-- 2km Z1 Pace`
-  },
-
-  "2026-08-08": {
-    name: "Jaco - Lange duur 18 km",
-    date: "2026-08-08",
-    type: "Run",
-    description: `Lange duurloop met gecontroleerde versnelling.
-
-Easy
-- 15km 4:55-5:20/km Pace
-
-Progression
-- 3km 4:00-4:10/km Pace`
-  },
-
-  "2026-08-09": {
-    name: "Jaco - Herstel 8 km",
-    date: "2026-08-09",
-    type: "Run",
-    description: `Zeer rustige herstelloop.
-
-Recovery
-- 8km 5:10-5:35/km Pace`
-  }
-};
+import { WORKOUTS } from "../lib/workouts.js";
 
 function sendJson(res, status, payload) {
   res.status(status);
@@ -143,12 +54,18 @@ export default async function handler(req, res) {
     });
   }
 
+  if (!workout.intervalsDescription) {
+    return sendJson(res, 400, {
+      error: "Deze training heeft geen Intervals.icu-beschrijving."
+    });
+  }
+
   const event = [{
     category: "WORKOUT",
     start_date_local: `${workout.date}T00:00:00`,
-    name: workout.name,
-    description: workout.description,
-    type: workout.type,
+    name: workout.uploadName || workout.name,
+    description: workout.intervalsDescription,
+    type: workout.type || "Run",
     external_id: `jaco-performance-${workout.date}`
   }];
 
@@ -180,13 +97,6 @@ export default async function handler(req, res) {
     }
 
     if (!response.ok) {
-      console.error("Intervals.icu API error", {
-        status: response.status,
-        body: responseBody,
-        workoutDate,
-        description: workout.description
-      });
-
       const apiMessage =
         responseBody?.message ||
         responseBody?.error ||
@@ -204,13 +114,11 @@ export default async function handler(req, res) {
       message: "Workout toegevoegd aan Intervals.icu.",
       workout: {
         date: workout.date,
-        name: workout.name
+        name: workout.uploadName || workout.name
       },
       result: responseBody
     });
   } catch (error) {
-    console.error("Intervals.icu request failed", error);
-
     return sendJson(res, 500, {
       error: `De server kon Intervals.icu niet bereiken: ${error.message}`
     });
