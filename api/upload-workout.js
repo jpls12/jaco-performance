@@ -6,14 +6,49 @@ function sendJson(res, status, payload) {
   return res.end(JSON.stringify(payload));
 }
 
+function cleanText(value, maxLength = 200) {
+  return String(value ?? "").trim().slice(0, maxLength);
+}
+
+function validateCustomWorkout(input) {
+  if (!input || typeof input !== "object") {
+    throw new Error("De eigen training ontbreekt.");
+  }
+
+  const date = cleanText(input.date, 10);
+  const name = cleanText(input.name, 100);
+  const uploadName = cleanText(input.uploadName || input.name, 120);
+  const type = cleanText(input.type || "Run", 20);
+  const description = cleanText(input.intervalsDescription, 5000);
+
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    throw new Error("De datum van de training is ongeldig.");
+  }
+  if (!name) {
+    throw new Error("De training heeft geen naam.");
+  }
+  if (!description || !description.includes("- ")) {
+    throw new Error("De Intervals.icu-opbouw van de training is ongeldig.");
+  }
+  if (type !== "Run") {
+    throw new Error("Sprint 5 ondersteunt voorlopig alleen hardlooptrainingen.");
+  }
+
+  return {
+    date,
+    name,
+    uploadName,
+    type,
+    intervalsDescription: description
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
-    return sendJson(res, 405, {
-      error: "Alleen POST is toegestaan."
-    });
+    return sendJson(res, 405, { error: "Alleen POST is toegestaan." });
   }
 
   const apiKey = process.env.INTERVALS_API_KEY;
@@ -26,14 +61,11 @@ export default async function handler(req, res) {
   }
 
   let requestBody = req.body;
-
   if (typeof requestBody === "string") {
     try {
       requestBody = JSON.parse(requestBody);
     } catch {
-      return sendJson(res, 400, {
-        error: "De aanvraag bevat geen geldige JSON."
-      });
+      return sendJson(res, 400, { error: "De aanvraag bevat geen geldige JSON." });
     }
   }
 
@@ -41,23 +73,24 @@ export default async function handler(req, res) {
   const pin = requestBody?.pin;
 
   if (String(pin ?? "") !== String(appPin)) {
-    return sendJson(res, 401, {
-      error: "Onjuiste app-pincode."
-    });
+    return sendJson(res, 401, { error: "Onjuiste app-pincode." });
   }
 
-  const workout = WORKOUTS[workoutDate];
+  let workout;
 
-  if (!workout) {
-    return sendJson(res, 400, {
-      error: "Voor deze datum is geen uploadbare workout ingesteld."
-    });
-  }
-
-  if (!workout.intervalsDescription) {
-    return sendJson(res, 400, {
-      error: "Deze training heeft geen Intervals.icu-beschrijving."
-    });
+  try {
+    if (requestBody?.customWorkout) {
+      workout = validateCustomWorkout(requestBody.customWorkout);
+    } else {
+      workout = WORKOUTS[workoutDate];
+      if (!workout) {
+        return sendJson(res, 400, {
+          error: "Voor deze datum is geen uploadbare workout ingesteld."
+        });
+      }
+    }
+  } catch (error) {
+    return sendJson(res, 400, { error: error.message });
   }
 
   const event = [{
@@ -66,7 +99,7 @@ export default async function handler(req, res) {
     name: workout.uploadName || workout.name,
     description: workout.intervalsDescription,
     type: workout.type || "Run",
-    external_id: `jaco-performance-${workout.date}`
+    external_id: `jaco-performance-${workout.date}-${Date.now()}`
   }];
 
   const authorization = Buffer
@@ -104,8 +137,7 @@ export default async function handler(req, res) {
         `HTTP ${response.status}`;
 
       return sendJson(res, 502, {
-        error: `Intervals.icu weigerde de workout: ${apiMessage}`,
-        status: response.status
+        error: `Intervals.icu weigerde de workout: ${apiMessage}`
       });
     }
 
@@ -115,8 +147,7 @@ export default async function handler(req, res) {
       workout: {
         date: workout.date,
         name: workout.uploadName || workout.name
-      },
-      result: responseBody
+      }
     });
   } catch (error) {
     return sendJson(res, 500, {
