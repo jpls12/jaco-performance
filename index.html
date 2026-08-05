@@ -32,7 +32,7 @@
       border-radius:20px;padding:17px;margin:13px 0;
       box-shadow:0 14px 40px rgba(0,0,0,.18)
     }
-    .tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin:17px 0}
+    .tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin:17px 0}
     button{
       border:0;border-radius:13px;padding:13px;background:var(--green);
       color:#062311;font-size:.96rem;font-weight:850;cursor:pointer
@@ -207,6 +207,7 @@
     <button class="tab" data-view="editor">Nieuwe training</button>
     <button class="tab" data-view="saved">Mijn trainingen</button>
     <button class="tab" data-view="races">Wedstrijden</button>
+    <button class="tab" data-view="planning">Planning</button>
     <button class="tab" data-view="profile">Profiel</button>
   </nav>
 
@@ -558,28 +559,21 @@
   </section>
 
 
-  <section id="profile" class="view">
+
+  <section id="planning" class="view">
     <article class="card">
-      <p class="label">Persoonlijk profiel</p><h2>Trainingsinstellingen</h2><p class="help">Deze gegevens gebruikt de weekplanner voor tempo’s en trainingsomvang.</p>
-      <form id="profileForm">
-        <div class="grid2"><label>Naam<input id="profileName" type="text" value="Jaco"></label><label>Loopdagen per week<select id="profileDays"><option value="3">3 dagen</option><option value="4" selected>4 dagen</option><option value="5">5 dagen</option><option value="6">6 dagen</option></select></label></div>
-        <div class="grid2"><label>Gewenste weekomvang (km)<input id="profileWeeklyKm" type="number" min="20" max="160" step="1" value="60"></label><label>Maximale weekomvang (km)<input id="profileMaxKm" type="number" min="20" max="180" step="1" value="70"></label></div>
-        <div class="grid2"><label>5 km PR<input id="profileFiveKPr" type="text" value="18:16"></label><label>5 km-doel<input id="profileFiveKGoal" type="text" value="17:59"></label></div>
-        <div class="grid2"><label>10 km PR<input id="profileTenKPr" type="text" value="38:03"></label><label>Halve marathon-doel<input id="profileHalfGoal" type="text" value="1:19:59"></label></div>
-        <div class="grid2"><label>Maximale hartslag<input id="profileMaxHr" type="number" min="120" max="230" value="185"></label><label>Zone 2 bovengrens<input id="profileZ2Hr" type="number" min="90" max="190" value="145"></label></div>
-        
-        <div class="section">
-          <p class="label">Beschikbaarheid per dag</p>
-          <h3>Wanneer kun je trainen?</h3>
-          <p class="help">
-            De weekplanner gebruikt alleen dagen die je hier beschikbaar maakt.
-          </p>
+      <p class="label">Sprint 11.1</p>
+      <h2>Mijn vaste weekplanning</h2>
+      <p class="help">
+        Stel per dag in wanneer je kunt trainen. De weekplanner plant daarna alleen
+        op beschikbare dagen en houdt rekening met tijd, voorkeur en prioriteit.
+      </p>
 
-          <div id="availabilityEditor" class="availability-grid"></div>
-        </div>
+      <form id="planningForm">
+        <div id="availabilityEditor" class="availability-grid"></div>
 
         <div class="section">
-          <p class="label">Planningsregels</p>
+          <p class="label">Algemene planningsregels</p>
 
           <div class="grid2">
             <label>Minimum rust tussen kwaliteitstrainingen
@@ -605,11 +599,32 @@
           </div>
 
           <label class="switchrow">
-            <span>Core automatisch toevoegen na een rustige loopdag</span>
+            <span>Core automatisch toevoegen op een passende dag</span>
             <input id="profileAutoCore" type="checkbox" checked>
           </label>
         </div>
 
+        <button type="submit">Planning opslaan</button>
+        <p id="planningStatus" class="status"></p>
+      </form>
+    </article>
+
+    <article class="card">
+      <p class="label">Voorbeeld van jouw week</p>
+      <div id="planningPreview" class="saved-list"></div>
+    </article>
+  </section>
+
+  <section id="profile" class="view">
+    <article class="card">
+      <p class="label">Persoonlijk profiel</p><h2>Trainingsinstellingen</h2><p class="help">Deze gegevens gebruikt de weekplanner voor tempo’s en trainingsomvang.</p>
+      <form id="profileForm">
+        <div class="grid2"><label>Naam<input id="profileName" type="text" value="Jaco"></label><label>Loopdagen per week<select id="profileDays"><option value="3">3 dagen</option><option value="4" selected>4 dagen</option><option value="5">5 dagen</option><option value="6">6 dagen</option></select></label></div>
+        <div class="grid2"><label>Gewenste weekomvang (km)<input id="profileWeeklyKm" type="number" min="20" max="160" step="1" value="60"></label><label>Maximale weekomvang (km)<input id="profileMaxKm" type="number" min="20" max="180" step="1" value="70"></label></div>
+        <div class="grid2"><label>5 km PR<input id="profileFiveKPr" type="text" value="18:16"></label><label>5 km-doel<input id="profileFiveKGoal" type="text" value="17:59"></label></div>
+        <div class="grid2"><label>10 km PR<input id="profileTenKPr" type="text" value="38:03"></label><label>Halve marathon-doel<input id="profileHalfGoal" type="text" value="1:19:59"></label></div>
+        <div class="grid2"><label>Maximale hartslag<input id="profileMaxHr" type="number" min="120" max="230" value="185"></label><label>Zone 2 bovengrens<input id="profileZ2Hr" type="number" min="90" max="190" value="145"></label></div>
+        
         <button type="submit">Profiel opslaan</button><p id="profileStatus" class="status"></p>
       </form>
     </article>
@@ -2543,6 +2558,82 @@ function scheduleByAvailability(workouts){
 
 function defaultProfile(){return{name:"Jaco",days:4,weeklyKm:60,maxKm:70,fiveKPr:"18:16",fiveKGoal:"17:59",tenKPr:"38:03",halfGoal:"1:19:59",maxHr:185,z2Hr:145};}
 function getProfile(){return{...defaultProfile(),...profile};}
+
+function fillPlanningForm(){
+  const p=getProfile();
+  document.getElementById("profileQualityGap").value=String(p.qualityGap ?? 2);
+  document.getElementById("profileLongRunDay").value=String(p.longRunDay ?? 5);
+  document.getElementById("profileAutoCore").checked=p.autoCore !== false;
+  renderAvailabilityEditor();
+  renderPlanningPreview();
+}
+
+function savePlanning(event){
+  event.preventDefault();
+
+  const current=getProfile();
+  profile={
+    ...current,
+    qualityGap:Number(document.getElementById("profileQualityGap").value),
+    longRunDay:document.getElementById("profileLongRunDay").value === ""
+      ? ""
+      : Number(document.getElementById("profileLongRunDay").value),
+    autoCore:document.getElementById("profileAutoCore").checked,
+    availability:readAvailabilityForm()
+  };
+
+  saveObject(PROFILE_KEY,profile);
+
+  document.getElementById("planningStatus").className="status ok";
+  document.getElementById("planningStatus").textContent=
+    "Planning opgeslagen. Plan mijn week gebruikt vanaf nu deze dagen.";
+
+  renderPlanningPreview();
+  renderProfileSummary();
+}
+
+function renderPlanningPreview(){
+  const box=document.getElementById("planningPreview");
+  if(!box) return;
+
+  const p=getProfile();
+  const availability={...defaultAvailability(),...(p.availability||{})};
+
+  box.innerHTML=DAY_KEYS.map((key,index)=>{
+    const day=availability[key];
+    const available=Boolean(day.available);
+
+    return `
+      <div class="saved-row">
+        <div class="saved-row-top">
+          <div>
+            <strong>${DAY_NAMES[index]}</strong>
+            <small>
+              ${available
+                ? `${day.daypart} · maximaal ${day.maxMinutes} min · ${preferenceLabel(day.preference)}`
+                : "Rust / niet beschikbaar"}
+            </small>
+          </div>
+          <span class="pill">${available ? day.priority.toUpperCase() : "RUST"}</span>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function preferenceLabel(value){
+  const labels={
+    rust:"Rust",
+    kwaliteit:"Interval / kwaliteit",
+    rustig:"Rustige duurloop",
+    drempel:"Tempo / drempel",
+    "lange-duur":"Lange duurloop",
+    herstel:"Herstel",
+    core:"Core",
+    mobiliteit:"Mobiliteit"
+  };
+  return labels[value] || value;
+}
+
 function fillProfileForm(){const p=getProfile();profileName.value=p.name;profileDays.value=String(p.days);profileWeeklyKm.value=p.weeklyKm;profileMaxKm.value=p.maxKm;profileFiveKPr.value=p.fiveKPr;profileFiveKGoal.value=p.fiveKGoal;profileTenKPr.value=p.tenKPr;profileHalfGoal.value=p.halfGoal;profileMaxHr.value=p.maxHr;profileZ2Hr.value=p.z2Hr;renderProfileSummary();}
 function saveProfile(e){e.preventDefault();profile={name:safe(profileName.value).trim()||"Jaco",days:Number(profileDays.value),weeklyKm:Number(profileWeeklyKm.value),maxKm:Number(profileMaxKm.value),fiveKPr:safe(profileFiveKPr.value).trim(),fiveKGoal:safe(profileFiveKGoal.value).trim(),tenKPr:safe(profileTenKPr.value).trim(),halfGoal:safe(profileHalfGoal.value).trim(),maxHr:Number(profileMaxHr.value),z2Hr:Number(profileZ2Hr.value)};saveObject(PROFILE_KEY,profile);profileStatus.className="status ok";profileStatus.textContent="Profiel opgeslagen.";renderProfileSummary();}
 function renderProfileSummary(){const p=getProfile();summaryDays.textContent=p.days;summaryKm.textContent=`${p.weeklyKm} km`;summaryFiveK.textContent=p.fiveKGoal||"—";summaryHalf.textContent=p.halfGoal||"—";}
@@ -2621,6 +2712,7 @@ document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
 document.getElementById("planMyWeek").onclick=generatePersonalWeek;
 document.getElementById("saveWeekPlan").onclick=savePersonalWeek;
 document.getElementById("profileForm").onsubmit=saveProfile;
+document.getElementById("planningForm").onsubmit=savePlanning;
 document.getElementById("raceForm").onsubmit=saveRace;
 document.getElementById("raceDistance").onchange=()=>{
   document.getElementById("customRaceDistanceLabel").hidden=
@@ -2634,6 +2726,7 @@ document.getElementById("greeting").textContent=
 
 setDefaultForm(ymd(today));
 fillProfileForm();
+fillPlanningForm();
 renderProfileSummary();
 renderRaces();
 renderRaceOptions();
