@@ -32,7 +32,7 @@
       border-radius:20px;padding:17px;margin:13px 0;
       box-shadow:0 14px 40px rgba(0,0,0,.18)
     }
-    .tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:9px;margin:17px 0}
+    .tabs{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin:17px 0}
     button{
       border:0;border-radius:13px;padding:13px;background:var(--green);
       color:#062311;font-size:.96rem;font-weight:850;cursor:pointer
@@ -106,6 +106,15 @@
     .notice{border-left:3px solid var(--orange);padding-left:12px;color:#ffd697}
 
 
+
+    .profile-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+    .profile-chip{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:12px}
+    .profile-chip span{display:block;color:var(--muted);font-size:.75rem}
+    .profile-chip strong{display:block;margin-top:5px;font-size:1.1rem}
+    .week-plan{display:grid;gap:10px;margin-top:14px}
+    .week-plan-row{display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;background:#0d1928;border:1px solid #223650;border-radius:14px;padding:12px}
+    .week-plan-row strong{display:block}.week-plan-row small{color:var(--muted)}
+    .readiness-badge{padding:6px 9px;border-radius:999px;font-size:.76rem;font-weight:800;background:#173d2a;color:#9ce7b5;border:1px solid #2f6d49}
     .dashboard-grid{
       display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px
     }
@@ -173,6 +182,7 @@
     <button class="tab" data-view="editor">Nieuwe training</button>
     <button class="tab" data-view="saved">Mijn trainingen</button>
     <button class="tab" data-view="races">Wedstrijden</button>
+    <button class="tab" data-view="profile">Profiel</button>
   </nav>
 
 
@@ -232,6 +242,22 @@
     <article class="card">
       <p class="label">Laatste 7 dagen</p>
       <div id="wellnessHistory" class="wellness-list"></div>
+    </article>
+
+    <article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div><p class="label">Versie 1.1</p><h2>Plan mijn week</h2><p class="help">De app gebruikt je profiel, eerstvolgende wedstrijd, weekomvang en hersteldata om een trainingsweek voor te stellen.</p></div>
+        <button id="planMyWeek" type="button" style="width:auto">Plan week</button>
+      </div>
+      <div class="profile-summary">
+        <div class="profile-chip"><span>Loopdagen</span><strong id="summaryDays">4</strong></div>
+        <div class="profile-chip"><span>Weekomvang</span><strong id="summaryKm">60 km</strong></div>
+        <div class="profile-chip"><span>5 km-doel</span><strong id="summaryFiveK">17:59</strong></div>
+        <div class="profile-chip"><span>HM-doel</span><strong id="summaryHalf">1:19:59</strong></div>
+      </div>
+      <div id="weekPlan" class="week-plan"><p class="help">Tik op Plan week om een voorstel te maken.</p></div>
+      <div class="actions"><button id="saveWeekPlan" type="button" disabled>Voeg week toe aan kalender</button></div>
+      <p id="weekPlanStatus" class="status"></p>
     </article>
   </section>
 
@@ -506,6 +532,20 @@
     </article>
   </section>
 
+
+  <section id="profile" class="view">
+    <article class="card">
+      <p class="label">Persoonlijk profiel</p><h2>Trainingsinstellingen</h2><p class="help">Deze gegevens gebruikt de weekplanner voor tempo’s en trainingsomvang.</p>
+      <form id="profileForm">
+        <div class="grid2"><label>Naam<input id="profileName" type="text" value="Jaco"></label><label>Loopdagen per week<select id="profileDays"><option value="3">3 dagen</option><option value="4" selected>4 dagen</option><option value="5">5 dagen</option><option value="6">6 dagen</option></select></label></div>
+        <div class="grid2"><label>Gewenste weekomvang (km)<input id="profileWeeklyKm" type="number" min="20" max="160" step="1" value="60"></label><label>Maximale weekomvang (km)<input id="profileMaxKm" type="number" min="20" max="180" step="1" value="70"></label></div>
+        <div class="grid2"><label>5 km PR<input id="profileFiveKPr" type="text" value="18:16"></label><label>5 km-doel<input id="profileFiveKGoal" type="text" value="17:59"></label></div>
+        <div class="grid2"><label>10 km PR<input id="profileTenKPr" type="text" value="38:03"></label><label>Halve marathon-doel<input id="profileHalfGoal" type="text" value="1:19:59"></label></div>
+        <div class="grid2"><label>Maximale hartslag<input id="profileMaxHr" type="number" min="120" max="230" value="185"></label><label>Zone 2 bovengrens<input id="profileZ2Hr" type="number" min="90" max="190" value="145"></label></div>
+        <button type="submit">Profiel opslaan</button><p id="profileStatus" class="status"></p>
+      </form>
+    </article>
+  </section>
 </main>
 
 <div id="duplicateModal" class="modal-backdrop">
@@ -528,12 +568,15 @@ const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
 const RACES_KEY = "jp_races_v1";
+const PROFILE_KEY = "jp_profile_v1";
 
 let serverWorkouts = {};
 let customWorkouts = loadObject(STORAGE_KEY);
 let doneWorkouts = loadObject(DONE_KEY);
 let uploadedWorkouts = loadObject(UPLOAD_KEY);
 let races = loadObject(RACES_KEY);
+let profile = loadObject(PROFILE_KEY);
+let pendingWeekPlan = [];
 
 const today = new Date();
 let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -595,9 +638,8 @@ function switchView(id){
     renderRaces();
     renderRaceOptions();
   }
-  if(id==="dashboard"){
-    loadWellnessDashboard();
-  }
+  if(id==="dashboard"){loadWellnessDashboard();renderProfileSummary();}
+  if(id==="profile"){fillProfileForm();}
 }
 
 function workoutState(date,workout){
@@ -2152,6 +2194,24 @@ async function loadWellnessDashboard(){
   }
 }
 
+
+function defaultProfile(){return{name:"Jaco",days:4,weeklyKm:60,maxKm:70,fiveKPr:"18:16",fiveKGoal:"17:59",tenKPr:"38:03",halfGoal:"1:19:59",maxHr:185,z2Hr:145};}
+function getProfile(){return{...defaultProfile(),...profile};}
+function fillProfileForm(){const p=getProfile();profileName.value=p.name;profileDays.value=String(p.days);profileWeeklyKm.value=p.weeklyKm;profileMaxKm.value=p.maxKm;profileFiveKPr.value=p.fiveKPr;profileFiveKGoal.value=p.fiveKGoal;profileTenKPr.value=p.tenKPr;profileHalfGoal.value=p.halfGoal;profileMaxHr.value=p.maxHr;profileZ2Hr.value=p.z2Hr;renderProfileSummary();}
+function saveProfile(e){e.preventDefault();profile={name:safe(profileName.value).trim()||"Jaco",days:Number(profileDays.value),weeklyKm:Number(profileWeeklyKm.value),maxKm:Number(profileMaxKm.value),fiveKPr:safe(profileFiveKPr.value).trim(),fiveKGoal:safe(profileFiveKGoal.value).trim(),tenKPr:safe(profileTenKPr.value).trim(),halfGoal:safe(profileHalfGoal.value).trim(),maxHr:Number(profileMaxHr.value),z2Hr:Number(profileZ2Hr.value)};saveObject(PROFILE_KEY,profile);profileStatus.className="status ok";profileStatus.textContent="Profiel opgeslagen.";renderProfileSummary();}
+function renderProfileSummary(){const p=getProfile();summaryDays.textContent=p.days;summaryKm.textContent=`${p.weeklyKm} km`;summaryFiveK.textContent=p.fiveKGoal||"—";summaryHalf.textContent=p.halfGoal||"—";}
+function nextMonday(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day+7);return ymd(d);}
+function raceForPlanner(){return Object.values(races).filter(r=>daysUntil(r.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0]||null;}
+function plannerReduced(){const form=Number(metricForm.textContent);return Number.isFinite(form)&&form<-15;}
+function makeWeekWorkout(date,name,km,rpe,steps,desc){return{date,name,uploadName:`Jaco - ${name}`,type:"Run",distanceKm:Math.round(km*10)/10,rpe,status:"planned",displaySteps:steps,intervalsDescription:desc};}
+function generatePersonalWeek(){const p=getProfile(),start=nextMonday(),race=raceForPlanner(),reduced=plannerReduced();const target=Math.min(p.maxKm,Math.round(p.weeklyKm*(reduced?.75:1)));let qName="5 × 1000 m VO₂max",qKm=12,qRpe="8/10",qSteps=["3 km inlopen","5 × 1000 m @ 3:28–3:30/km","2 min dribbel","2 km uitlopen"],qDesc=`5 km-specifieke VO2max-training.\n\nWarmup\n- 3km Z1 Pace\n\nMain set 5x\n- 1km 3:28-3:30/km Pace\n- 2m Z1 Pace\n\nCooldown\n- 2km Z1 Pace`;
+if(race&&Number(race.distanceKm)>=10){qName="3 × 2 km drempel";qKm=13;qRpe="7/10";qSteps=["3 km inlopen","3 × 2 km rond drempeltempo","2 min dribbel","2 km uitlopen"];qDesc=`Drempeltraining richting ${race.name}.\n\nWarmup\n- 3km Z1 Pace\n\nMain set 3x\n- 2km 3:42-3:48/km Pace\n- 2m Z1 Pace\n\nCooldown\n- 2km Z1 Pace`;}
+if(reduced){qName="Rustige duurloop met strides";qKm=10;qRpe="5/10";qSteps=["9 km rustig in zone 2","6 × 100 m ontspannen strides indien fris"];qDesc=`Gecontroleerde duurloop wegens vermoeidheidssignalen.\n\nEasy\n- 9km 5:00-5:25/km Pace\n\nStrides 6x\n- 100mtr 3:20-3:30/km Pace\n- 100mtr Z1 Pace`;}
+const longKm=Math.max(14,Math.round(target*(race&&Number(race.distanceKm)>=21?.30:.25))),easyCount=Math.max(1,p.days-2),easyKm=Math.max(6,Math.round(Math.max(12,target-qKm-longKm)/easyCount));const offsets=p.days===3?[1,3,5]:p.days===4?[1,3,5,6]:p.days===5?[0,1,3,5,6]:[0,1,2,3,5,6];const types=p.days===3?["quality","easy","long"]:p.days===4?["quality","easy","long","recovery"]:p.days===5?["easy","quality","easy","long","recovery"]:["easy","quality","recovery","easy","long","recovery"];
+pendingWeekPlan=offsets.map((o,i)=>{const date=addDays(start,o),t=types[i];if(t==="quality")return makeWeekWorkout(date,qName,qKm,qRpe,qSteps,qDesc);if(t==="long")return makeWeekWorkout(date,`Lange duurloop ${longKm} km`,longKm,"4/10",[`${longKm} km rustig lopen`,`Hartslag onder circa ${p.z2Hr} bpm houden`],`Lange rustige duurloop.\n\nEasy\n- ${longKm}km 4:55-5:20/km Pace`);if(t==="recovery"){const km=Math.max(6,easyKm-2);return makeWeekWorkout(date,`Herstelloop ${km} km`,km,"2/10",[`${km} km zeer rustig`,`Geen strides als de benen zwaar zijn`],`Hersteltraining.\n\nRecovery\n- ${km}km 5:10-5:35/km Pace`);}return makeWeekWorkout(date,`Rustige duurloop ${easyKm} km`,easyKm,"3/10",[`${easyKm} km zone 2`,`Hartslag bij voorkeur onder ${p.z2Hr} bpm`],`Rustige duurloop.\n\nEasy\n- ${easyKm}km 5:00-5:25/km Pace`);});renderWeekPlan(reduced,race,target);}
+function renderWeekPlan(reduced,race,target){weekPlan.innerHTML=pendingWeekPlan.map(w=>`<div class="week-plan-row"><div><strong>${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(w.date+"T12:00:00"))}</strong><small>${w.distanceKm} km</small></div><div><strong>${safe(w.name)}</strong><small>${safe(w.displaySteps[0]||"")}</small></div><span class="readiness-badge">${safe(w.rpe)}</span></div>`).join("");saveWeekPlan.disabled=false;weekPlanStatus.className="status";weekPlanStatus.textContent=`${target} km gepland${race?` richting ${race.name}`:""}${reduced?" · volume verlaagd door herstelsignalen":""}.`;}
+function savePersonalWeek(){if(!pendingWeekPlan.length)return;let added=0;for(const w of pendingWeekPlan){if(!customWorkouts[w.date]){customWorkouts[w.date]=w;added++;}}saveObject(STORAGE_KEY,customWorkouts);renderMonth();renderSaved();weekPlanStatus.className="status ok";weekPlanStatus.textContent=`${added} trainingen toegevoegd aan de kalender.`;}
+
 async function loadServer(){
   try{
     const response=await fetch("/api/workouts");
@@ -2212,6 +2272,9 @@ document.getElementById("duplicateModal").onclick=event=>{
 
 
 document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
+document.getElementById("planMyWeek").onclick=generatePersonalWeek;
+document.getElementById("saveWeekPlan").onclick=savePersonalWeek;
+document.getElementById("profileForm").onsubmit=saveProfile;
 document.getElementById("raceForm").onsubmit=saveRace;
 document.getElementById("raceDistance").onchange=()=>{
   document.getElementById("customRaceDistanceLabel").hidden=
@@ -2224,6 +2287,8 @@ document.getElementById("greeting").textContent=
   (today.getHours()<12?"Goedemorgen":today.getHours()<18?"Goedemiddag":"Goedenavond")+" Jaco";
 
 setDefaultForm(ymd(today));
+fillProfileForm();
+renderProfileSummary();
 renderRaces();
 renderRaceOptions();
 loadWellnessDashboard();
