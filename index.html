@@ -2713,7 +2713,7 @@ function makeAdaptiveQuality(date,race,readiness,phase){
   const distance=Number(race?.distanceKm || 5);
 
   if(readiness.level==="low"){
-    const w=makePlannedDay(
+    const w=makeWeekWorkout(
       date,"easy",8,"Herstelduur met mobiliteit",
       ["8 km zeer rustig","10 minuten mobiliteit na afloop"],
       `Hersteltraining.
@@ -2727,7 +2727,7 @@ Recovery
   }
 
   if(phase.phase==="race-week"){
-    const w=makePlannedDay(
+    const w=makeWeekWorkout(
       date,"quality",7,"Wedstrijdprikkel",
       ["2 km inlopen","6 × 200 m ontspannen snel","200 m dribbel","2 km uitlopen"],
       `Korte wedstrijdprikkel.
@@ -2749,7 +2749,7 @@ Cooldown
 
   if(distance<=5){
     const reps=readiness.level==="good"?6:5;
-    const w=makePlannedDay(
+    const w=makeWeekWorkout(
       date,"quality",readiness.level==="good"?13:12,
       `${reps} × 1000 m VO₂max`,
       ["3 km inlopen",`${reps} × 1000 m @ ${paces.vo2}`,"2 min dribbel","2 km uitlopen"],
@@ -2772,7 +2772,7 @@ Cooldown
 
   if(distance<=10){
     const reps=readiness.level==="good"?4:3;
-    const w=makePlannedDay(
+    const w=makeWeekWorkout(
       date,"quality",readiness.level==="good"?15:13,
       `${reps} × 2 km drempel`,
       ["3 km inlopen",`${reps} × 2 km @ ${paces.threshold}`,"2 min dribbel","2 km uitlopen"],
@@ -2795,7 +2795,7 @@ Cooldown
 
   const reps=readiness.level==="good"?3:2;
   const blockKm=3;
-  const w=makePlannedDay(
+  const w=makeWeekWorkout(
     date,"quality",reps===3?15:12,
     `${reps} × ${blockKm} km wedstrijdspecifiek`,
     ["3 km inlopen",`${reps} × ${blockKm} km rond wedstrijdtempo`,"3 min dribbel","2 km uitlopen"],
@@ -2842,7 +2842,7 @@ function buildUnscheduledAdaptiveWeek(readiness,race,phase){
   const items=[quality];
 
   if(count>=3){
-    const long=makePlannedDay(
+    const long=makeWeekWorkout(
       nextMonday(),"long",longKm,`Lange duurloop ${longKm} km`,
       [`${longKm} km rustig`,`Hartslag bij voorkeur onder ${p.z2Hr} bpm`],
       `Lange rustige duurloop.
@@ -2862,7 +2862,7 @@ Easy
     const name=type==="recovery"?`Herstelloop ${km} km`:`Rustige duurloop ${km} km`;
     const pace=type==="recovery"?"5:10-5:35/km":"5:00-5:25/km";
 
-    const w=makePlannedDay(
+    const w=makeWeekWorkout(
       nextMonday(),type,km,name,
       [`${km} km rustig`,type==="recovery"?"Zeer lage inspanning":"Zone 2 aanhouden"],
       `${type==="recovery"?"Hersteltraining":"Rustige duurloop"}.
@@ -2970,7 +2970,24 @@ function saveAdaptiveWeek(){
     `${added} trainingen ingepland${skipped?` · ${skipped} dagen overgeslagen omdat daar al iets stond`:""}.`;
 }
 
-function defaultProfile(){return{name:"Jaco",days:4,weeklyKm:60,maxKm:70,fiveKPr:"18:16",fiveKGoal:"17:59",tenKPr:"38:03",halfGoal:"1:19:59",maxHr:185,z2Hr:145};}
+function defaultProfile(){
+  return{
+    name:"Jaco",
+    days:4,
+    weeklyKm:60,
+    maxKm:70,
+    fiveKPr:"18:16",
+    fiveKGoal:"17:59",
+    tenKPr:"38:03",
+    halfGoal:"1:19:59",
+    maxHr:185,
+    z2Hr:145,
+    qualityGap:2,
+    longRunDay:5,
+    autoCore:true,
+    availability:defaultAvailability()
+  };
+}
 function getProfile(){return{...defaultProfile(),...profile};}
 
 function fillPlanningForm(){
@@ -3049,7 +3066,27 @@ function preferenceLabel(value){
 }
 
 function fillProfileForm(){const p=getProfile();profileName.value=p.name;profileDays.value=String(p.days);profileWeeklyKm.value=p.weeklyKm;profileMaxKm.value=p.maxKm;profileFiveKPr.value=p.fiveKPr;profileFiveKGoal.value=p.fiveKGoal;profileTenKPr.value=p.tenKPr;profileHalfGoal.value=p.halfGoal;profileMaxHr.value=p.maxHr;profileZ2Hr.value=p.z2Hr;renderProfileSummary();}
-function saveProfile(e){e.preventDefault();profile={name:safe(profileName.value).trim()||"Jaco",days:Number(profileDays.value),weeklyKm:Number(profileWeeklyKm.value),maxKm:Number(profileMaxKm.value),fiveKPr:safe(profileFiveKPr.value).trim(),fiveKGoal:safe(profileFiveKGoal.value).trim(),tenKPr:safe(profileTenKPr.value).trim(),halfGoal:safe(profileHalfGoal.value).trim(),maxHr:Number(profileMaxHr.value),z2Hr:Number(profileZ2Hr.value)};saveObject(PROFILE_KEY,profile);profileStatus.className="status ok";profileStatus.textContent="Profiel opgeslagen.";renderProfileSummary();}
+function saveProfile(e){
+  e.preventDefault();
+  const current=getProfile();
+  profile={
+    ...current,
+    name:safe(profileName.value).trim()||"Jaco",
+    days:Number(profileDays.value),
+    weeklyKm:Number(profileWeeklyKm.value),
+    maxKm:Number(profileMaxKm.value),
+    fiveKPr:safe(profileFiveKPr.value).trim(),
+    fiveKGoal:safe(profileFiveKGoal.value).trim(),
+    tenKPr:safe(profileTenKPr.value).trim(),
+    halfGoal:safe(profileHalfGoal.value).trim(),
+    maxHr:Number(profileMaxHr.value),
+    z2Hr:Number(profileZ2Hr.value)
+  };
+  saveObject(PROFILE_KEY,profile);
+  profileStatus.className="status ok";
+  profileStatus.textContent="Profiel opgeslagen.";
+  renderProfileSummary();
+}
 function renderProfileSummary(){const p=getProfile();summaryDays.textContent=p.days;summaryKm.textContent=`${p.weeklyKm} km`;summaryFiveK.textContent=p.fiveKGoal||"—";summaryHalf.textContent=p.halfGoal||"—";}
 function nextMonday(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day+7);return ymd(d);}
 function raceForPlanner(){return Object.values(races).filter(r=>daysUntil(r.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0]||null;}
@@ -3123,7 +3160,19 @@ document.getElementById("duplicateModal").onclick=event=>{
 
 
 document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
-document.getElementById("buildAdaptiveWeek").onclick=buildAdaptiveWeek;
+document.getElementById("buildAdaptiveWeek").onclick=()=>{
+  const status=document.getElementById("adaptiveWeekStatus");
+  try{
+    buildAdaptiveWeek();
+  }catch(error){
+    console.error(error);
+    status.className="status error";
+    status.textContent=`Voorstel kon niet worden gemaakt: ${error.message}`;
+    document.getElementById("adaptiveCoachHeadline").textContent="Er ging iets mis";
+    document.getElementById("adaptiveCoachReason").textContent=
+      "Controleer je Planning, Profiel en Wedstrijden en probeer het opnieuw.";
+  }
+};
 document.getElementById("saveAdaptiveWeek").onclick=saveAdaptiveWeek;
 document.getElementById("planMyWeek").onclick=generatePersonalWeek;
 document.getElementById("saveWeekPlan").onclick=savePersonalWeek;
