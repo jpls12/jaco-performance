@@ -32,7 +32,7 @@
       border-radius:20px;padding:17px;margin:13px 0;
       box-shadow:0 14px 40px rgba(0,0,0,.18)
     }
-    .tabs{display:grid;grid-template-columns:repeat(7,1fr);gap:9px;margin:17px 0}
+    .tabs{display:grid;grid-template-columns:repeat(8,1fr);gap:9px;margin:17px 0}
     button{
       border:0;border-radius:13px;padding:13px;background:var(--green);
       color:#062311;font-size:.96rem;font-weight:850;cursor:pointer
@@ -137,6 +137,59 @@
     .week-plan-row strong{display:block}.week-plan-row small{color:var(--muted)}
     .readiness-badge{padding:6px 9px;border-radius:999px;font-size:.76rem;font-weight:800;background:#173d2a;color:#9ce7b5;border:1px solid #2f6d49}
 
+
+    .hero-score{
+      display:grid;grid-template-columns:130px 1fr;gap:18px;align-items:center
+    }
+    .score-ring{
+      width:126px;height:126px;border-radius:50%;
+      display:grid;place-items:center;
+      background:conic-gradient(var(--green) calc(var(--score)*1%),#1b2b40 0);
+      position:relative
+    }
+    .score-ring::before{
+      content:"";position:absolute;inset:12px;border-radius:50%;
+      background:#0d1928;border:1px solid #29415e
+    }
+    .score-ring strong,.score-ring small{position:relative;z-index:1}
+    .score-ring strong{font-size:2.15rem;line-height:1}
+    .score-ring small{display:block;color:var(--muted);text-align:center}
+    .today-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+    .today-metric{
+      background:#0d1928;border:1px solid #223650;border-radius:14px;padding:12px
+    }
+    .today-metric span{display:block;color:var(--muted);font-size:.75rem}
+    .today-metric strong{display:block;margin-top:5px;font-size:1.15rem}
+    .reason-list{display:grid;gap:8px;margin:14px 0}
+    .reason-item{
+      display:flex;gap:10px;align-items:flex-start;
+      background:#0d1928;border:1px solid #223650;border-radius:12px;padding:11px
+    }
+    .reason-icon{
+      width:25px;height:25px;border-radius:50%;display:grid;place-items:center;
+      flex:0 0 25px;font-size:.75rem;font-weight:900
+    }
+    .reason-icon.good{background:#173d2a;color:#9ce7b5}
+    .reason-icon.warn{background:#4a3b20;color:#ffe0a4}
+    .reason-icon.bad{background:#4a2027;color:#ffd9df}
+    .recommendation-card{
+      background:linear-gradient(135deg,#13263d,#173624);
+      border:1px solid #376148;border-radius:18px;padding:16px;margin-top:14px
+    }
+    .recommendation-title{font-size:1.45rem;font-weight:900;margin:7px 0}
+    .v2-badge{
+      display:inline-flex;padding:6px 10px;border-radius:999px;
+      background:#153454;border:1px solid #3c6f9c;color:#a9d7ff;
+      font-size:.75rem;font-weight:900
+    }
+    .today-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+    @media(max-width:650px){
+      .hero-score{grid-template-columns:1fr;text-align:center}
+      .score-ring{margin:auto}
+      .today-grid{grid-template-columns:1fr}
+      .today-actions{grid-template-columns:1fr}
+    }
+
     .adaptive-tag{
       display:inline-flex;align-items:center;gap:6px;padding:6px 9px;
       border-radius:999px;font-size:.76rem;font-weight:850
@@ -217,7 +270,8 @@
   <p class="subtitle" id="greeting">Hallo Jaco</p>
 
   <nav class="tabs">
-    <button class="tab active" data-view="dashboard">Dashboard</button>
+    <button class="tab active" data-view="today">Vandaag</button>
+    <button class="tab" data-view="dashboard">Dashboard</button>
     <button class="tab" data-view="calendar">Kalender</button>
     <button class="tab" data-view="editor">Nieuwe training</button>
     <button class="tab" data-view="saved">Mijn trainingen</button>
@@ -227,7 +281,73 @@
   </nav>
 
 
-  <section id="dashboard" class="view active">
+
+  <section id="today" class="view active">
+    <article class="card">
+      <span class="v2-badge">Jaco Performance 2.0</span>
+      <p class="label" style="margin-top:14px">Dagelijkse coach</p>
+
+      <div class="hero-score">
+        <div class="score-ring" id="coachScoreRing" style="--score:70">
+          <div>
+            <strong id="coachScore">70</strong>
+            <small>coachscore</small>
+          </div>
+        </div>
+
+        <div>
+          <h2 id="todayHeadline">Je coach wordt voorbereid…</h2>
+          <p class="help" id="todaySummary">
+            Hersteldata, planning en wedstrijdfocus worden gecombineerd.
+          </p>
+        </div>
+      </div>
+
+      <div class="today-grid">
+        <div class="today-metric">
+          <span>Beschikbaarheid</span>
+          <strong id="todayAvailability">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Wedstrijdfocus</span>
+          <strong id="todayRace">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Trainingsfase</span>
+          <strong id="todayPhase">—</strong>
+        </div>
+      </div>
+
+      <div id="todayReasons" class="reason-list">
+        <div class="reason-item"><div class="reason-icon warn">…</div><div>Data wordt geladen.</div></div>
+      </div>
+
+      <div class="recommendation-card">
+        <p class="label">Advies voor vandaag</p>
+        <div class="recommendation-title" id="todayRecommendationTitle">Nog geen advies</div>
+        <p class="help" id="todayRecommendationText">
+          De coach wacht op actuele wellnessdata.
+        </p>
+        <ul class="steps" id="todayRecommendationSteps"></ul>
+      </div>
+
+      <div class="today-actions">
+        <button id="refreshTodayCoach" class="secondary" type="button">Vernieuw coach</button>
+        <button id="applyTodayAdvice" type="button" disabled>Plan advies voor vandaag</button>
+      </div>
+
+      <p id="todayStatus" class="status"></p>
+    </article>
+
+    <article class="card">
+      <p class="label">Wat staat er al?</p>
+      <div id="todayCurrentWorkout">
+        <p class="help">Kalender wordt gecontroleerd…</p>
+      </div>
+    </article>
+  </section>
+
+  <section id="dashboard" class="view">
     <article class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
         <div>
@@ -712,6 +832,7 @@ let profile = loadObject(PROFILE_KEY);
 let pendingWeekPlan = [];
 let pendingAdaptiveWeek = [];
 let latestWellnessSnapshot = null;
+let pendingTodayAdvice = null;
 
 const today = new Date();
 let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -2291,6 +2412,8 @@ function renderWellnessDashboard(data){
   const advice=buildCoachAdvice(latest,averages);
   document.getElementById("coachHeadline").textContent=advice.headline;
   document.getElementById("coachAdvice").textContent=advice.advice;
+  renderTodayCoach();
+
   document.getElementById("dashboardUpdated").textContent=
     `Bijgewerkt met Intervals.icu-data t/m ${latest.id || latest.date || "vandaag"}.`;
 
@@ -2610,6 +2733,285 @@ function scheduleByAvailability(workouts){
   return scheduled.sort((a,b)=>a.date.localeCompare(b.date));
 }
 
+
+
+function todayAvailabilityInfo(){
+  const p=getProfile();
+  const availability={...defaultAvailability(),...(p.availability||{})};
+  const jsDay=new Date().getDay();
+  const mondayIndex=(jsDay+6)%7;
+  const key=DAY_KEYS[mondayIndex];
+  return {key,index:mondayIndex,...availability[key]};
+}
+
+function todayDateString(){
+  return ymd(new Date());
+}
+
+function currentTodayWorkout(){
+  return allWorkouts()[todayDateString()] || null;
+}
+
+function phaseLabel(phase){
+  const labels={
+    "race-week":"Wedstrijdweek",
+    taper:"Taper",
+    specific:"Wedstrijdspecifiek",
+    build:"Opbouw",
+    general:"Algemene training"
+  };
+  return labels[phase] || phase;
+}
+
+function createTodayRecommendation(readiness,race,phase,availability,currentWorkout){
+  const date=todayDateString();
+
+  if(!availability.available){
+    return{
+      kind:"rest",
+      workout:null,
+      title:"Rustdag",
+      text:"Vandaag staat als niet beschikbaar ingesteld. Herstel, slaap en eventueel korte mobiliteit hebben prioriteit.",
+      steps:["10–15 minuten mobiliteit indien gewenst","Geen verplichte training"]
+    };
+  }
+
+  if(readiness.level==="low"){
+    const minutes=Math.min(availability.maxMinutes||45,45);
+    const km=Math.max(5,Math.min(8,Math.round(minutes/5.5)));
+    const workout=makeWeekWorkout(
+      date,"recovery",km,`Herstelloop ${km} km`,
+      [`${km} km zeer rustig`,`Hartslag onder ${getProfile().z2Hr} bpm`,`Stop bij zwaar gevoel`],
+      `Hersteltraining.
+
+Recovery
+- ${km}km 5:10-5:35/km Pace`,
+      "2/10"
+    );
+    workout.planType="recovery";
+    return{
+      kind:"replace",
+      workout,
+      title:`Herstelloop ${km} km`,
+      text:"De hersteldata geeft meerdere signalen om intensiteit te beperken. Vandaag bouw je vooral herstel op.",
+      steps:workout.displaySteps
+    };
+  }
+
+  if(availability.preference==="core"){
+    const mins=Math.min(availability.maxMinutes||20,25);
+    const workout=makeCoreWorkout(date,mins,availability.priority||"could");
+    return{
+      kind:"new",
+      workout,
+      title:workout.name,
+      text:"Je beschikbaarheid is vandaag ingesteld op core. Dit ondersteunt loopstabiliteit zonder extra loopbelasting.",
+      steps:workout.displaySteps
+    };
+  }
+
+  if(availability.preference==="mobiliteit"){
+    const workout={
+      date,type:"Mobility",distanceKm:0,durationMinutes:Math.min(availability.maxMinutes||20,25),
+      name:"Mobiliteit en herstel",uploadName:"Jaco - Mobiliteit en herstel",
+      rpe:"2/10",status:"planned",priority:availability.priority||"could",
+      planType:"mobility",
+      displaySteps:["Heupmobiliteit 5 min","Enkelmobiliteit 5 min","Hamstring en bilspieren 5 min","Rustig foamrollen 5 min"],
+      intervalsDescription:"Mobiliteit en herstel."
+    };
+    return{
+      kind:"new",workout,title:workout.name,
+      text:"Een lichte mobiliteitssessie past vandaag het beste bij je ingestelde voorkeur.",
+      steps:workout.displaySteps
+    };
+  }
+
+  if(currentWorkout && readiness.level!=="low"){
+    return{
+      kind:"keep",
+      workout:currentWorkout,
+      title:currentWorkout.name,
+      text:"De geplande training past bij je herstelstatus. Voer hem uit zoals gepland en gebruik je gevoel als laatste controle.",
+      steps:currentWorkout.displaySteps||[]
+    };
+  }
+
+  const generated=makeAdaptiveQuality(date,race,readiness,phase);
+
+  if(!["kwaliteit","drempel"].includes(availability.preference) && generated.planType==="quality"){
+    const minutes=Math.min(availability.maxMinutes||60,70);
+    const km=Math.max(6,Math.min(12,Math.round(minutes/5.2)));
+    const easy=makeWeekWorkout(
+      date,"easy",km,`Rustige duurloop ${km} km`,
+      [`${km} km zone 2`,`Hartslag onder circa ${getProfile().z2Hr} bpm`],
+      `Rustige duurloop.
+
+Easy
+- ${km}km 5:00-5:25/km Pace`,
+      "3/10"
+    );
+    easy.planType="easy";
+    return{
+      kind:"new",workout:easy,title:easy.name,
+      text:"Je dagvoorkeur is geen kwaliteitstraining. De coach kiest daarom een rustige duurloop.",
+      steps:easy.displaySteps
+    };
+  }
+
+  const fitted=fitWorkoutToDay(generated,availability);
+  fitted.date=date;
+  fitted.priority=availability.priority||"should";
+  fitted.preferredDaypart=availability.daypart||"flexibel";
+
+  return{
+    kind:"new",
+    workout:fitted,
+    title:fitted.name,
+    text:`Deze training past bij je ${phaseLabel(phase.phase).toLowerCase()}, herstelstatus en beschikbare tijd.`,
+    steps:fitted.displaySteps||[]
+  };
+}
+
+function renderCurrentTodayWorkout(workout){
+  const box=document.getElementById("todayCurrentWorkout");
+  if(!workout){
+    box.innerHTML='<p class="help">Er staat vandaag nog geen training in je kalender.</p>';
+    return;
+  }
+
+  box.innerHTML=`
+    <div class="saved-row">
+      <div class="saved-row-top">
+        <div>
+          <strong>${safe(workout.name)}</strong>
+          <small>${safe(workout.type||"Run")} · ${workout.distanceKm ? `${workout.distanceKm} km` : `${workout.durationMinutes||0} min`} · RPE ${safe(workout.rpe||"—")}</small>
+        </div>
+        <span class="pill">${customWorkouts[todayDateString()]?"EIGEN":"SCHEMA"}</span>
+      </div>
+    </div>`;
+}
+
+function renderTodayCoach(){
+  const snapshot=getWellnessSnapshot();
+  const readiness=determineReadiness(snapshot);
+  const race=getRaceFocus();
+  const phase=classifyRacePhase(race);
+  const availability=todayAvailabilityInfo();
+  const existing=currentTodayWorkout();
+
+  pendingTodayAdvice=createTodayRecommendation(readiness,race,phase,availability,existing);
+
+  document.getElementById("coachScore").textContent=readiness.score;
+  document.getElementById("coachScoreRing").style.setProperty("--score",readiness.score);
+
+  let headline="Train volgens plan";
+  if(readiness.level==="good") headline="Je bent klaar om te trainen";
+  if(readiness.level==="moderate") headline="Vandaag gecontroleerd trainen";
+  if(readiness.level==="low") headline="Herstel heeft vandaag prioriteit";
+  document.getElementById("todayHeadline").textContent=headline;
+
+  const reasons=readiness.reasons.length
+    ? readiness.reasons.join(", ")
+    : "geen duidelijke negatieve herstelsignalen";
+  document.getElementById("todaySummary").textContent=
+    `Coachscore ${readiness.score}/100: ${reasons}.`;
+
+  document.getElementById("todayAvailability").textContent=availability.available
+    ? `${availability.maxMinutes} min · ${availability.daypart}`
+    : "Niet beschikbaar";
+  document.getElementById("todayRace").textContent=race
+    ? `${race.name} · ${daysUntil(race.date)} d`
+    : "Geen wedstrijd";
+  document.getElementById("todayPhase").textContent=phaseLabel(phase.phase);
+
+  const reasonRows=[];
+  reasonRows.push({
+    cls:availability.available?"good":"warn",
+    icon:availability.available?"✓":"—",
+    text:availability.available
+      ? `Beschikbaar voor maximaal ${availability.maxMinutes} minuten (${availability.daypart}).`
+      : "Vandaag staat als rustdag of niet beschikbaar ingesteld."
+  });
+
+  reasonRows.push({
+    cls:readiness.level==="good"?"good":readiness.level==="moderate"?"warn":"bad",
+    icon:readiness.level==="good"?"✓":readiness.level==="moderate"?"!":"×",
+    text:`Herstelniveau: ${readiness.level} (${readiness.score}/100).`
+  });
+
+  if(race){
+    reasonRows.push({
+      cls:phase.phase==="race-week"?"warn":"good",
+      icon:"🏁",
+      text:`${race.name} is over ${phase.days} dagen; fase: ${phaseLabel(phase.phase)}.`
+    });
+  }
+
+  document.getElementById("todayReasons").innerHTML=reasonRows.map(row=>`
+    <div class="reason-item">
+      <div class="reason-icon ${row.cls}">${row.icon}</div>
+      <div>${safe(row.text)}</div>
+    </div>`).join("");
+
+  document.getElementById("todayRecommendationTitle").textContent=pendingTodayAdvice.title;
+  document.getElementById("todayRecommendationText").textContent=pendingTodayAdvice.text;
+  document.getElementById("todayRecommendationSteps").innerHTML=
+    (pendingTodayAdvice.steps||[]).map((step,index)=>`
+      <li><span class="step">${index+1}</span><span>${safe(step)}</span></li>`
+    ).join("");
+
+  const apply=document.getElementById("applyTodayAdvice");
+  apply.disabled=!pendingTodayAdvice.workout || pendingTodayAdvice.kind==="keep";
+  apply.textContent=pendingTodayAdvice.kind==="replace" && existing
+    ? "Vervang training van vandaag"
+    : pendingTodayAdvice.kind==="keep"
+      ? "Training staat al goed"
+      : "Plan advies voor vandaag";
+
+  renderCurrentTodayWorkout(existing);
+}
+
+function applyTodayRecommendation(){
+  if(!pendingTodayAdvice?.workout) return;
+
+  const date=todayDateString();
+  const existing=customWorkouts[date];
+
+  if(existing && !confirm(`De bestaande training "${existing.name}" vervangen?`)){
+    return;
+  }
+
+  const workout=JSON.parse(JSON.stringify(pendingTodayAdvice.workout));
+  workout.date=date;
+  customWorkouts[date]=workout;
+  saveObject(STORAGE_KEY,customWorkouts);
+
+  renderMonth();
+  renderSelected();
+  renderSaved();
+  renderTodayCoach();
+
+  const status=document.getElementById("todayStatus");
+  status.className="status ok";
+  status.textContent=`${workout.name} is toegevoegd aan vandaag.`;
+}
+
+async function refreshTodayCoach(){
+  const status=document.getElementById("todayStatus");
+  status.className="status";
+  status.textContent="Hersteldata wordt vernieuwd…";
+
+  try{
+    await loadWellnessDashboard();
+    renderTodayCoach();
+    status.className="status ok";
+    status.textContent="Coachadvies is bijgewerkt.";
+  }catch(error){
+    renderTodayCoach();
+    status.className="status error";
+    status.textContent=`Wellnessdata kon niet volledig worden vernieuwd: ${error.message}`;
+  }
+}
 
 function getWellnessSnapshot(){
   const ctl=numberOrNull(document.getElementById("metricCtl")?.textContent);
@@ -3159,6 +3561,8 @@ document.getElementById("duplicateModal").onclick=event=>{
 };
 
 
+document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
+document.getElementById("applyTodayAdvice").onclick=applyTodayRecommendation;
 document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
 document.getElementById("buildAdaptiveWeek").onclick=()=>{
   const status=document.getElementById("adaptiveWeekStatus");
@@ -3196,6 +3600,7 @@ renderProfileSummary();
 renderRaces();
 renderRaceOptions();
 loadWellnessDashboard();
+renderTodayCoach();
 loadServer();
 </script>
 </body>
