@@ -107,6 +107,27 @@
 
 
 
+
+    .availability-grid{display:grid;gap:10px;margin-top:14px}
+    .availability-row{
+      display:grid;
+      grid-template-columns:110px 95px 115px 1fr 120px;
+      gap:10px;
+      align-items:end;
+      background:#0d1928;
+      border:1px solid #223650;
+      border-radius:14px;
+      padding:12px
+    }
+    .availability-day{font-weight:900;padding-bottom:11px}
+    .availability-row label{font-size:.78rem}
+    .availability-row input[type="checkbox"]{
+      width:24px;height:24px;margin-bottom:10px
+    }
+    .priority-must{color:#ff9494}
+    .priority-should{color:#ffd697}
+    .priority-could{color:#9ce7b5}
+
     .profile-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
     .profile-chip{background:#0d1928;border:1px solid #223650;border-radius:14px;padding:12px}
     .profile-chip span{display:block;color:var(--muted);font-size:.75rem}
@@ -159,6 +180,10 @@
     .modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
 
     @media(max-width:650px){
+      .availability-row{
+        grid-template-columns:1fr 1fr;
+      }
+      .availability-day{grid-column:1/-1;padding-bottom:0}
       .tabs{grid-template-columns:1fr}
       .grid2{grid-template-columns:1fr}
       .day{min-height:61px;padding:6px}
@@ -542,6 +567,49 @@
         <div class="grid2"><label>5 km PR<input id="profileFiveKPr" type="text" value="18:16"></label><label>5 km-doel<input id="profileFiveKGoal" type="text" value="17:59"></label></div>
         <div class="grid2"><label>10 km PR<input id="profileTenKPr" type="text" value="38:03"></label><label>Halve marathon-doel<input id="profileHalfGoal" type="text" value="1:19:59"></label></div>
         <div class="grid2"><label>Maximale hartslag<input id="profileMaxHr" type="number" min="120" max="230" value="185"></label><label>Zone 2 bovengrens<input id="profileZ2Hr" type="number" min="90" max="190" value="145"></label></div>
+        
+        <div class="section">
+          <p class="label">Beschikbaarheid per dag</p>
+          <h3>Wanneer kun je trainen?</h3>
+          <p class="help">
+            De weekplanner gebruikt alleen dagen die je hier beschikbaar maakt.
+          </p>
+
+          <div id="availabilityEditor" class="availability-grid"></div>
+        </div>
+
+        <div class="section">
+          <p class="label">Planningsregels</p>
+
+          <div class="grid2">
+            <label>Minimum rust tussen kwaliteitstrainingen
+              <select id="profileQualityGap">
+                <option value="1">Minimaal 1 dag</option>
+                <option value="2" selected>Minimaal 2 dagen</option>
+                <option value="3">Minimaal 3 dagen</option>
+              </select>
+            </label>
+
+            <label>Voorkeur lange duur
+              <select id="profileLongRunDay">
+                <option value="">Automatisch</option>
+                <option value="0">Maandag</option>
+                <option value="1">Dinsdag</option>
+                <option value="2">Woensdag</option>
+                <option value="3">Donderdag</option>
+                <option value="4">Vrijdag</option>
+                <option value="5" selected>Zaterdag</option>
+                <option value="6">Zondag</option>
+              </select>
+            </label>
+          </div>
+
+          <label class="switchrow">
+            <span>Core automatisch toevoegen na een rustige loopdag</span>
+            <input id="profileAutoCore" type="checkbox" checked>
+          </label>
+        </div>
+
         <button type="submit">Profiel opslaan</button><p id="profileStatus" class="status"></p>
       </form>
     </article>
@@ -2194,6 +2262,284 @@ async function loadWellnessDashboard(){
   }
 }
 
+
+
+const DAY_NAMES=["Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag","Zondag"];
+const DAY_KEYS=["mon","tue","wed","thu","fri","sat","sun"];
+
+function defaultAvailability(){
+  return{
+    mon:{available:false,maxMinutes:0,daypart:"avond",preference:"rust",priority:"could"},
+    tue:{available:true,maxMinutes:75,daypart:"avond",preference:"kwaliteit",priority:"must"},
+    wed:{available:true,maxMinutes:50,daypart:"ochtend",preference:"rustig",priority:"should"},
+    thu:{available:false,maxMinutes:0,daypart:"avond",preference:"rust",priority:"could"},
+    fri:{available:true,maxMinutes:70,daypart:"avond",preference:"kwaliteit",priority:"must"},
+    sat:{available:true,maxMinutes:150,daypart:"ochtend",preference:"lange-duur",priority:"must"},
+    sun:{available:true,maxMinutes:60,daypart:"ochtend",preference:"herstel",priority:"should"}
+  };
+}
+
+function availabilityPreferenceOptions(selected){
+  const options=[
+    ["rust","Rust"],
+    ["kwaliteit","Interval / kwaliteit"],
+    ["rustig","Rustige duurloop"],
+    ["drempel","Tempo / drempel"],
+    ["lange-duur","Lange duurloop"],
+    ["herstel","Herstel"],
+    ["core","Core"],
+    ["mobiliteit","Mobiliteit"]
+  ];
+  return options.map(([value,label])=>
+    `<option value="${value}" ${selected===value?"selected":""}>${label}</option>`
+  ).join("");
+}
+
+function priorityOptions(selected){
+  return[
+    ["must","Must"],
+    ["should","Should"],
+    ["could","Could"]
+  ].map(([value,label])=>
+    `<option value="${value}" ${selected===value?"selected":""}>${label}</option>`
+  ).join("");
+}
+
+function renderAvailabilityEditor(){
+  const p=getProfile();
+  const availability={...defaultAvailability(),...(p.availability||{})};
+  const editor=document.getElementById("availabilityEditor");
+  if(!editor) return;
+
+  editor.innerHTML=DAY_KEYS.map((key,index)=>{
+    const day=availability[key] || defaultAvailability()[key];
+    return `
+      <div class="availability-row">
+        <div class="availability-day">${DAY_NAMES[index]}</div>
+
+        <label>Beschikbaar
+          <input id="avail-${key}" type="checkbox" ${day.available?"checked":""}
+            onchange="toggleAvailabilityRow('${key}')">
+        </label>
+
+        <label>Max. minuten
+          <input id="minutes-${key}" type="number" min="0" max="300" step="5"
+            value="${day.maxMinutes||0}" ${day.available?"":"disabled"}>
+        </label>
+
+        <label>Voorkeur
+          <select id="preference-${key}" ${day.available?"":"disabled"}>
+            ${availabilityPreferenceOptions(day.preference)}
+          </select>
+        </label>
+
+        <label>Prioriteit
+          <select id="priority-${key}" ${day.available?"":"disabled"}>
+            ${priorityOptions(day.priority)}
+          </select>
+        </label>
+
+        <label>Moment
+          <select id="daypart-${key}" ${day.available?"":"disabled"}>
+            <option value="ochtend" ${day.daypart==="ochtend"?"selected":""}>Ochtend</option>
+            <option value="middag" ${day.daypart==="middag"?"selected":""}>Middag</option>
+            <option value="avond" ${day.daypart==="avond"?"selected":""}>Avond</option>
+            <option value="flexibel" ${day.daypart==="flexibel"?"selected":""}>Flexibel</option>
+          </select>
+        </label>
+      </div>`;
+  }).join("");
+}
+
+function toggleAvailabilityRow(key){
+  const available=document.getElementById(`avail-${key}`).checked;
+  ["minutes","preference","priority","daypart"].forEach(prefix=>{
+    document.getElementById(`${prefix}-${key}`).disabled=!available;
+  });
+
+  if(!available){
+    document.getElementById(`minutes-${key}`).value=0;
+  }else if(Number(document.getElementById(`minutes-${key}`).value)===0){
+    document.getElementById(`minutes-${key}`).value=60;
+  }
+}
+
+function readAvailabilityForm(){
+  return Object.fromEntries(DAY_KEYS.map(key=>[
+    key,{
+      available:document.getElementById(`avail-${key}`).checked,
+      maxMinutes:Number(document.getElementById(`minutes-${key}`).value||0),
+      preference:document.getElementById(`preference-${key}`).value,
+      priority:document.getElementById(`priority-${key}`).value,
+      daypart:document.getElementById(`daypart-${key}`).value
+    }
+  ]));
+}
+
+function availableDaysForPlanner(){
+  const p=getProfile();
+  const availability={...defaultAvailability(),...(p.availability||{})};
+
+  return DAY_KEYS.map((key,index)=>({
+    key,
+    index,
+    ...availability[key]
+  })).filter(day=>day.available);
+}
+
+function workoutDurationEstimate(type,km){
+  if(type==="core" || type==="mobiliteit") return Math.max(10,Math.round(km));
+  if(type==="quality") return Math.round(km*5+15);
+  if(type==="long") return Math.round(km*5);
+  return Math.round(km*5.2);
+}
+
+function fitWorkoutToDay(workout,day){
+  const maxMinutes=Number(day.maxMinutes||0);
+  if(!maxMinutes) return workout;
+
+  const estimated=workoutDurationEstimate(workout.planType||"easy",workout.distanceKm);
+  if(estimated<=maxMinutes) return workout;
+
+  const factor=Math.max(0.55,maxMinutes/estimated);
+  const copy=JSON.parse(JSON.stringify(workout));
+
+  if(copy.planType==="quality"){
+    const reducedKm=Math.max(7,Math.round(copy.distanceKm*factor));
+    copy.distanceKm=reducedKm;
+    copy.name=`Verkorte ${copy.name}`;
+    copy.displaySteps=[
+      `Training ingekort tot maximaal ${maxMinutes} minuten`,
+      ...copy.displaySteps.slice(0,2)
+    ];
+  }else if(copy.planType==="long"){
+    copy.distanceKm=Math.max(10,Math.round(copy.distanceKm*factor));
+    copy.name=`Lange duurloop ${copy.distanceKm} km`;
+    copy.displaySteps=[`${copy.distanceKm} km rustig lopen`];
+    copy.intervalsDescription=`Lange rustige duurloop.
+
+Easy
+- ${copy.distanceKm}km 4:55-5:20/km Pace`;
+  }else{
+    copy.distanceKm=Math.max(5,Math.round(copy.distanceKm*factor));
+    copy.name=copy.planType==="recovery"
+      ? `Herstelloop ${copy.distanceKm} km`
+      : `Rustige duurloop ${copy.distanceKm} km`;
+    copy.displaySteps=[`${copy.distanceKm} km rustig lopen`];
+    copy.intervalsDescription=`Rustige training.
+
+Easy
+- ${copy.distanceKm}km 5:00-5:30/km Pace`;
+  }
+
+  return copy;
+}
+
+function makeCoreWorkout(date,minutes=15,priority="could"){
+  return{
+    date,
+    type:"Core",
+    distanceKm:0,
+    durationMinutes:minutes,
+    name:`Core ${minutes} minuten`,
+    uploadName:`Jaco - Core ${minutes} minuten`,
+    rpe:"4/10",
+    status:"planned",
+    priority,
+    planType:"core",
+    displaySteps:[
+      "3 × 40 sec plank",
+      "3 × 10 dead bug per zijde",
+      "3 × 10 bird dog per zijde",
+      "3 × 30 sec side plank per zijde",
+      "3 × 12 glute bridge"
+    ],
+    intervalsDescription:`Coretraining ${minutes} minuten.
+
+- Plank
+- Dead bug
+- Bird dog
+- Side plank
+- Glute bridge`
+  };
+}
+
+function scheduleByAvailability(workouts){
+  const days=availableDaysForPlanner();
+  if(!days.length) return [];
+
+  const start=nextMonday();
+  const used=new Set();
+  const scheduled=[];
+
+  const preferredLong=Number(getProfile().longRunDay ?? 5);
+  const longDay=days.find(d=>d.index===preferredLong)
+    || days.find(d=>d.preference==="lange-duur")
+    || days[days.length-1];
+
+  const qualityDays=days
+    .filter(d=>["kwaliteit","drempel"].includes(d.preference))
+    .sort((a,b)=>
+      (a.priority==="must"?0:a.priority==="should"?1:2) -
+      (b.priority==="must"?0:b.priority==="should"?1:2)
+    );
+
+  const recoveryDays=days.filter(d=>d.preference==="herstel");
+  const easyDays=days.filter(d=>["rustig","core","mobiliteit"].includes(d.preference));
+
+  const pickDay=(type)=>{
+    if(type==="long" && longDay && !used.has(longDay.index)) return longDay;
+    if(type==="quality"){
+      const q=qualityDays.find(d=>!used.has(d.index));
+      if(q) return q;
+    }
+    if(type==="recovery"){
+      const r=recoveryDays.find(d=>!used.has(d.index));
+      if(r) return r;
+    }
+    return easyDays.find(d=>!used.has(d.index))
+      || days.find(d=>!used.has(d.index))
+      || null;
+  };
+
+  for(const workout of workouts){
+    const day=pickDay(workout.planType||"easy");
+    if(!day) continue;
+
+    used.add(day.index);
+    const date=addDays(start,day.index);
+    const fitted=fitWorkoutToDay({...workout,date},day);
+
+    fitted.date=date;
+    fitted.priority=day.priority;
+    fitted.preferredDaypart=day.daypart;
+    fitted.displaySteps=[
+      ...fitted.displaySteps,
+      `Voorkeursmoment: ${day.daypart}`,
+      `Prioriteit: ${day.priority.toUpperCase()}`
+    ];
+
+    scheduled.push(fitted);
+  }
+
+  const p=getProfile();
+  if(p.autoCore){
+    const coreDay=days.find(d=>
+      !used.has(d.index) && ["core","mobiliteit","rustig"].includes(d.preference)
+    );
+
+    if(coreDay){
+      const minutes=Math.min(20,Math.max(10,coreDay.maxMinutes||15));
+      scheduled.push(makeCoreWorkout(
+        addDays(start,coreDay.index),
+        minutes,
+        coreDay.priority
+      ));
+    }
+  }
+
+  return scheduled.sort((a,b)=>a.date.localeCompare(b.date));
+}
 
 function defaultProfile(){return{name:"Jaco",days:4,weeklyKm:60,maxKm:70,fiveKPr:"18:16",fiveKGoal:"17:59",tenKPr:"38:03",halfGoal:"1:19:59",maxHr:185,z2Hr:145};}
 function getProfile(){return{...defaultProfile(),...profile};}
