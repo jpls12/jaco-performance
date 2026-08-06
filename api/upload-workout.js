@@ -27,11 +27,25 @@ function validateCustomWorkout(input) {
   if (!name) {
     throw new Error("De training heeft geen naam.");
   }
-  if (!description || !description.includes("- ")) {
-    throw new Error("De Intervals.icu-opbouw van de training is ongeldig.");
+  if (!description) {
+    throw new Error("De beschrijving van de training ontbreekt.");
   }
-  if (type !== "Run") {
-    throw new Error("Sprint 5 ondersteunt voorlopig alleen hardlooptrainingen.");
+
+  if (["Core", "Mobility"].includes(type) && !description.includes("- ")) {
+    throw new Error(
+      "Core- en mobiliteitstrainingen moeten minimaal één oefening bevatten."
+    );
+  }
+
+  if (type === "Run" && !description.includes("- ")) {
+    throw new Error("De Intervals.icu-opbouw van de hardlooptraining is ongeldig.");
+  }
+  const allowedTypes = ["Run", "Core", "Mobility"];
+
+  if (!allowedTypes.includes(type)) {
+    throw new Error(
+      "Alleen hardlopen, core en mobiliteit kunnen momenteel worden geëxporteerd."
+    );
   }
 
   return {
@@ -41,6 +55,17 @@ function validateCustomWorkout(input) {
     type,
     intervalsDescription: description
   };
+}
+
+
+function intervalsEventType(type) {
+  const mapping = {
+    Run: "Run",
+    Core: "WeightTraining",
+    Mobility: "Yoga"
+  };
+
+  return mapping[type] || "Workout";
 }
 
 export default async function handler(req, res) {
@@ -98,7 +123,7 @@ export default async function handler(req, res) {
     start_date_local: `${workout.date}T00:00:00`,
     name: workout.uploadName || workout.name,
     description: workout.intervalsDescription,
-    type: workout.type || "Run",
+    type: intervalsEventType(workout.type || "Run"),
     external_id: `jaco-performance-${workout.date}-${Date.now()}`
   }];
 
@@ -143,7 +168,7 @@ export default async function handler(req, res) {
 
     return sendJson(res, 200, {
       ok: true,
-      message: "Workout toegevoegd aan Intervals.icu.",
+      message: "Training toegevoegd aan Intervals.icu.",
       workout: {
         date: workout.date,
         name: workout.uploadName || workout.name
