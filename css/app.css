@@ -477,3 +477,33 @@
       .generator-context-grid{grid-template-columns:1fr}
       .generator-alternatives{grid-template-columns:1fr}
     }
+
+
+    .ai-week-card{
+      background:linear-gradient(155deg,rgba(25,45,66,.98),rgba(15,31,49,.98));
+      border-color:#3b5f7f
+    }
+    .ai-week-plan{
+      display:grid;gap:10px;margin-top:14px
+    }
+    .ai-week-row{
+      display:grid;grid-template-columns:100px 1fr auto;gap:12px;align-items:center;
+      padding:13px;background:#0d1928;border:1px solid #29415e;border-radius:14px
+    }
+    .ai-week-row strong{display:block}
+    .ai-week-row small{display:block;color:var(--muted);margin-top:4px}
+    .ai-week-day{
+      font-weight:900;color:#d7e9fb
+    }
+    .ai-week-volume{
+      min-width:72px;text-align:center;padding:7px 9px;border-radius:999px;
+      background:#14283d;border:1px solid #355775;font-size:.78rem;font-weight:850
+    }
+    .ai-week-row.quality{border-color:#74404a}
+    .ai-week-row.long{border-color:#745f2f}
+    .ai-week-row.recovery{border-color:#315c49}
+    .ai-week-row.core,.ai-week-row.mobility{border-color:#594479}
+    @media(max-width:650px){
+      .ai-week-row{grid-template-columns:78px 1fr}
+      .ai-week-volume{grid-column:2;justify-self:start}
+    }
