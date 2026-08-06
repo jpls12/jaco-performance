@@ -2249,6 +2249,8 @@ function renderWellnessDashboard(data){
   document.getElementById("dashboardUpdated").textContent=
     `Bijgewerkt met Intervals.icu-data t/m ${latest.id || latest.date || "vandaag"}.`;
 
+  renderPerformanceEngine();
+
   const history=records.slice(-7).reverse();
   document.getElementById("wellnessHistory").innerHTML=history.length
     ? history.map(record=>{
@@ -3001,6 +3003,252 @@ function buildCoachHorizon(){
   `).join("");
 }
 
+
+function clampScore(value){
+  return Math.max(0,Math.min(100,Math.round(Number(value)||0)));
+}
+
+function dateDaysAgo(days){
+  const value=new Date();
+  value.setHours(0,0,0,0);
+  value.setDate(value.getDate()-days);
+  return value;
+}
+
+function calculateConsistencyScore(){
+  const cutoff=dateDaysAgo(28);
+  const todayValue=new Date();
+  todayValue.setHours(23,59,59,999);
+
+  const workouts=Object.entries({...serverWorkouts,...customWorkouts})
+    .filter(([date,workout])=>{
+      if(!workout || workout.type==="Race" || workout.type==="Rest") return false;
+      const parsed=new Date(date+"T12:00:00");
+      return parsed>=cutoff && parsed<=todayValue;
+    });
+
+  if(!workouts.length){
+    return{
+      score:60,
+      completed:0,
+      planned:0,
+      explanation:"Nog onvoldoende lokale trainingshistorie"
+    };
+  }
+
+  const completed=workouts.filter(([date,workout])=>
+    Boolean(doneWorkouts[date]) ||
+    workout.status==="done" ||
+    workout.status==="completed"
+  ).length;
+
+  const ratio=completed/workouts.length;
+  return{
+    score:clampScore(45+ratio*55),
+    completed,
+    planned:workouts.length,
+    explanation:`${completed} van ${workouts.length} trainingen lokaal als voltooid gemarkeerd`
+  };
+}
+
+function calculatePerformanceEngine(){
+  const snapshot=getWellnessSnapshot();
+  const readiness=determineReadiness(snapshot);
+  const race=getRaceFocus();
+  const phase=classifyRacePhase(race);
+  const consistency=calculateConsistencyScore();
+
+  const ctl=snapshot.ctl;
+  const atl=snapshot.atl;
+
+  const fitness=ctl===null
+    ? 55
+    : clampScore(35+(ctl/70)*55);
+
+  let loadRatio=null;
+  let fatigue=65;
+  if(ctl!==null && ctl>0 && atl!==null){
+    loadRatio=atl/ctl;
+    if(loadRatio<0.65) fatigue=74;
+    else if(loadRatio<=1.05) fatigue=92;
+    else if(loadRatio<=1.25) fatigue=78;
+    else if(loadRatio<=1.45) fatigue=58;
+    else fatigue=35;
+  }
+
+  const recovery=clampScore(readiness.score);
+
+  let phaseScore=62;
+  if(phase.phase==="specific") phaseScore=78;
+  if(phase.phase==="taper") phaseScore=88;
+  if(phase.phase==="race-week") phaseScore=90;
+  if(!race) phaseScore=58;
+
+  let raceReadiness=clampScore(
+    fitness*0.32+
+    recovery*0.30+
+    consistency.score*0.23+
+    phaseScore*0.15
+  );
+
+  if(race && phase.days!==null && phase.days<=7 && recovery<55){
+    raceReadiness=clampScore(raceReadiness-10);
+  }
+
+  let dataPoints=0;
+  const possibleDataPoints=8;
+  if(snapshot.ctl!==null) dataPoints++;
+  if(snapshot.atl!==null) dataPoints++;
+  if(snapshot.form!==null) dataPoints++;
+  if(snapshot.hrv!==null) dataPoints++;
+  if(snapshot.restingHR!==null) dataPoints++;
+  if(snapshot.sleepHours!==null) dataPoints++;
+  if(race) dataPoints++;
+  if(getProfile()?.availability) dataPoints++;
+
+  const confidence=clampScore(35+(dataPoints/possibleDataPoints)*65);
+
+  const performance=clampScore(
+    fitness*0.23+
+    fatigue*0.17+
+    recovery*0.27+
+    consistency.score*0.16+
+    raceReadiness*0.12+
+    confidence*0.05
+  );
+
+  const signals=[];
+  signals.push({
+    state:recovery>=75?"good":recovery>=55?"warn":"bad",
+    icon:recovery>=75?"✓":recovery>=55?"!":"×",
+    text:`Recovery ${recovery}/100: ${readiness.reasons.length?readiness.reasons.join(", "):"geen duidelijke negatieve signalen"}`
+  });
+
+  signals.push({
+    state:fatigue>=75?"good":fatigue>=55?"warn":"bad",
+    icon:fatigue>=75?"✓":fatigue>=55?"!":"×",
+    text:loadRatio===null
+      ?"Belastingsverhouding nog niet volledig beschikbaar"
+      :`ATL/CTL-verhouding ${loadRatio.toFixed(2)}`
+  });
+
+  signals.push({
+    state:consistency.score>=75?"good":consistency.score>=55?"warn":"bad",
+    icon:consistency.score>=75?"✓":consistency.score>=55?"!":"×",
+    text:consistency.explanation
+  });
+
+  if(race){
+    signals.push({
+      state:raceReadiness>=75?"good":raceReadiness>=55?"warn":"bad",
+      icon:"🏁",
+      text:`${race.name}: ${phase.days} dagen · ${phaseLabel(phase.phase)}`
+    });
+  }
+
+  return{
+    performance,
+    fitness,
+    fatigue,
+    recovery,
+    consistency:consistency.score,
+    raceReadiness,
+    confidence,
+    loadRatio,
+    race,
+    phase,
+    signals,
+    explanations:{
+      fitness:ctl===null
+        ?"CTL ontbreekt; neutrale basisscore gebruikt"
+        :`CTL ${ctl.toFixed(1)} als indicatie van langetermijnfitness`,
+      fatigue:loadRatio===null
+        ?"CTL of ATL ontbreekt"
+        :loadRatio<=1.05
+          ?"Acute belasting is goed in balans"
+          :loadRatio<=1.25
+            ?"Acute belasting is verhoogd maar beheersbaar"
+            :"Acute belasting ligt hoog ten opzichte van je fitness",
+      recovery:`Coach-readiness ${recovery}/100`,
+      consistency:consistency.explanation,
+      race:race
+        ? `${phaseLabel(phase.phase)} richting ${race.name}`
+        :"Voeg een komende wedstrijd toe voor een gerichtere score",
+      confidence:`${dataPoints} van ${possibleDataPoints} databronnen beschikbaar`
+    }
+  };
+}
+
+function scoreHeadline(score){
+  if(score>=85) return "Sterke performancepositie";
+  if(score>=72) return "Goede basis om gericht te trainen";
+  if(score>=58) return "Train gecontroleerd en bewaak herstel";
+  return "Herstel en belastingsbeheersing hebben prioriteit";
+}
+
+function setPerformanceMetric(id,barId,value,explanationId,explanation){
+  const valueElement=document.getElementById(id);
+  const bar=document.getElementById(barId);
+  const explanationElement=document.getElementById(explanationId);
+
+  if(valueElement) valueElement.textContent=value;
+  if(bar) bar.style.width=`${clampScore(value)}%`;
+  if(explanationElement) explanationElement.textContent=explanation;
+}
+
+function renderPerformanceEngine(){
+  const scoreElement=document.getElementById("performanceScore");
+  if(!scoreElement) return;
+
+  const engine=calculatePerformanceEngine();
+
+  scoreElement.textContent=engine.performance;
+  document.getElementById("performanceHeadline").textContent=
+    scoreHeadline(engine.performance);
+
+  const raceText=engine.race
+    ? `De score wordt mede bepaald door ${engine.race.name} over ${engine.phase.days} dagen.`
+    :"Voeg een toekomstige wedstrijd toe om race readiness specifieker te maken.";
+
+  document.getElementById("performanceExplanation").textContent=
+    `Performance ${engine.performance}/100. ${raceText}`;
+
+  setPerformanceMetric(
+    "fitnessScore","fitnessBar",engine.fitness,
+    "fitnessExplanation",engine.explanations.fitness
+  );
+  setPerformanceMetric(
+    "fatigueScore","fatigueBar",engine.fatigue,
+    "fatigueExplanation",engine.explanations.fatigue
+  );
+  setPerformanceMetric(
+    "recoveryScore","recoveryBar",engine.recovery,
+    "recoveryExplanation",engine.explanations.recovery
+  );
+  setPerformanceMetric(
+    "consistencyScore","consistencyBar",engine.consistency,
+    "consistencyExplanation",engine.explanations.consistency
+  );
+  setPerformanceMetric(
+    "raceReadinessScore","raceReadinessBar",engine.raceReadiness,
+    "raceReadinessExplanation",engine.explanations.race
+  );
+  setPerformanceMetric(
+    "coachConfidenceScore","coachConfidenceBar",engine.confidence,
+    "coachConfidenceExplanation",engine.explanations.confidence
+  );
+
+  document.getElementById("performanceSignals").innerHTML=
+    engine.signals.map(signal=>`
+      <div class="reason-item">
+        <div class="reason-icon ${signal.state}">${signal.icon}</div>
+        <div>${safe(signal.text)}</div>
+      </div>
+    `).join("");
+
+  return engine;
+}
+
 function todayAvailabilityInfo(){
   const p=getProfile();
   const availability={...defaultAvailability(),...(p.availability||{})};
@@ -3265,6 +3513,7 @@ function renderTodayCoach(){
         : "Plan advies voor vandaag";
 
   renderCurrentTodayWorkout(existing);
+  renderPerformanceEngine();
 }
 
 function applyTodayRecommendation(){
