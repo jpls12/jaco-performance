@@ -3004,6 +3004,368 @@ function buildCoachHorizon(){
 }
 
 
+
+let aiTrainingOptions=[];
+let selectedAiTrainingIndex=0;
+
+function generatorContext(){
+  const availability=todayAvailabilityInfo();
+  const snapshot=getWellnessSnapshot();
+  const readiness=determineReadiness(snapshot);
+  const race=getRaceFocus();
+  const phase=classifyRacePhase(race);
+  const profileData=getProfile();
+  const existing=currentTodayWorkout();
+
+  return{
+    availability,
+    snapshot,
+    readiness,
+    race,
+    phase,
+    profile:profileData,
+    existing
+  };
+}
+
+function generatorTargetLabel(context){
+  if(!context.race) return "Algemene ontwikkeling";
+  const distance=Number(context.race.distanceKm||0);
+  if(distance<=5) return "5 km-snelheid";
+  if(distance<=10) return "10 km-drempel";
+  if(distance<30) return "Halve marathon";
+  return "Marathonuithouding";
+}
+
+function generatorIntensityLabel(context){
+  if(context.readiness.level==="low") return "Herstel";
+  if(context.readiness.level==="moderate") return "Gecontroleerd";
+  if(context.phase.phase==="race-week") return "Kort en scherp";
+  return "Kwaliteit mogelijk";
+}
+
+function secondsForAvailableRun(minutes,paceMinutes=5.2){
+  return Math.max(5,Math.round(Number(minutes||45)/paceMinutes));
+}
+
+function createGeneratorWorkout(kind,context,variant=0){
+  const date=todayDateString();
+  const minutes=Math.max(0,Number(context.availability.maxMinutes||0));
+  const p=context.profile;
+  const race=context.race;
+  const paces=targetPacesForRace(race,p);
+  const distance=Number(race?.distanceKm||5);
+
+  if(kind==="rest"){
+    return{
+      date,type:"Rest",distanceKm:0,durationMinutes:0,
+      name:"Rustdag",uploadName:"Jaco - Rustdag",rpe:"1/10",
+      status:"planned",priority:"could",planType:"rest",
+      displaySteps:["Geen verplichte training","Focus op slaap, voeding en herstel"],
+      intervalsDescription:"Rustdag."
+    };
+  }
+
+  if(kind==="mobility"){
+    const duration=Math.min(minutes||15,25);
+    return{
+      date,type:"Mobility",distanceKm:0,durationMinutes:duration,
+      name:`Mobiliteit en herstel ${duration} min`,
+      uploadName:`Jaco - Mobiliteit en herstel ${duration} min`,
+      rpe:"2/10",status:"planned",priority:"could",planType:"mobility",
+      displaySteps:[
+        "Heupmobiliteit 4 min",
+        "Enkelmobiliteit 4 min",
+        "Hamstrings en bilspieren 4 min",
+        "Borstrotaties 3 min"
+      ],
+      intervalsDescription:`Mobiliteit en herstel ${duration} minuten.
+
+- Heupmobiliteit
+- Enkelmobiliteit
+- Hamstrings en bilspieren
+- Borstrotaties`
+    };
+  }
+
+  if(kind==="core"){
+    return makeCoreWorkout(
+      date,
+      Math.min(minutes||20,25),
+      context.availability.priority||"could"
+    );
+  }
+
+  if(kind==="recovery"){
+    const km=Math.max(5,Math.min(9,secondsForAvailableRun(minutes,5.6)));
+    return makeWeekWorkout(
+      date,"recovery",km,`Herstelloop ${km} km`,
+      [`${km} km zeer rustig`,`Hartslag onder ${p.z2Hr} bpm`,`Geen versnellingen`],
+      `Hersteltraining.
+
+Recovery
+- ${km}km 5:10-5:35/km Pace`,
+      "2/10"
+    );
+  }
+
+  if(kind==="easy"){
+    const km=Math.max(7,Math.min(15,secondsForAvailableRun(minutes,5.15)));
+    return makeWeekWorkout(
+      date,"easy",km,`Rustige duurloop ${km} km`,
+      [`${km} km zone 2`,`Hartslag bij voorkeur onder ${p.z2Hr} bpm`],
+      `Rustige duurloop.
+
+Easy
+- ${km}km 5:00-5:25/km Pace`,
+      "3/10"
+    );
+  }
+
+  if(kind==="long"){
+    const km=Math.max(14,Math.min(30,secondsForAvailableRun(minutes,5.2)));
+    return makeWeekWorkout(
+      date,"long",km,`Lange duurloop ${km} km`,
+      [`${km} km rustig`,`Hartslag bij voorkeur onder ${p.z2Hr} bpm`],
+      `Lange duurloop.
+
+Easy
+- ${km}km 4:55-5:20/km Pace`,
+      "4/10"
+    );
+  }
+
+  if(kind==="sharpen"){
+    return makeWeekWorkout(
+      date,"quality",7,"Wedstrijdprikkel",
+      ["2 km inlopen","6 × 200 m ontspannen snel","200 m dribbel","2 km uitlopen"],
+      `Wedstrijdprikkel.
+
+Warmup
+- 2km Z1 Pace
+
+Main set 6x
+- 200mtr 3:10-3:20/km Pace
+- 200mtr Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+      "5/10"
+    );
+  }
+
+  if(kind==="threshold"){
+    let reps=4;
+    let block=1600;
+
+    if(distance>=21){
+      reps=variant===1?2:3;
+      block=variant===1?4000:3000;
+    }else if(distance>=10){
+      reps=variant===1?3:4;
+      block=2000;
+    }
+
+    return makeWeekWorkout(
+      date,"quality",distance>=21?15:13,
+      `${reps} × ${block} m drempel`,
+      ["3 km inlopen",`${reps} × ${block} m @ ${paces.threshold}`,"2–3 min dribbel","2 km uitlopen"],
+      `Drempeltraining.
+
+Warmup
+- 3km Z1 Pace
+
+Main set ${reps}x
+- ${block}mtr ${paces.threshold} Pace
+- ${distance>=21?3:2}m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+      "7/10"
+    );
+  }
+
+  if(kind==="vo2"){
+    const reps=variant===1?12:5;
+    const meters=variant===1?400:1000;
+    const recovery=variant===1?"200mtr":"2m";
+    const name=variant===1?"12 × 400 m snelheid":"5 × 1000 m VO₂max";
+    const total=variant===1?11:12;
+
+    return makeWeekWorkout(
+      date,"quality",total,name,
+      ["3 km inlopen",`${reps} × ${meters} m @ ${paces.vo2}`,`${recovery} herstel`,"2 km uitlopen"],
+      `VO2max-training.
+
+Warmup
+- 3km Z1 Pace
+
+Main set ${reps}x
+- ${meters}mtr ${paces.vo2} Pace
+- ${recovery} Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+      "8/10"
+    );
+  }
+
+  return createGeneratorWorkout("easy",context,variant);
+}
+
+function chooseGeneratorKinds(context){
+  if(!context.availability.available){
+    return["mobility","rest","core"];
+  }
+
+  if(context.readiness.level==="low"){
+    return["recovery","mobility","rest"];
+  }
+
+  if(context.phase.phase==="race-week"){
+    return["sharpen","easy","mobility"];
+  }
+
+  const preference=context.availability.preference;
+
+  if(preference==="core") return["core","mobility","easy"];
+  if(preference==="mobiliteit") return["mobility","core","recovery"];
+  if(preference==="lange-duur") return["long","easy","recovery"];
+  if(preference==="herstel") return["recovery","easy","mobility"];
+  if(preference==="rustig") return["easy","recovery","core"];
+  if(preference==="drempel") return["threshold","easy","recovery"];
+
+  const raceDistance=Number(context.race?.distanceKm||5);
+  if(raceDistance<=5) return["vo2","threshold","easy"];
+  if(raceDistance<=10) return["threshold","vo2","easy"];
+  return["threshold","long","easy"];
+}
+
+function fitGeneratedWorkout(workout,context){
+  if(!workout || workout.type!=="Run") return workout;
+  return fitWorkoutToDay(workout,context.availability);
+}
+
+function generateAiTrainingOptions(){
+  const context=generatorContext();
+  const kinds=chooseGeneratorKinds(context);
+
+  aiTrainingOptions=kinds.map((kind,index)=>
+    fitGeneratedWorkout(createGeneratorWorkout(kind,context,index===1?1:0),context)
+  );
+
+  selectedAiTrainingIndex=0;
+  renderAiTrainingGenerator(context);
+}
+
+function renderAiTrainingGenerator(context=generatorContext()){
+  const available=document.getElementById("generatorAvailableTime");
+  if(!available) return;
+
+  available.textContent=context.availability.available
+    ? `${context.availability.maxMinutes} min`
+    :"Rustdag";
+  document.getElementById("generatorGoal").textContent=
+    generatorTargetLabel(context);
+  document.getElementById("generatorIntensity").textContent=
+    generatorIntensityLabel(context);
+
+  const workout=aiTrainingOptions[selectedAiTrainingIndex];
+
+  if(!workout){
+    document.getElementById("generatorTitle").textContent=
+      "Nog geen training gegenereerd";
+    document.getElementById("generatorExplanation").textContent=
+      "Tik op Genereer training om een voorstel te maken.";
+    document.getElementById("generatorSteps").innerHTML="";
+    document.getElementById("generatorAlternatives").innerHTML="";
+    document.getElementById("saveAiTraining").disabled=true;
+    document.getElementById("regenerateAiTraining").disabled=true;
+    return;
+  }
+
+  document.getElementById("generatorTitle").textContent=workout.name;
+
+  const reasonParts=[
+    `herstelstatus ${context.readiness.level}`,
+    context.availability.available
+      ? `${context.availability.maxMinutes} minuten beschikbaar`
+      :"vandaag niet beschikbaar",
+    context.race
+      ? `${phaseLabel(context.phase.phase).toLowerCase()} richting ${context.race.name}`
+      :"algemene trainingsopbouw"
+  ];
+
+  document.getElementById("generatorExplanation").textContent=
+    `Gekozen vanwege ${reasonParts.join(", ")}.`;
+
+  document.getElementById("generatorSteps").innerHTML=
+    (workout.displaySteps||[]).map((step,index)=>`
+      <li><span class="step">${index+1}</span><span>${safe(step)}</span></li>
+    `).join("");
+
+  document.getElementById("generatorAlternatives").innerHTML=
+    aiTrainingOptions.map((option,index)=>`
+      <button type="button"
+        class="generator-alt ${index===selectedAiTrainingIndex?"active":""}"
+        onclick="selectAiTrainingOption(${index})">
+        <strong>${safe(option.name)}</strong>
+        <small>${trainingVolumeLabel(option)} · RPE ${safe(option.rpe||"—")}</small>
+      </button>
+    `).join("");
+
+  document.getElementById("saveAiTraining").disabled=false;
+  document.getElementById("regenerateAiTraining").disabled=false;
+}
+
+function selectAiTrainingOption(index){
+  if(!aiTrainingOptions[index]) return;
+  selectedAiTrainingIndex=index;
+  renderAiTrainingGenerator();
+}
+
+function saveAiGeneratedTraining(){
+  const workout=aiTrainingOptions[selectedAiTrainingIndex];
+  const status=document.getElementById("generatorStatus");
+  if(!workout) return;
+
+  const date=todayDateString();
+  const existing=customWorkouts[date];
+
+  if(existing){
+    const confirmed=confirm(
+      `De bestaande training "${existing.name}" vervangen door "${workout.name}"?`
+    );
+    if(!confirmed) return;
+  }
+
+  const saved=JSON.parse(JSON.stringify(workout));
+  saved.date=date;
+  saved.status="planned";
+  customWorkouts[date]=saved;
+  saveObject(STORAGE_KEY,customWorkouts);
+
+  renderMonth();
+  renderSelected();
+  renderSaved();
+  renderTodayCoach();
+  renderPerformanceEngine();
+
+  status.className="status ok";
+  status.textContent=`${saved.name} is toegevoegd aan vandaag.`;
+}
+
+function regenerateAiTraining(){
+  if(!aiTrainingOptions.length){
+    generateAiTrainingOptions();
+    return;
+  }
+
+  selectedAiTrainingIndex=
+    (selectedAiTrainingIndex+1)%aiTrainingOptions.length;
+  renderAiTrainingGenerator();
+}
+
 function clampScore(value){
   return Math.max(0,Math.min(100,Math.round(Number(value)||0)));
 }
@@ -3514,6 +3876,7 @@ function renderTodayCoach(){
 
   renderCurrentTodayWorkout(existing);
   renderPerformanceEngine();
+  renderAiTrainingGenerator();
 }
 
 function applyTodayRecommendation(){
