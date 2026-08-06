@@ -303,7 +303,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 3.1 · Coach Brain</span>
+      <span class="v2-badge">Jaco Performance 4.0 · Coach Horizon</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -387,6 +387,27 @@
       </div>
 
       <div id="brainFactors" class="reason-list"></div>
+    </article>
+
+
+    <article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div>
+          <p class="label">Performance 4.0 · Coach Horizon</p>
+          <h2>Koers voor de komende vier weken</h2>
+          <p class="help">
+            De coach verdeelt opbouw, specifieke belasting en taper richting je
+            belangrijkste komende wedstrijd.
+          </p>
+        </div>
+        <button id="buildCoachHorizon" class="secondary" type="button" style="width:auto">
+          Herbereken
+        </button>
+      </div>
+
+      <div id="coachHorizon" class="week-plan">
+        <p class="help">De vierwekenkoers wordt geladen.</p>
+      </div>
     </article>
 
   </section>
@@ -901,8 +922,8 @@ const TRAINING_TYPES={
   Ride:{label:"Fietsen",icon:"🚴",css:"sport-bike",unit:"km",uploadable:false},
   Swim:{label:"Zwemmen",icon:"🏊",css:"sport-swim",unit:"m",uploadable:false},
   Strength:{label:"Kracht",icon:"💪",css:"sport-strength",unit:"min",uploadable:false},
-  Core:{label:"Core",icon:"🧱",css:"sport-core",unit:"min",uploadable:false},
-  Mobility:{label:"Mobiliteit",icon:"🧘",css:"sport-mobility",unit:"min",uploadable:false},
+  Core:{label:"Core",icon:"🧱",css:"sport-core",unit:"min",uploadable:true},
+  Mobility:{label:"Mobiliteit",icon:"🧘",css:"sport-mobility",unit:"min",uploadable:true},
   Rest:{label:"Rust",icon:"😴",css:"sport-rest",unit:"",uploadable:false}
 };
 
@@ -1167,7 +1188,24 @@ async function uploadSelected(){
   try{
     const payload={workoutDate:selectedDate,pin};
     if(customWorkouts[selectedDate]){
-      payload.customWorkout=workout;
+      const customWorkout=JSON.parse(JSON.stringify(workout));
+
+      if(["Core","Mobility"].includes(customWorkout.type)){
+        const steps=Array.isArray(customWorkout.displaySteps)
+          ? customWorkout.displaySteps.filter(Boolean)
+          : [];
+
+        const bulletSteps=steps.map(step=>`- ${step}`).join("\n");
+        const duration=Number(customWorkout.durationMinutes)||15;
+
+        customWorkout.intervalsDescription=[
+          `${trainingTypeInfo(customWorkout.type).label} · ${duration} minuten`,
+          bulletSteps,
+          customWorkout.intervalsDescription || ""
+        ].filter(Boolean).join("\n\n");
+      }
+
+      payload.customWorkout=customWorkout;
     }
 
     const response=await fetch("/api/upload-workout",{
@@ -1689,7 +1727,11 @@ function buildWorkout(){
       displaySteps:steps.length?steps:[
         type==="Rest"?"Volledige rustdag":`${durationMinutes} minuten ${info.label.toLowerCase()}`
       ],
-      intervalsDescription:[description,notes].filter(Boolean).join("\n\n")
+      intervalsDescription:[
+        description,
+        steps.length ? steps.map(step=>`- ${step}`).join("\n") : "",
+        notes
+      ].filter(Boolean).join("\n\n")
     };
   }
 
@@ -3257,6 +3299,100 @@ function renderCoachBrain(){
   renderTodayCoach();
 }
 
+
+function horizonWeekPhase(raceDays,weekOffset){
+  const daysAtWeek=raceDays-weekOffset*7;
+  if(daysAtWeek<=7) return "Wedstrijdweek";
+  if(daysAtWeek<=14) return "Taper";
+  if(daysAtWeek<=35) return "Wedstrijdspecifiek";
+  return "Opbouw";
+}
+
+function horizonQualityFocus(race,phase){
+  const distance=Number(race?.distanceKm||5);
+
+  if(phase==="Wedstrijdweek") return "Korte wedstrijdprikkel, verder fris worden";
+  if(phase==="Taper") return "Minder volume, intensiteit kort behouden";
+
+  if(distance<=5){
+    return phase==="Wedstrijdspecifiek"
+      ? "5 km-tempo, VO₂max en korte snelheid"
+      : "Aerobe opbouw en drempel";
+  }
+
+  if(distance<=10){
+    return phase==="Wedstrijdspecifiek"
+      ? "Drempel en 10 km-tempo"
+      : "Aerobe opbouw en gecontroleerde kwaliteit";
+  }
+
+  if(distance<30){
+    return phase==="Wedstrijdspecifiek"
+      ? "Halve-marathontempo en lange tempoblokken"
+      : "Drempel, duurvermogen en lange duur";
+  }
+
+  return phase==="Wedstrijdspecifiek"
+    ? "Marathontempo, voeding en lange duur"
+    : "Aerobe omvang en belastbaarheid";
+}
+
+function buildCoachHorizon(){
+  const box=document.getElementById("coachHorizon");
+  if(!box) return;
+
+  const race=getRaceFocus();
+  const profileData=getProfile();
+  const readiness=determineReadiness(getWellnessSnapshot());
+
+  if(!race){
+    box.innerHTML='<p class="help">Voeg eerst een toekomstige wedstrijd toe.</p>';
+    return;
+  }
+
+  const raceDays=daysUntil(race.date);
+  const baseKm=Math.min(Number(profileData.maxKm)||70,Number(profileData.weeklyKm)||60);
+  const readinessFactor=readiness.level==="low"?0.78:readiness.level==="moderate"?0.90:1;
+
+  const weeks=[0,1,2,3].map(offset=>{
+    const phase=horizonWeekPhase(raceDays,offset);
+    let phaseFactor=1;
+
+    if(phase==="Taper") phaseFactor=0.75;
+    if(phase==="Wedstrijdweek") phaseFactor=0.50;
+
+    const km=Math.max(20,Math.round(baseKm*readinessFactor*phaseFactor));
+    const start=addDays(nextMonday(),offset*7);
+    const end=addDays(start,6);
+
+    return{
+      offset,
+      start,
+      end,
+      phase,
+      km,
+      focus:horizonQualityFocus(race,phase)
+    };
+  });
+
+  box.innerHTML=weeks.map((week,index)=>`
+    <div class="adaptive-row">
+      <div>
+        <strong>Week ${index+1}</strong>
+        <small>${new Intl.DateTimeFormat("nl-NL",{day:"numeric",month:"short"}).format(new Date(week.start+"T12:00:00"))}
+        – ${new Intl.DateTimeFormat("nl-NL",{day:"numeric",month:"short"}).format(new Date(week.end+"T12:00:00"))}</small>
+      </div>
+      <div>
+        <strong>${week.phase}</strong>
+        <small>${safe(week.focus)}</small>
+      </div>
+      <span class="adaptive-tag ${week.phase==="Wedstrijdweek"?"red":week.phase==="Taper"?"orange":"green"}">
+        ± ${week.km} km
+      </span>
+    </div>
+  `).join("");
+}
+
 function todayAvailabilityInfo(){
   const p=getProfile();
   const availability={...defaultAvailability(),...(p.availability||{})};
@@ -4120,6 +4256,7 @@ document.getElementById("duplicateModal").onclick=event=>{
 };
 
 
+document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
 document.getElementById("refreshTodayCoach").onclick=async()=>{
   await refreshTodayCoach();
@@ -4165,6 +4302,7 @@ renderRaceOptions();
 loadWellnessDashboard();
 renderTodayCoach();
 renderCoachBrain();
+buildCoachHorizon();
 loadServer();
 </script>
 </body>
