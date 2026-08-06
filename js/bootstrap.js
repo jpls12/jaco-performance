@@ -54,6 +54,7 @@ document.getElementById("showMobilityRecipe").onclick=()=>renderVisualWorkout("m
 document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
+document.getElementById("refreshCoachIntelligence").onclick=renderCoachIntelligence;
 document.getElementById("generateAiWeek").onclick=generateAiWeekOptions;
 document.getElementById("regenerateAiWeek").onclick=regenerateAiWeek;
 document.getElementById("saveAiWeek").onclick=saveAiGeneratedWeek;
@@ -128,6 +129,7 @@ async function initializeJacoPerformance(){
   renderPerformanceEngine();
   renderAiTrainingGenerator();
   renderAiWeekPlanner();
+  renderCoachIntelligence();
 }
 
 window.addEventListener("error",event=>{
