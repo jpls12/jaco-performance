@@ -119,6 +119,7 @@ async function initializeJacoPerformance(){
   renderTodayCoach();
   renderCoachBrain();
   buildCoachHorizon();
+  renderPerformanceEngine();
 }
 
 window.addEventListener("error",event=>{
