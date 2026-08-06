@@ -54,6 +54,9 @@ document.getElementById("showMobilityRecipe").onclick=()=>renderVisualWorkout("m
 document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
+document.getElementById("generateAiTraining").onclick=generateAiTrainingOptions;
+document.getElementById("regenerateAiTraining").onclick=regenerateAiTraining;
+document.getElementById("saveAiTraining").onclick=saveAiGeneratedTraining;
 document.getElementById("refreshTodayCoach").onclick=async()=>{
   await refreshTodayCoach();
   renderCoachBrain();
@@ -120,6 +123,7 @@ async function initializeJacoPerformance(){
   renderCoachBrain();
   buildCoachHorizon();
   renderPerformanceEngine();
+  renderAiTrainingGenerator();
 }
 
 window.addEventListener("error",event=>{
