@@ -303,7 +303,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 3.0 · fase 1</span>
+      <span class="v2-badge">Jaco Performance 3.1 · Coach Brain</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -364,6 +364,31 @@
         <p class="help">Kalender wordt gecontroleerd…</p>
       </div>
     </article>
+
+    <article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div>
+          <p class="label">Performance 3.1 · Coach Brain</p>
+          <h2>Waarom deze training?</h2>
+          <p class="help">
+            De coach kiest uit een trainingsbibliotheek op basis van herstel,
+            beschikbaarheid, wedstrijdfase en doelafstand.
+          </p>
+        </div>
+        <button id="recalculateBrain" class="secondary" type="button" style="width:auto">
+          Herbereken
+        </button>
+      </div>
+
+      <div id="brainDecision" class="coach-box">
+        <p class="label">Coachbesluit</p>
+        <h3 id="brainDecisionTitle">Nog geen besluit</h3>
+        <p class="help" id="brainDecisionText">De coach wordt geladen.</p>
+      </div>
+
+      <div id="brainFactors" class="reason-list"></div>
+    </article>
+
   </section>
 
   <section id="dashboard" class="view">
@@ -2892,6 +2917,346 @@ function scheduleByAvailability(workouts){
 
 
 
+
+const TRAINING_LIBRARY={
+  recovery_run:{
+    type:"Run",
+    name:"Herstelloop",
+    phase:["general","build","specific","taper","race-week"],
+    readiness:["low","moderate","good"],
+    preference:["herstel","rustig"],
+    minMinutes:30,
+    maxMinutes:60,
+    rpe:"2/10"
+  },
+  easy_run:{
+    type:"Run",
+    name:"Rustige duurloop",
+    phase:["general","build","specific","taper"],
+    readiness:["moderate","good"],
+    preference:["rustig","herstel"],
+    minMinutes:40,
+    maxMinutes:90,
+    rpe:"3/10"
+  },
+  threshold_run:{
+    type:"Run",
+    name:"Drempeltraining",
+    phase:["build","specific"],
+    readiness:["good","moderate"],
+    preference:["kwaliteit","drempel"],
+    minMinutes:55,
+    maxMinutes:90,
+    rpe:"7/10"
+  },
+  vo2_run:{
+    type:"Run",
+    name:"VO₂max-training",
+    phase:["build","specific"],
+    readiness:["good"],
+    preference:["kwaliteit"],
+    minMinutes:55,
+    maxMinutes:85,
+    rpe:"8/10"
+  },
+  race_sharpening:{
+    type:"Run",
+    name:"Wedstrijdprikkel",
+    phase:["taper","race-week"],
+    readiness:["moderate","good"],
+    preference:["kwaliteit","drempel"],
+    minMinutes:35,
+    maxMinutes:60,
+    rpe:"5/10"
+  },
+  long_run:{
+    type:"Run",
+    name:"Lange duurloop",
+    phase:["general","build","specific"],
+    readiness:["moderate","good"],
+    preference:["lange-duur"],
+    minMinutes:75,
+    maxMinutes:180,
+    rpe:"4/10"
+  },
+  core:{
+    type:"Core",
+    name:"Core",
+    phase:["general","build","specific","taper","race-week"],
+    readiness:["low","moderate","good"],
+    preference:["core"],
+    minMinutes:10,
+    maxMinutes:30,
+    rpe:"4/10"
+  },
+  mobility:{
+    type:"Mobility",
+    name:"Mobiliteit",
+    phase:["general","build","specific","taper","race-week"],
+    readiness:["low","moderate","good"],
+    preference:["mobiliteit","rust"],
+    minMinutes:10,
+    maxMinutes:30,
+    rpe:"2/10"
+  },
+  rest:{
+    type:"Rest",
+    name:"Rustdag",
+    phase:["general","build","specific","taper","race-week"],
+    readiness:["low","moderate","good"],
+    preference:["rust"],
+    minMinutes:0,
+    maxMinutes:0,
+    rpe:"1/10"
+  }
+};
+
+function coachContext(){
+  const snapshot=getWellnessSnapshot();
+  const readiness=determineReadiness(snapshot);
+  const race=getRaceFocus();
+  const phase=classifyRacePhase(race);
+  const availability=todayAvailabilityInfo();
+  const existing=currentTodayWorkout();
+
+  return{snapshot,readiness,race,phase,availability,existing};
+}
+
+function scoreLibraryItem(item,context){
+  let score=0;
+  const reasons=[];
+
+  if(item.phase.includes(context.phase.phase)){
+    score+=30;
+    reasons.push(`past bij fase ${phaseLabel(context.phase.phase).toLowerCase()}`);
+  }else{
+    score-=25;
+  }
+
+  if(item.readiness.includes(context.readiness.level)){
+    score+=25;
+    reasons.push(`past bij herstelstatus ${context.readiness.level}`);
+  }else{
+    score-=35;
+  }
+
+  if(item.preference.includes(context.availability.preference)){
+    score+=30;
+    reasons.push(`sluit aan op jouw dagvoorkeur`);
+  }
+
+  const minutes=Number(context.availability.maxMinutes||0);
+  if(minutes>=item.minMinutes && minutes<=item.maxMinutes){
+    score+=20;
+    reasons.push(`past binnen ${minutes} beschikbare minuten`);
+  }else if(minutes>=item.minMinutes){
+    score+=10;
+  }else{
+    score-=25;
+  }
+
+  if(!context.availability.available && item.type!=="Rest" && item.type!=="Mobility"){
+    score-=100;
+  }
+
+  if(context.readiness.level==="low" && ["vo2_run","threshold_run","long_run"].includes(
+    Object.keys(TRAINING_LIBRARY).find(key=>TRAINING_LIBRARY[key]===item)
+  )){
+    score-=70;
+  }
+
+  if(context.existing && item.type===context.existing.type){
+    score+=5;
+  }
+
+  return{score,reasons};
+}
+
+function chooseCoachBrainSession(){
+  const context=coachContext();
+
+  const ranked=Object.entries(TRAINING_LIBRARY).map(([key,item])=>{
+    const scored=scoreLibraryItem(item,context);
+    return{key,item,...scored};
+  }).sort((a,b)=>b.score-a.score);
+
+  return{context,choice:ranked[0],alternatives:ranked.slice(1,4)};
+}
+
+function buildLibraryWorkout(decision){
+  const {context,choice}=decision;
+  const date=todayDateString();
+  const minutes=Math.max(0,Number(context.availability.maxMinutes||0));
+  const p=getProfile();
+  const race=context.race;
+
+  switch(choice.key){
+    case "recovery_run":{
+      const km=Math.max(5,Math.min(9,Math.round((minutes||45)/5.5)));
+      return makeWeekWorkout(
+        date,"recovery",km,`Herstelloop ${km} km`,
+        [`${km} km zeer rustig`,`Hartslag onder ${p.z2Hr} bpm`,`Geen versnellingen`],
+        `Hersteltraining.
+
+Recovery
+- ${km}km 5:10-5:35/km Pace`,
+        "2/10"
+      );
+    }
+    case "easy_run":{
+      const km=Math.max(7,Math.min(14,Math.round((minutes||60)/5.2)));
+      return makeWeekWorkout(
+        date,"easy",km,`Rustige duurloop ${km} km`,
+        [`${km} km zone 2`,`Hartslag bij voorkeur onder ${p.z2Hr} bpm`],
+        `Rustige duurloop.
+
+Easy
+- ${km}km 5:00-5:25/km Pace`,
+        "3/10"
+      );
+    }
+    case "threshold_run":{
+      const distance=Number(race?.distanceKm||10);
+      const reps=distance>=21?3:4;
+      const block=distance>=21?2000:1600;
+      const pace=targetPacesForRace(race,p).threshold;
+      return makeWeekWorkout(
+        date,"quality",13,`${reps} × ${block} m drempel`,
+        ["3 km inlopen",`${reps} × ${block} m @ ${pace}`,"2 min dribbel","2 km uitlopen"],
+        `Drempeltraining.
+
+Warmup
+- 3km Z1 Pace
+
+Main set ${reps}x
+- ${block}mtr ${pace} Pace
+- 2m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+        "7/10"
+      );
+    }
+    case "vo2_run":{
+      const pace=targetPacesForRace(race,p).vo2;
+      return makeWeekWorkout(
+        date,"quality",12,"5 × 1000 m VO₂max",
+        ["3 km inlopen",`5 × 1000 m @ ${pace}`,"2 min dribbel","2 km uitlopen"],
+        `VO2max-training.
+
+Warmup
+- 3km Z1 Pace
+
+Main set 5x
+- 1km ${pace} Pace
+- 2m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+        "8/10"
+      );
+    }
+    case "race_sharpening":{
+      return makeWeekWorkout(
+        date,"quality",7,"Wedstrijdprikkel",
+        ["2 km inlopen","6 × 200 m ontspannen snel","200 m dribbel","2 km uitlopen"],
+        `Wedstrijdprikkel.
+
+Warmup
+- 2km Z1 Pace
+
+Main set 6x
+- 200mtr 3:10-3:20/km Pace
+- 200mtr Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+        "5/10"
+      );
+    }
+    case "long_run":{
+      const km=Math.max(14,Math.min(28,Math.round((minutes||100)/5.2)));
+      return makeWeekWorkout(
+        date,"long",km,`Lange duurloop ${km} km`,
+        [`${km} km rustig`,`Hartslag onder ${p.z2Hr} bpm`],
+        `Lange duurloop.
+
+Easy
+- ${km}km 4:55-5:20/km Pace`,
+        "4/10"
+      );
+    }
+    case "core":
+      return makeCoreWorkout(date,Math.min(minutes||20,25),context.availability.priority||"could");
+    case "mobility":
+      return{
+        date,type:"Mobility",distanceKm:0,durationMinutes:Math.min(minutes||15,25),
+        name:"Mobiliteit en herstel",uploadName:"Jaco - Mobiliteit en herstel",
+        rpe:"2/10",status:"planned",priority:context.availability.priority||"could",
+        planType:"mobility",
+        displaySteps:["Heupmobiliteit","Enkelmobiliteit","Hamstrings en bilspieren","Rugrotaties","Rustige ademhaling"],
+        intervalsDescription:"Mobiliteit en herstel."
+      };
+    default:
+      return{
+        date,type:"Rest",distanceKm:0,durationMinutes:0,
+        name:"Rustdag",uploadName:"Jaco - Rustdag",rpe:"1/10",
+        status:"planned",priority:"could",planType:"rest",
+        displaySteps:["Geen verplichte training","Focus op slaap en herstel"],
+        intervalsDescription:"Rustdag."
+      };
+  }
+}
+
+function renderCoachBrain(){
+  const decision=chooseCoachBrainSession();
+  const workout=buildLibraryWorkout(decision);
+  const context=decision.context;
+  const choice=decision.choice;
+
+  pendingTodayAdvice={
+    kind:context.existing?"replace":"new",
+    workout,
+    title:workout.name,
+    text:`De Coach Brain koos ${choice.item.name.toLowerCase()} met een matchscore van ${choice.score}.`,
+    steps:workout.displaySteps||[]
+  };
+
+  document.getElementById("brainDecisionTitle").textContent=workout.name;
+  document.getElementById("brainDecisionText").textContent=
+    `${choice.reasons.join(", ")}. ${context.race?`Focuswedstrijd: ${context.race.name}.`:"Geen komende wedstrijd ingesteld."}`;
+
+  const factorRows=[
+    {
+      cls:context.readiness.level==="good"?"good":context.readiness.level==="moderate"?"warn":"bad",
+      icon:context.readiness.level==="good"?"✓":context.readiness.level==="moderate"?"!":"×",
+      text:`Herstelstatus: ${context.readiness.level} (${context.readiness.score}/100)`
+    },
+    {
+      cls:context.availability.available?"good":"warn",
+      icon:context.availability.available?"✓":"—",
+      text:context.availability.available
+        ? `${context.availability.maxMinutes} minuten beschikbaar · voorkeur ${preferenceLabel(context.availability.preference)}`
+        : "Vandaag niet beschikbaar"
+    },
+    {
+      cls:"good",
+      icon:"🏁",
+      text:context.race
+        ? `${context.race.name} over ${context.phase.days} dagen · ${phaseLabel(context.phase.phase)}`
+        : "Geen toekomstige wedstrijd ingesteld"
+    }
+  ];
+
+  document.getElementById("brainFactors").innerHTML=factorRows.map(row=>`
+    <div class="reason-item">
+      <div class="reason-icon ${row.cls}">${row.icon}</div>
+      <div>${safe(row.text)}</div>
+    </div>`).join("");
+
+  renderTodayCoach();
+}
+
 function todayAvailabilityInfo(){
   const p=getProfile();
   const availability={...defaultAvailability(),...(p.availability||{})};
@@ -3755,7 +4120,11 @@ document.getElementById("duplicateModal").onclick=event=>{
 };
 
 
-document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
+document.getElementById("recalculateBrain").onclick=renderCoachBrain;
+document.getElementById("refreshTodayCoach").onclick=async()=>{
+  await refreshTodayCoach();
+  renderCoachBrain();
+};
 document.getElementById("applyTodayAdvice").onclick=applyTodayRecommendation;
 document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
 document.getElementById("buildAdaptiveWeek").onclick=()=>{
@@ -3795,6 +4164,7 @@ renderRaces();
 renderRaceOptions();
 loadWellnessDashboard();
 renderTodayCoach();
+renderCoachBrain();
 loadServer();
 </script>
 </body>
