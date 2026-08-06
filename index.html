@@ -140,6 +140,92 @@
 
 
 
+
+    .player-launch{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px
+    }
+    .workout-player{
+      position:fixed;inset:0;z-index:9999;background:#06101c;
+      color:#f5f8fc;display:none;overflow:auto
+    }
+    .workout-player.active{display:block}
+    .player-shell{
+      max-width:760px;margin:auto;min-height:100vh;padding:22px 18px 42px;
+      display:flex;flex-direction:column
+    }
+    .player-top{
+      display:flex;justify-content:space-between;align-items:center;gap:12px
+    }
+    .player-progress{
+      height:8px;border-radius:99px;background:#172a40;overflow:hidden;margin:18px 0
+    }
+    .player-progress span{
+      display:block;height:100%;width:0;background:linear-gradient(90deg,#38c976,#62b9ff);
+      transition:width .25s ease
+    }
+    .player-stage{
+      flex:1;display:flex;flex-direction:column;justify-content:center;text-align:center;
+      background:linear-gradient(180deg,#102137,#0a1727);
+      border:1px solid #2a4664;border-radius:24px;padding:22px;margin-top:6px
+    }
+    .player-visual{
+      width:190px;height:190px;border-radius:50%;margin:10px auto 20px;
+      display:grid;place-items:center;font-size:6rem;
+      background:radial-gradient(circle at 35% 30%,#234766,#10253b 62%,#0b1928);
+      border:2px solid #3f7196;box-shadow:0 18px 50px rgba(0,0,0,.28)
+    }
+    .player-visual.animate{animation:visualPulse 2.2s ease-in-out infinite}
+    @keyframes visualPulse{
+      0%,100%{transform:scale(.96) rotate(-2deg)}
+      50%{transform:scale(1.04) rotate(2deg)}
+    }
+    .player-phase{
+      color:#61bfff;text-transform:uppercase;letter-spacing:.15em;
+      font-size:.78rem;font-weight:900
+    }
+    .player-title{font-size:2.2rem;margin:10px 0 5px;line-height:1.1}
+    .player-cue{color:#a9bdd4;line-height:1.5;margin:8px auto;max-width:560px}
+    .player-timer{font-size:5rem;font-weight:950;letter-spacing:-.04em;margin:12px 0}
+    .player-reps{font-size:2rem;font-weight:900;margin:14px 0}
+    .player-next{color:#9db2c9;margin-top:16px}
+    .player-controls{
+      display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px
+    }
+    .player-controls button{padding:13px 8px;font-size:.9rem}
+    .player-primary{
+      background:#39c978!important;color:#07140d!important;border-color:#39c978!important
+    }
+    .player-meta{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px
+    }
+    .player-meta div{
+      background:#0c1a2a;border:1px solid #263f5b;border-radius:13px;padding:10px;
+      text-align:center
+    }
+    .player-meta span{display:block;color:#8fa6bf;font-size:.72rem}
+    .player-meta strong{display:block;margin-top:4px}
+    .player-finish{
+      display:none;text-align:center;padding:40px 12px
+    }
+    .player-finish.active{display:block}
+    .finish-icon{font-size:5rem;margin-bottom:12px}
+    .visual-guide{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-top:12px
+    }
+    .visual-guide div{
+      background:#0d1928;border:1px solid #29415e;border-radius:13px;padding:10px;
+      text-align:center
+    }
+    .visual-guide strong{display:block;font-size:1.5rem}
+    .visual-guide small{color:var(--muted)}
+    @media(max-width:650px){
+      .player-launch{grid-template-columns:1fr}
+      .player-controls{grid-template-columns:repeat(3,1fr)}
+      .player-title{font-size:1.75rem}
+      .player-timer{font-size:4rem}
+      .player-visual{width:160px;height:160px;font-size:5rem}
+    }
+
     .exercise-library{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
     .exercise-card{
       background:#0d1928;border:1px solid #27415e;border-radius:16px;padding:14px
@@ -345,7 +431,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 4.1 · COROS Visual</span>
+      <span class="v2-badge">Jaco Performance 4.2 · Visual Workout Player</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -929,7 +1015,7 @@
 
   <section id="library" class="view">
     <article class="card">
-      <p class="label">Performance 4.1 · COROS Visual Workouts</p>
+      <p class="label">Performance 4.2 · Visual Workout Player</p>
       <h2>Oefeningenbibliotheek</h2>
       <p class="help">
         Kies een core- of mobiliteitstraining. De app toont de uitvoering en maakt
@@ -939,6 +1025,18 @@
       <div class="grid2">
         <button id="showCoreRecipe" type="button">Core Running Power</button>
         <button id="showMobilityRecipe" class="secondary" type="button">Mobiliteit & herstel</button>
+      </div>
+
+
+      <div class="player-launch">
+        <button id="startCorePlayer" class="player-primary" type="button">▶ Start Core Running Power</button>
+        <button id="startMobilityPlayer" type="button">▶ Start Mobiliteit & herstel</button>
+      </div>
+
+      <div class="visual-guide">
+        <div><strong>▶</strong><small>Automatisch doorlopen</small></div>
+        <div><strong>🔊</strong><small>Gesproken coaching</small></div>
+        <div><strong>⏱</strong><small>Werk- en rusttimer</small></div>
       </div>
 
       <div id="exerciseLibrary" class="exercise-library"></div>
@@ -1126,6 +1224,332 @@ const VISUAL_WORKOUTS={
 };
 
 let activeVisualWorkout="core";
+
+let visualPlayer={
+  workoutKey:"core",
+  sequence:[],
+  index:0,
+  secondsLeft:0,
+  elapsedSeconds:0,
+  intervalId:null,
+  paused:false,
+  wakeLock:null,
+  startedAt:null
+};
+
+function prescriptionSeconds(text){
+  const value=String(text||"").toLowerCase();
+  const minuteMatch=value.match(/(\d+)\s*min/);
+  if(minuteMatch) return Number(minuteMatch[1])*60;
+  const secondMatch=value.match(/(\d+)\s*secon/);
+  if(secondMatch) return Number(secondMatch[1]);
+  return null;
+}
+
+function restSeconds(text){
+  const value=String(text||"").toLowerCase();
+  const minuteMatch=value.match(/(\d+)\s*min/);
+  if(minuteMatch) return Number(minuteMatch[1])*60;
+  const secondMatch=value.match(/(\d+)\s*secon/);
+  if(secondMatch) return Number(secondMatch[1]);
+  return 20;
+}
+
+function buildPlayerSequence(workoutKey){
+  const workout=VISUAL_WORKOUTS[workoutKey];
+  const sequence=[];
+
+  for(let round=1;round<=workout.rounds;round++){
+    workout.exercises.forEach((exerciseId,exerciseIndex)=>{
+      const exercise=VISUAL_EXERCISES[exerciseId];
+      const seconds=prescriptionSeconds(exercise.prescription);
+
+      sequence.push({
+        kind:"work",
+        round,
+        exerciseIndex,
+        id:exerciseId,
+        name:exercise.name,
+        icon:exercise.icon,
+        cue:exercise.cue,
+        prescription:exercise.prescription,
+        seconds,
+        reps:seconds ? null : exercise.prescription
+      });
+
+      const isFinal=round===workout.rounds &&
+        exerciseIndex===workout.exercises.length-1;
+
+      if(!isFinal){
+        sequence.push({
+          kind:"rest",
+          round,
+          exerciseIndex,
+          id:`rest-${round}-${exerciseIndex}`,
+          name:"Rust",
+          icon:"💧",
+          cue:"Adem rustig door en maak je klaar voor de volgende oefening.",
+          prescription:exercise.rest,
+          seconds:restSeconds(exercise.rest),
+          reps:null
+        });
+      }
+    });
+  }
+
+  return sequence;
+}
+
+async function requestPlayerWakeLock(){
+  try{
+    if("wakeLock" in navigator){
+      visualPlayer.wakeLock=await navigator.wakeLock.request("screen");
+    }
+  }catch{}
+}
+
+function releasePlayerWakeLock(){
+  if(visualPlayer.wakeLock){
+    visualPlayer.wakeLock.release().catch(()=>{});
+    visualPlayer.wakeLock=null;
+  }
+}
+
+function speakPlayer(text){
+  if(!("speechSynthesis" in window)) return;
+  window.speechSynthesis.cancel();
+  const utterance=new SpeechSynthesisUtterance(text);
+  utterance.lang="nl-NL";
+  utterance.rate=.95;
+  window.speechSynthesis.speak(utterance);
+}
+
+function formatPlayerTime(seconds){
+  const value=Math.max(0,Math.round(seconds));
+  return `${Math.floor(value/60)}:${String(value%60).padStart(2,"0")}`;
+}
+
+function currentPlayerStep(){
+  return visualPlayer.sequence[visualPlayer.index] || null;
+}
+
+function nextWorkStep(fromIndex=visualPlayer.index+1){
+  for(let i=fromIndex;i<visualPlayer.sequence.length;i++){
+    if(visualPlayer.sequence[i].kind==="work") return visualPlayer.sequence[i];
+  }
+  return null;
+}
+
+function openVisualWorkoutPlayer(workoutKey){
+  visualPlayer.workoutKey=workoutKey;
+  visualPlayer.sequence=buildPlayerSequence(workoutKey);
+  visualPlayer.index=0;
+  visualPlayer.elapsedSeconds=0;
+  visualPlayer.paused=false;
+  visualPlayer.startedAt=Date.now();
+
+  const workout=VISUAL_WORKOUTS[workoutKey];
+  document.getElementById("playerWorkoutName").textContent=workout.title;
+  document.getElementById("visualWorkoutPlayer").classList.add("active");
+  document.getElementById("visualWorkoutPlayer").setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+
+  document.getElementById("playerActiveScreen").style.display="flex";
+  document.getElementById("playerFinishScreen").classList.remove("active");
+  document.getElementById("playerControls").style.display="grid";
+
+  requestPlayerWakeLock();
+  loadPlayerStep(true);
+  startPlayerClock();
+}
+
+function closeVisualWorkoutPlayer(){
+  clearInterval(visualPlayer.intervalId);
+  visualPlayer.intervalId=null;
+  releasePlayerWakeLock();
+  if("speechSynthesis" in window) window.speechSynthesis.cancel();
+  document.getElementById("visualWorkoutPlayer").classList.remove("active");
+  document.getElementById("visualWorkoutPlayer").setAttribute("aria-hidden","true");
+  document.body.style.overflow="";
+}
+
+function loadPlayerStep(announce=false){
+  const step=currentPlayerStep();
+  if(!step){
+    finishVisualWorkout();
+    return;
+  }
+
+  visualPlayer.secondsLeft=step.seconds || 0;
+  const workout=VISUAL_WORKOUTS[visualPlayer.workoutKey];
+  const workSteps=visualPlayer.sequence.filter(item=>item.kind==="work");
+  const completedWork=visualPlayer.sequence
+    .slice(0,visualPlayer.index+1)
+    .filter(item=>item.kind==="work").length;
+
+  document.getElementById("playerPhase").textContent=
+    step.kind==="rest" ? "Rust" : `Ronde ${step.round}`;
+  document.getElementById("playerVisual").textContent=step.icon;
+  document.getElementById("playerVisual").classList.toggle("animate",step.kind==="work");
+  document.getElementById("playerExerciseName").textContent=step.name;
+  document.getElementById("playerExerciseCue").textContent=step.cue;
+
+  const timer=document.getElementById("playerTimer");
+  const reps=document.getElementById("playerReps");
+
+  if(step.seconds){
+    timer.hidden=false;
+    reps.hidden=true;
+    timer.textContent=visualPlayer.secondsLeft;
+  }else{
+    timer.hidden=true;
+    reps.hidden=false;
+    reps.textContent=step.reps;
+  }
+
+  const next=nextWorkStep();
+  document.getElementById("playerNext").textContent=
+    next ? `Hierna: ${next.name}` : "Laatste onderdeel";
+
+  document.getElementById("playerRound").textContent=`${step.round}/${workout.rounds}`;
+  document.getElementById("playerExerciseIndex").textContent=
+    `${Math.max(1,completedWork)}/${workSteps.length}`;
+
+  const progress=(visualPlayer.index/Math.max(1,visualPlayer.sequence.length))*100;
+  document.getElementById("playerProgressBar").style.width=`${progress}%`;
+
+  if(announce){
+    if(step.kind==="rest"){
+      speakPlayer(`Rust. ${step.seconds} seconden.`);
+    }else{
+      speakPlayer(`${step.name}. ${step.prescription}. ${step.cue}`);
+    }
+  }
+}
+
+function startPlayerClock(){
+  clearInterval(visualPlayer.intervalId);
+
+  visualPlayer.intervalId=setInterval(()=>{
+    if(visualPlayer.paused) return;
+
+    visualPlayer.elapsedSeconds++;
+    document.getElementById("playerElapsed").textContent=
+      formatPlayerTime(visualPlayer.elapsedSeconds);
+
+    const step=currentPlayerStep();
+    if(!step) return;
+
+    if(step.seconds){
+      visualPlayer.secondsLeft--;
+      document.getElementById("playerTimer").textContent=
+        Math.max(0,visualPlayer.secondsLeft);
+
+      if(visualPlayer.secondsLeft===5){
+        speakPlayer("Nog vijf seconden.");
+      }
+
+      if(visualPlayer.secondsLeft<=0){
+        advancePlayerStep();
+      }
+    }
+  },1000);
+}
+
+function advancePlayerStep(){
+  visualPlayer.index++;
+  loadPlayerStep(true);
+}
+
+function previousPlayerStep(){
+  visualPlayer.index=Math.max(0,visualPlayer.index-1);
+  loadPlayerStep(true);
+}
+
+function adjustPlayerSeconds(delta){
+  const step=currentPlayerStep();
+  if(!step?.seconds) return;
+  visualPlayer.secondsLeft=Math.max(1,visualPlayer.secondsLeft+delta);
+  document.getElementById("playerTimer").textContent=visualPlayer.secondsLeft;
+}
+
+function togglePlayerPause(){
+  visualPlayer.paused=!visualPlayer.paused;
+  document.getElementById("playerPause").textContent=
+    visualPlayer.paused ? "Hervat" : "Pauze";
+  speakPlayer(visualPlayer.paused ? "Workout gepauzeerd." : "Workout hervat.");
+}
+
+function finishVisualWorkout(){
+  clearInterval(visualPlayer.intervalId);
+  visualPlayer.intervalId=null;
+  releasePlayerWakeLock();
+
+  document.getElementById("playerActiveScreen").style.display="none";
+  document.getElementById("playerControls").style.display="none";
+  document.getElementById("playerFinishScreen").classList.add("active");
+  document.getElementById("playerProgressBar").style.width="100%";
+
+  const workout=VISUAL_WORKOUTS[visualPlayer.workoutKey];
+  document.getElementById("playerFinishSummary").textContent=
+    `${workout.title} voltooid in ${formatPlayerTime(visualPlayer.elapsedSeconds)}.`;
+
+  speakPlayer("Workout voltooid. Goed gedaan.");
+}
+
+function restartVisualWorkout(){
+  openVisualWorkoutPlayer(visualPlayer.workoutKey);
+}
+
+function saveCompletedVisualWorkout(){
+  const workoutDefinition=VISUAL_WORKOUTS[visualPlayer.workoutKey];
+  const date=todayDateString();
+  const durationMinutes=Math.max(1,Math.round(visualPlayer.elapsedSeconds/60));
+  const exerciseNames=workoutDefinition.exercises
+    .map(id=>VISUAL_EXERCISES[id].name);
+
+  const workout={
+    date,
+    type:workoutDefinition.type,
+    distanceKm:0,
+    durationMinutes,
+    name:workoutDefinition.title,
+    uploadName:`Jaco - ${workoutDefinition.title}`,
+    rpe:workoutDefinition.type==="Core"?"4/10":"2/10",
+    status:"completed",
+    priority:"could",
+    planType:workoutDefinition.type.toLowerCase(),
+    displaySteps:exerciseNames,
+    intervalsDescription:[
+      `${workoutDefinition.title} voltooid`,
+      `${workoutDefinition.rounds} rondes`,
+      ...exerciseNames.map(name=>`- ${name}`)
+    ].join("\n")
+  };
+
+  customWorkouts[date]=workout;
+  completed[date]=true;
+  saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(COMPLETED_KEY,completed);
+
+  renderMonth();
+  renderSelected();
+  renderSaved();
+  renderTodayCoach();
+
+  closeVisualWorkoutPlayer();
+  switchView("calendar");
+  selectedDate=date;
+  renderSelected();
+}
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible" &&
+     document.getElementById("visualWorkoutPlayer").classList.contains("active")){
+    requestPlayerWakeLock();
+  }
+});
+
 
 function renderVisualWorkout(key="core"){
   activeVisualWorkout=key;
@@ -4559,6 +4983,16 @@ document.getElementById("duplicateModal").onclick=event=>{
 };
 
 
+document.getElementById("startCorePlayer").onclick=()=>openVisualWorkoutPlayer("core");
+document.getElementById("startMobilityPlayer").onclick=()=>openVisualWorkoutPlayer("mobility");
+document.getElementById("closeWorkoutPlayer").onclick=closeVisualWorkoutPlayer;
+document.getElementById("playerPrevious").onclick=previousPlayerStep;
+document.getElementById("playerMinus").onclick=()=>adjustPlayerSeconds(-10);
+document.getElementById("playerPause").onclick=togglePlayerPause;
+document.getElementById("playerPlus").onclick=()=>adjustPlayerSeconds(10);
+document.getElementById("playerNextButton").onclick=advancePlayerStep;
+document.getElementById("finishAndSaveWorkout").onclick=saveCompletedVisualWorkout;
+document.getElementById("restartVisualWorkout").onclick=restartVisualWorkout;
 document.getElementById("showCoreRecipe").onclick=()=>renderVisualWorkout("core");
 document.getElementById("showMobilityRecipe").onclick=()=>renderVisualWorkout("mobility");
 document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
@@ -4612,5 +5046,56 @@ buildCoachHorizon();
 renderVisualWorkout("core");
 loadServer();
 </script>
+
+<div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
+  <div class="player-shell">
+    <div class="player-top">
+      <div>
+        <p class="label" id="playerWorkoutLabel">Visual workout</p>
+        <strong id="playerWorkoutName">Core Running Power</strong>
+      </div>
+      <button id="closeWorkoutPlayer" class="secondary" type="button" style="width:auto">Sluiten</button>
+    </div>
+
+    <div class="player-progress"><span id="playerProgressBar"></span></div>
+
+    <div id="playerActiveScreen" class="player-stage">
+      <div class="player-phase" id="playerPhase">Oefening</div>
+      <div id="playerVisual" class="player-visual animate">🧍</div>
+      <h2 id="playerExerciseName" class="player-title">Plank</h2>
+      <p id="playerExerciseCue" class="player-cue">Span je core aan.</p>
+      <div id="playerTimer" class="player-timer">40</div>
+      <div id="playerReps" class="player-reps" hidden></div>
+      <p id="playerNext" class="player-next">Hierna: Dead bug</p>
+    </div>
+
+    <div id="playerFinishScreen" class="player-finish">
+      <div class="finish-icon">🏁</div>
+      <h2>Workout voltooid</h2>
+      <p class="help" id="playerFinishSummary"></p>
+      <button id="finishAndSaveWorkout" class="player-primary" type="button">
+        Markeer als voltooid
+      </button>
+      <button id="restartVisualWorkout" class="secondary" type="button">
+        Nog een keer
+      </button>
+    </div>
+
+    <div class="player-meta">
+      <div><span>Ronde</span><strong id="playerRound">1/3</strong></div>
+      <div><span>Oefening</span><strong id="playerExerciseIndex">1/18</strong></div>
+      <div><span>Verstreken</span><strong id="playerElapsed">0:00</strong></div>
+    </div>
+
+    <div id="playerControls" class="player-controls">
+      <button id="playerPrevious" class="secondary" type="button">⏮ Vorige</button>
+      <button id="playerMinus" class="secondary" type="button">−10 sec</button>
+      <button id="playerPause" class="player-primary" type="button">Pauze</button>
+      <button id="playerPlus" class="secondary" type="button">+10 sec</button>
+      <button id="playerNextButton" class="secondary" type="button">Volgende ⏭</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
