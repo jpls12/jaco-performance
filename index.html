@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=500">
+  <link rel="stylesheet" href="/css/app.css?v=600">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 5.0 · Modulaire basis</span>
+      <span class="v2-badge">Jaco Performance 6.0 · Intelligence Engine</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -83,6 +83,76 @@
 
       <p id="todayStatus" class="status"></p>
     </article>
+
+
+    <article class="card performance-engine-card">
+      <div class="performance-engine-head">
+        <div>
+          <p class="label">Performance 6.0 · Intelligence Engine</p>
+          <h2>Performance Engine</h2>
+          <p class="help">
+            Dagelijkse coachinschatting op basis van belasting, herstel,
+            consistentie en je volgende wedstrijd.
+          </p>
+        </div>
+        <div class="performance-main-score">
+          <strong id="performanceScore">—</strong>
+          <span>/100</span>
+        </div>
+      </div>
+
+      <div class="performance-summary">
+        <h3 id="performanceHeadline">Scores worden berekend…</h3>
+        <p class="help" id="performanceExplanation">
+          De engine wacht op actuele Intervals.icu-data.
+        </p>
+      </div>
+
+      <div class="performance-score-grid">
+        <div class="performance-score-item">
+          <div class="score-label"><span>Fitness</span><strong id="fitnessScore">—</strong></div>
+          <div class="score-track"><span id="fitnessBar"></span></div>
+          <small id="fitnessExplanation">Langetermijnbelasting</small>
+        </div>
+
+        <div class="performance-score-item">
+          <div class="score-label"><span>Fatigue</span><strong id="fatigueScore">—</strong></div>
+          <div class="score-track"><span id="fatigueBar"></span></div>
+          <small id="fatigueExplanation">Balans tussen acute en chronische belasting</small>
+        </div>
+
+        <div class="performance-score-item">
+          <div class="score-label"><span>Recovery</span><strong id="recoveryScore">—</strong></div>
+          <div class="score-track"><span id="recoveryBar"></span></div>
+          <small id="recoveryExplanation">HRV, rusthartslag, slaap en vorm</small>
+        </div>
+
+        <div class="performance-score-item">
+          <div class="score-label"><span>Consistentie</span><strong id="consistencyScore">—</strong></div>
+          <div class="score-track"><span id="consistencyBar"></span></div>
+          <small id="consistencyExplanation">Afgeronde trainingen in de afgelopen vier weken</small>
+        </div>
+
+        <div class="performance-score-item">
+          <div class="score-label"><span>Race readiness</span><strong id="raceReadinessScore">—</strong></div>
+          <div class="score-track"><span id="raceReadinessBar"></span></div>
+          <small id="raceReadinessExplanation">Voorbereiding op je belangrijkste wedstrijd</small>
+        </div>
+
+        <div class="performance-score-item">
+          <div class="score-label"><span>Coach confidence</span><strong id="coachConfidenceScore">—</strong></div>
+          <div class="score-track"><span id="coachConfidenceBar"></span></div>
+          <small id="coachConfidenceExplanation">Hoe compleet de beschikbare data is</small>
+        </div>
+      </div>
+
+      <div id="performanceSignals" class="reason-list"></div>
+
+      <p class="engine-disclaimer">
+        Deze scores zijn coachheuristieken en geen medische beoordeling.
+      </p>
+    </article>
+
 
     <article class="card">
       <p class="label">Wat staat er al?</p>
@@ -712,8 +782,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=500" defer></script>
-<script src="/js/bootstrap.js?v=500" defer></script>
+<script src="/js/app.js?v=600" defer></script>
+<script src="/js/bootstrap.js?v=600" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
