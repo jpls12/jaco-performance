@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=600">
+  <link rel="stylesheet" href="/css/app.css?v=610">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 6.0 · Intelligence Engine</span>
+      <span class="v2-badge">Jaco Performance 6.1 · AI Training Generator</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -84,6 +84,62 @@
       <p id="todayStatus" class="status"></p>
     </article>
 
+
+
+    <article class="card ai-generator-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 6.1 · AI Training Generator</p>
+          <h2>Genereer mijn training van vandaag</h2>
+          <p class="help">
+            De generator combineert je herstel, beschikbaarheid, wedstrijdfase en
+            dagvoorkeur tot één concreet trainingsvoorstel.
+          </p>
+        </div>
+        <button id="generateAiTraining" type="button" style="width:auto">
+          Genereer training
+        </button>
+      </div>
+
+      <div class="generator-context-grid">
+        <div class="today-metric">
+          <span>Beschikbare tijd</span>
+          <strong id="generatorAvailableTime">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Trainingsdoel</span>
+          <strong id="generatorGoal">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Intensiteitsniveau</span>
+          <strong id="generatorIntensity">—</strong>
+        </div>
+      </div>
+
+      <div id="generatorResult" class="recommendation-card generator-result">
+        <p class="label">Voorstel</p>
+        <div class="recommendation-title" id="generatorTitle">
+          Nog geen training gegenereerd
+        </div>
+        <p class="help" id="generatorExplanation">
+          Tik op Genereer training om een voorstel te maken.
+        </p>
+        <ul class="steps" id="generatorSteps"></ul>
+      </div>
+
+      <div id="generatorAlternatives" class="generator-alternatives"></div>
+
+      <div class="today-actions">
+        <button id="regenerateAiTraining" class="secondary" type="button" disabled>
+          Ander voorstel
+        </button>
+        <button id="saveAiTraining" type="button" disabled>
+          Zet voorstel in kalender
+        </button>
+      </div>
+
+      <p id="generatorStatus" class="status"></p>
+    </article>
 
     <article class="card performance-engine-card">
       <div class="performance-engine-head">
@@ -782,8 +838,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=600" defer></script>
-<script src="/js/bootstrap.js?v=600" defer></script>
+<script src="/js/app.js?v=610" defer></script>
+<script src="/js/bootstrap.js?v=610" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
