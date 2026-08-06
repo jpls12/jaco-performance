@@ -3005,6 +3005,441 @@ function buildCoachHorizon(){
 
 
 
+
+let aiWeekOptions=[];
+let selectedAiWeekIndex=0;
+
+function weekPlanningContext(){
+  const profileData=getProfile();
+  const availability=availableDaysForPlanner();
+  const readiness=determineReadiness(getWellnessSnapshot());
+  const race=getRaceFocus();
+  const phase=classifyRacePhase(race);
+  const start=nextMonday();
+
+  return{
+    profile:profileData,
+    availability,
+    readiness,
+    race,
+    phase,
+    start
+  };
+}
+
+function weeklyTargetKm(context,variant=0){
+  const base=Math.min(
+    Number(context.profile.maxKm)||70,
+    Number(context.profile.weeklyKm)||60
+  );
+
+  let factor=1;
+  if(context.readiness.level==="low") factor=.70;
+  else if(context.readiness.level==="moderate") factor=.88;
+
+  if(context.phase.phase==="taper") factor*=.78;
+  if(context.phase.phase==="race-week") factor*=.52;
+
+  if(variant===1) factor*=.92;
+  if(variant===2) factor*=1.04;
+
+  return Math.max(20,Math.round(base*factor));
+}
+
+function weekFocusLabel(context){
+  if(!context.race) return "Algemene ontwikkeling";
+  if(context.phase.phase==="race-week") return "Wedstrijdweek";
+  if(context.phase.phase==="taper") return "Taper";
+  const distance=Number(context.race.distanceKm||5);
+  if(distance<=5) return "Snelheid en VO₂max";
+  if(distance<=10) return "Drempel en 10 km-tempo";
+  if(distance<30) return "Halve-marathontempo";
+  return "Marathonuithouding";
+}
+
+function makeWeekQualitySession(context,date,variant=0){
+  const paces=targetPacesForRace(context.race,context.profile);
+  const distance=Number(context.race?.distanceKm||5);
+
+  if(context.readiness.level==="low"){
+    const workout=makeWeekWorkout(
+      date,"recovery",8,"Herstelloop 8 km",
+      ["8 km zeer rustig","Hartslag onder zone 2-bovengrens"],
+      `Hersteltraining.
+
+Recovery
+- 8km 5:10-5:35/km Pace`,
+      "2/10"
+    );
+    workout.planType="recovery";
+    return workout;
+  }
+
+  if(context.phase.phase==="race-week"){
+    const workout=makeWeekWorkout(
+      date,"quality",7,"Wedstrijdprikkel",
+      ["2 km inlopen","6 × 200 m ontspannen snel","200 m dribbel","2 km uitlopen"],
+      `Wedstrijdprikkel.
+
+Warmup
+- 2km Z1 Pace
+
+Main set 6x
+- 200mtr 3:10-3:20/km Pace
+- 200mtr Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+      "5/10"
+    );
+    workout.planType="quality";
+    return workout;
+  }
+
+  if(distance<=5){
+    if(variant===1){
+      const workout=makeWeekWorkout(
+        date,"quality",11,"12 × 400 m snelheid",
+        ["3 km inlopen",`12 × 400 m @ ${paces.vo2}`,"200 m dribbel","2 km uitlopen"],
+        `Snelheidstraining.
+
+Warmup
+- 3km Z1 Pace
+
+Main set 12x
+- 400mtr ${paces.vo2} Pace
+- 200mtr Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+        "8/10"
+      );
+      workout.planType="quality";
+      return workout;
+    }
+
+    const workout=makeWeekWorkout(
+      date,"quality",12,"5 × 1000 m VO₂max",
+      ["3 km inlopen",`5 × 1000 m @ ${paces.vo2}`,"2 min dribbel","2 km uitlopen"],
+      `VO2max-training.
+
+Warmup
+- 3km Z1 Pace
+
+Main set 5x
+- 1km ${paces.vo2} Pace
+- 2m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+      "8/10"
+    );
+    workout.planType="quality";
+    return workout;
+  }
+
+  if(distance<=10){
+    const reps=variant===1?3:4;
+    const workout=makeWeekWorkout(
+      date,"quality",variant===1?13:15,`${reps} × 2 km drempel`,
+      ["3 km inlopen",`${reps} × 2 km @ ${paces.threshold}`,"2 min dribbel","2 km uitlopen"],
+      `Drempeltraining.
+
+Warmup
+- 3km Z1 Pace
+
+Main set ${reps}x
+- 2km ${paces.threshold} Pace
+- 2m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+      "7/10"
+    );
+    workout.planType="quality";
+    return workout;
+  }
+
+  const reps=variant===1?2:3;
+  const block=variant===1?4000:3000;
+  const workout=makeWeekWorkout(
+    date,"quality",variant===1?14:15,`${reps} × ${block/1000} km wedstrijdspecifiek`,
+    ["3 km inlopen",`${reps} × ${block/1000} km @ ${paces.threshold}`,"3 min dribbel","2 km uitlopen"],
+    `Wedstrijdspecifieke training.
+
+Warmup
+- 3km Z1 Pace
+
+Main set ${reps}x
+- ${block}mtr ${paces.threshold} Pace
+- 3m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+    "7/10"
+  );
+  workout.planType="quality";
+  return workout;
+}
+
+function makeWeekEasySession(date,km,recovery=false){
+  const workout=makeWeekWorkout(
+    date,
+    recovery?"recovery":"easy",
+    km,
+    recovery?`Herstelloop ${km} km`:`Rustige duurloop ${km} km`,
+    [
+      `${km} km ${recovery?"zeer rustig":"zone 2"}`,
+      recovery?"Geen versnellingen":"Hartslag gecontroleerd houden"
+    ],
+    `${recovery?"Hersteltraining":"Rustige duurloop"}.
+
+Easy
+- ${km}km ${recovery?"5:10-5:35/km":"5:00-5:25/km"} Pace`,
+    recovery?"2/10":"3/10"
+  );
+  workout.planType=recovery?"recovery":"easy";
+  return workout;
+}
+
+function makeWeekLongSession(context,date,km){
+  const workout=makeWeekWorkout(
+    date,"long",km,`Lange duurloop ${km} km`,
+    [
+      `${km} km rustig`,
+      `Hartslag bij voorkeur onder ${context.profile.z2Hr} bpm`,
+      Number(context.race?.distanceKm||0)>=21
+        ?"Laatste 3 km beheerst versnellen indien fris"
+        :"Volledig ontspannen houden"
+    ],
+    Number(context.race?.distanceKm||0)>=21 && km>=16
+      ? `Lange duurloop met gecontroleerde finish.
+
+Easy
+- ${km-3}km 4:55-5:20/km Pace
+
+Progression
+- 3km 4:05-4:20/km Pace`
+      : `Lange rustige duurloop.
+
+Easy
+- ${km}km 4:55-5:20/km Pace`,
+    "4/10"
+  );
+  workout.planType="long";
+  return workout;
+}
+
+function createUnscheduledAiWeek(context,variant=0){
+  const targetKm=weeklyTargetKm(context,variant);
+  const count=Math.min(
+    Number(context.profile.days)||4,
+    context.availability.length
+  );
+
+  if(count<=0){
+    return{targetKm,workouts:[]};
+  }
+
+  const quality=makeWeekQualitySession(context,context.start,variant);
+  const qualityKm=Number(quality.distanceKm)||0;
+
+  let longRatio=Number(context.race?.distanceKm||5)>=21?.30:.24;
+  if(context.phase.phase==="taper") longRatio=.22;
+  if(context.phase.phase==="race-week") longRatio=.16;
+
+  const longKm=Math.max(
+    8,
+    Math.round(targetKm*longRatio)
+  );
+
+  const remaining=Math.max(6,targetKm-qualityKm-(count>=3?longKm:0));
+  const easyCount=Math.max(1,count-(count>=3?2:1));
+  const easyKm=Math.max(6,Math.round(remaining/easyCount));
+
+  const sessions=[quality];
+
+  if(count>=3){
+    sessions.push(makeWeekLongSession(context,context.start,longKm));
+  }
+
+  while(sessions.length<count){
+    const isFinal=sessions.length===count-1;
+    const recovery=isFinal || context.readiness.level!=="good";
+    sessions.push(
+      makeWeekEasySession(
+        context.start,
+        recovery?Math.max(6,easyKm-2):easyKm,
+        recovery
+      )
+    );
+  }
+
+  return{targetKm,workouts:sessions};
+}
+
+function assignAiWeekToAvailability(context,unscheduled,variant=0){
+  const scheduled=scheduleByAvailability(unscheduled.workouts);
+
+  // Add core or mobility only if a free available day remains.
+  const usedDates=new Set(scheduled.map(workout=>workout.date));
+  const freeDay=context.availability.find(day=>{
+    const date=addDays(context.start,day.index);
+    return !usedDates.has(date) &&
+      ["core","mobiliteit","rustig"].includes(day.preference);
+  });
+
+  if(freeDay && context.profile.autoCore){
+    const date=addDays(context.start,freeDay.index);
+    const extra=freeDay.preference==="mobiliteit"
+      ? {
+          date,type:"Mobility",distanceKm:0,
+          durationMinutes:Math.min(freeDay.maxMinutes||15,20),
+          name:"Mobiliteit en herstel",
+          uploadName:"Jaco - Mobiliteit en herstel",
+          rpe:"2/10",status:"planned",
+          priority:freeDay.priority||"could",
+          planType:"mobility",
+          displaySteps:[
+            "Heupmobiliteit",
+            "Enkelmobiliteit",
+            "Hamstrings en bilspieren",
+            "Borstrotaties"
+          ],
+          intervalsDescription:"Mobiliteit en herstel."
+        }
+      : makeCoreWorkout(
+          date,
+          Math.min(freeDay.maxMinutes||15,20),
+          freeDay.priority||"could"
+        );
+
+    scheduled.push(extra);
+  }
+
+  scheduled.sort((a,b)=>a.date.localeCompare(b.date));
+
+  return{
+    targetKm:unscheduled.targetKm,
+    workouts:scheduled,
+    variant
+  };
+}
+
+function generateAiWeekOptions(){
+  const context=weekPlanningContext();
+
+  aiWeekOptions=[0,1,2].map(variant=>
+    assignAiWeekToAvailability(
+      context,
+      createUnscheduledAiWeek(context,variant),
+      variant
+    )
+  );
+
+  selectedAiWeekIndex=0;
+  renderAiWeekPlanner(context);
+}
+
+function renderAiWeekPlanner(context=weekPlanningContext()){
+  const target=document.getElementById("aiWeekTargetKm");
+  if(!target) return;
+
+  target.textContent=`${weeklyTargetKm(context,selectedAiWeekIndex)} km`;
+  document.getElementById("aiWeekAvailableDays").textContent=
+    `${context.availability.length} dagen`;
+  document.getElementById("aiWeekFocus").textContent=
+    weekFocusLabel(context);
+
+  const option=aiWeekOptions[selectedAiWeekIndex];
+
+  if(!option){
+    document.getElementById("aiWeekHeadline").textContent=
+      "Nog geen week gegenereerd";
+    document.getElementById("aiWeekReason").textContent=
+      "Tik op Genereer week om een voorstel te maken.";
+    document.getElementById("aiWeekPlan").innerHTML=
+      '<p class="help">Hier verschijnt je weekvoorstel.</p>';
+    document.getElementById("saveAiWeek").disabled=true;
+    document.getElementById("regenerateAiWeek").disabled=true;
+    return;
+  }
+
+  const totalKm=option.workouts.reduce(
+    (sum,workout)=>sum+(Number(workout.distanceKm)||0),
+    0
+  );
+
+  document.getElementById("aiWeekHeadline").textContent=
+    `${option.workouts.length} trainingen · circa ${Math.round(totalKm)} km`;
+
+  const raceText=context.race
+    ? `${context.race.name} over ${context.phase.days} dagen`
+    :"algemene opbouw";
+
+  document.getElementById("aiWeekReason").textContent=
+    `Gebaseerd op herstelstatus ${context.readiness.level}, ${context.availability.length} beschikbare dagen en ${raceText}.`;
+
+  document.getElementById("aiWeekPlan").innerHTML=
+    option.workouts.map(workout=>{
+      const typeClass=workout.planType||workout.type.toLowerCase();
+      return`
+        <div class="ai-week-row ${safe(typeClass)}">
+          <div class="ai-week-day">
+            ${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(workout.date+"T12:00:00"))}
+          </div>
+          <div>
+            <strong>${safe(workout.name)}</strong>
+            <small>${safe((workout.displaySteps||[])[0]||"")}</small>
+          </div>
+          <div class="ai-week-volume">${trainingVolumeLabel(workout)}</div>
+        </div>`;
+    }).join("");
+
+  document.getElementById("saveAiWeek").disabled=false;
+  document.getElementById("regenerateAiWeek").disabled=false;
+}
+
+function regenerateAiWeek(){
+  if(!aiWeekOptions.length){
+    generateAiWeekOptions();
+    return;
+  }
+
+  selectedAiWeekIndex=(selectedAiWeekIndex+1)%aiWeekOptions.length;
+  renderAiWeekPlanner();
+}
+
+function saveAiGeneratedWeek(){
+  const option=aiWeekOptions[selectedAiWeekIndex];
+  const status=document.getElementById("aiWeekStatus");
+
+  if(!option?.workouts?.length) return;
+
+  let added=0;
+  let skipped=0;
+
+  for(const workout of option.workouts){
+    if(customWorkouts[workout.date]){
+      skipped++;
+      continue;
+    }
+
+    customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
+    added++;
+  }
+
+  saveObject(STORAGE_KEY,customWorkouts);
+  renderMonth();
+  renderSaved();
+  renderTodayCoach();
+  renderPerformanceEngine();
+
+  status.className="status ok";
+  status.textContent=
+    `${added} trainingen toegevoegd${skipped?` · ${skipped} bestaande dagen overgeslagen`:""}.`;
+}
+
 let aiTrainingOptions=[];
 let selectedAiTrainingIndex=0;
 
@@ -3877,6 +4312,7 @@ function renderTodayCoach(){
   renderCurrentTodayWorkout(existing);
   renderPerformanceEngine();
   renderAiTrainingGenerator();
+  renderAiWeekPlanner();
 }
 
 function applyTodayRecommendation(){
