@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=620">
+  <link rel="stylesheet" href="/css/app.css?v=710">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 6.2 · AI Week Planner</span>
+      <span class="v2-badge">Jaco Performance 7.1 · Coach Intelligence</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -86,6 +86,67 @@
 
 
 
+
+    
+    <article class="card coach-intelligence-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 7.1 · Coach Intelligence</p>
+          <h2>Wat vertelt je trainingsgeschiedenis?</h2>
+          <p class="help">
+            Analyse van je laatste 7, 28 en 90 dagen op frequentie, kwaliteit,
+            lange duur, herstel en ondersteunende training.
+          </p>
+        </div>
+        <button id="refreshCoachIntelligence" class="secondary" type="button" style="width:auto">
+          Herbereken
+        </button>
+      </div>
+
+      <div class="intelligence-period-grid">
+        <div class="intelligence-period">
+          <span>Laatste 7 dagen</span>
+          <strong id="intel7Sessions">—</strong>
+          <small id="intel7Volume">—</small>
+        </div>
+        <div class="intelligence-period">
+          <span>Laatste 28 dagen</span>
+          <strong id="intel28Sessions">—</strong>
+          <small id="intel28Volume">—</small>
+        </div>
+        <div class="intelligence-period">
+          <span>Laatste 90 dagen</span>
+          <strong id="intel90Sessions">—</strong>
+          <small id="intel90Volume">—</small>
+        </div>
+      </div>
+
+      <div id="coachIntelligenceSignals" class="reason-list"></div>
+
+      <div class="intelligence-balance">
+        <div>
+          <span>Rustig lopen</span>
+          <div class="score-track"><span id="intelEasyBar"></span></div>
+          <small id="intelEasyText">—</small>
+        </div>
+        <div>
+          <span>Kwaliteit</span>
+          <div class="score-track"><span id="intelQualityBar"></span></div>
+          <small id="intelQualityText">—</small>
+        </div>
+        <div>
+          <span>Core & mobiliteit</span>
+          <div class="score-track"><span id="intelSupportBar"></span></div>
+          <small id="intelSupportText">—</small>
+        </div>
+      </div>
+
+      <div class="coach-box">
+        <p class="label">Coachconclusie</p>
+        <h3 id="coachIntelligenceHeadline">Analyse wordt berekend…</h3>
+        <p class="help" id="coachIntelligenceConclusion"></p>
+      </div>
+    </article>
 
     <article class="card ai-week-card">
       <div class="ai-generator-head">
@@ -893,8 +954,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=620" defer></script>
-<script src="/js/bootstrap.js?v=620" defer></script>
+<script src="/js/app.js?v=710" defer></script>
+<script src="/js/bootstrap.js?v=710" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
