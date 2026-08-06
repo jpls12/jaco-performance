@@ -32,7 +32,7 @@
       border-radius:20px;padding:17px;margin:13px 0;
       box-shadow:0 14px 40px rgba(0,0,0,.18)
     }
-    .tabs{display:grid;grid-template-columns:repeat(8,1fr);gap:9px;margin:17px 0}
+    .tabs{display:grid;grid-template-columns:repeat(9,1fr);gap:9px;margin:17px 0}
     button{
       border:0;border-radius:13px;padding:13px;background:var(--green);
       color:#062311;font-size:.96rem;font-weight:850;cursor:pointer
@@ -138,6 +138,47 @@
     .readiness-badge{padding:6px 9px;border-radius:999px;font-size:.76rem;font-weight:800;background:#173d2a;color:#9ce7b5;border:1px solid #2f6d49}
 
 
+
+
+    .exercise-library{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px}
+    .exercise-card{
+      background:#0d1928;border:1px solid #27415e;border-radius:16px;padding:14px
+    }
+    .exercise-head{display:flex;gap:12px;align-items:center}
+    .exercise-visual{
+      width:58px;height:58px;border-radius:14px;display:grid;place-items:center;
+      background:#172c43;border:1px solid #345574;font-size:2rem;flex:0 0 58px
+    }
+    .exercise-card h3{margin:0 0 4px;font-size:1.05rem}
+    .exercise-card p{margin:8px 0 0;color:var(--muted);line-height:1.4}
+    .coros-name{
+      display:inline-flex;margin-top:9px;padding:5px 8px;border-radius:999px;
+      background:#173d2a;border:1px solid #2f6d49;color:#9ce7b5;
+      font-size:.75rem;font-weight:800
+    }
+    .recipe-list{display:grid;gap:9px;margin-top:14px}
+    .recipe-row{
+      display:grid;grid-template-columns:38px 1fr auto;gap:11px;align-items:center;
+      padding:12px;background:#0d1928;border:1px solid #27415e;border-radius:13px
+    }
+    .recipe-number{
+      width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
+      background:#173d2a;color:#9ce7b5;font-weight:900
+    }
+    .recipe-row small{display:block;color:var(--muted);margin-top:3px}
+    .recipe-row code{
+      font-family:inherit;background:#15263a;border:1px solid #304a68;
+      border-radius:8px;padding:5px 7px;color:#b7d9ff
+    }
+    .copy-box{
+      white-space:pre-wrap;background:#08111d;border:1px solid #29415e;
+      border-radius:14px;padding:14px;line-height:1.55;max-height:420px;overflow:auto
+    }
+    @media(max-width:650px){
+      .exercise-library{grid-template-columns:1fr}
+      .recipe-row{grid-template-columns:38px 1fr}
+      .recipe-row code{grid-column:2}
+    }
 
     .sport-run{--sport:#56b8ff}
     .sport-bike{--sport:#ffd76a}
@@ -296,6 +337,7 @@
     <button class="tab" data-view="saved">Mijn trainingen</button>
     <button class="tab" data-view="races">Wedstrijden</button>
     <button class="tab" data-view="planning">Planning</button>
+    <button class="tab" data-view="library">Bibliotheek</button>
     <button class="tab" data-view="profile">Profiel</button>
   </nav>
 
@@ -303,7 +345,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 4.0 · Coach Horizon</span>
+      <span class="v2-badge">Jaco Performance 4.1 · COROS Visual</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -884,6 +926,65 @@
     </article>
   </section>
 
+
+  <section id="library" class="view">
+    <article class="card">
+      <p class="label">Performance 4.1 · COROS Visual Workouts</p>
+      <h2>Oefeningenbibliotheek</h2>
+      <p class="help">
+        Kies een core- of mobiliteitstraining. De app toont de uitvoering en maakt
+        een COROS-recept met de officiële of dichtstbijzijnde zoeknaam.
+      </p>
+
+      <div class="grid2">
+        <button id="showCoreRecipe" type="button">Core Running Power</button>
+        <button id="showMobilityRecipe" class="secondary" type="button">Mobiliteit & herstel</button>
+      </div>
+
+      <div id="exerciseLibrary" class="exercise-library"></div>
+    </article>
+
+    <article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div>
+          <p class="label">COROS-recept</p>
+          <h2 id="recipeTitle">Core Running Power</h2>
+          <p class="help">
+            Maak deze workout éénmalig in COROS via Profiel → Workout Library →
+            Create → Strength. Selecteer bij iedere fase de genoemde COROS-oefening.
+          </p>
+        </div>
+        <button id="copyCorosRecipe" class="secondary" type="button" style="width:auto">Kopieer</button>
+      </div>
+
+      <div id="corosRecipe" class="recipe-list"></div>
+
+      <details style="margin-top:16px">
+        <summary>Toon volledige kopieertekst</summary>
+        <div id="corosRecipeText" class="copy-box" style="margin-top:12px"></div>
+      </details>
+
+      <p id="copyRecipeStatus" class="status"></p>
+    </article>
+
+    <article class="card">
+      <p class="label">Eenmalig op je PACE 3</p>
+      <h2>Animaties activeren</h2>
+      <ol class="steps">
+        <li><span class="step">1</span><span>Open de COROS-app en selecteer je PACE 3.</span></li>
+        <li><span class="step">2</span><span>Open <strong>File Download</strong>.</span></li>
+        <li><span class="step">3</span><span>Download <strong>Strength Animation Files</strong> via wifi.</span></li>
+        <li><span class="step">4</span><span>Maak de workout als <strong>Strength</strong> en kies de gekoppelde oefeningen.</span></li>
+        <li><span class="step">5</span><span>Synchroniseer de workout naar je horloge.</span></li>
+      </ol>
+      <p class="notice">
+        Een export via Intervals.icu zet de training en tekst in je kalender, maar
+        kan geen interne COROS-animatie-ID koppelen. De animatie werkt na het
+        éénmalig aanmaken als native COROS Strength-workout.
+      </p>
+    </article>
+  </section>
+
   <section id="profile" class="view">
     <article class="card">
       <p class="label">Persoonlijk profiel</p><h2>Trainingsinstellingen</h2><p class="help">Deze gegevens gebruikt de weekplanner voor tempo’s en trainingsomvang.</p>
@@ -916,6 +1017,208 @@
 </div>
 
 <script>
+
+
+const VISUAL_EXERCISES={
+  plank:{
+    name:"Plank",
+    icon:"🧍",
+    coros:"Plank",
+    prescription:"40 seconden",
+    rest:"20 seconden",
+    cue:"Maak een rechte lijn van schouders tot hielen en span buik en billen aan."
+  },
+  sidePlank:{
+    name:"Side plank",
+    icon:"↔️",
+    coros:"Side Plank",
+    prescription:"30 seconden per zijde",
+    rest:"20 seconden",
+    cue:"Houd heupen hoog en schouders recht boven elkaar."
+  },
+  deadBug:{
+    name:"Dead bug",
+    icon:"🐞",
+    coros:"Dead Bug",
+    prescription:"10 herhalingen per zijde",
+    rest:"20 seconden",
+    cue:"Houd je onderrug tegen de grond en beweeg arm en tegenovergesteld been langzaam."
+  },
+  birdDog:{
+    name:"Bird dog",
+    icon:"🐕",
+    coros:"Bird Dog",
+    prescription:"10 herhalingen per zijde",
+    rest:"20 seconden",
+    cue:"Houd de heupen recht en maak lengte met arm en tegenovergesteld been."
+  },
+  gluteBridge:{
+    name:"Glute bridge",
+    icon:"🌉",
+    coros:"Glute Bridge",
+    prescription:"12 herhalingen",
+    rest:"30 seconden",
+    cue:"Duw vanuit de hielen en span bovenin de bilspieren aan."
+  },
+  copenhagen:{
+    name:"Copenhagen plank",
+    icon:"🦵",
+    coros:"Copenhagen Plank",
+    prescription:"20 seconden per zijde",
+    rest:"30 seconden",
+    cue:"Steun met het bovenste been en houd romp en bekken in één lijn."
+  },
+  hipMobility:{
+    name:"90/90 heuprotatie",
+    icon:"🧘",
+    coros:"90/90 Hip Switch",
+    prescription:"60 seconden",
+    rest:"15 seconden",
+    cue:"Beweeg gecontroleerd tussen beide kanten zonder de beweging te forceren."
+  },
+  ankleMobility:{
+    name:"Enkelmobiliteit",
+    icon:"🦶",
+    coros:"Ankle Mobility",
+    prescription:"60 seconden per zijde",
+    rest:"15 seconden",
+    cue:"Breng de knie naar voren terwijl de hiel volledig op de grond blijft."
+  },
+  hamstring:{
+    name:"Dynamische hamstring",
+    icon:"🦿",
+    coros:"Hamstring Stretch",
+    prescription:"45 seconden per zijde",
+    rest:"15 seconden",
+    cue:"Houd de rug lang en beweeg rustig vanuit de heup."
+  },
+  thoracic:{
+    name:"Borstrotatie",
+    icon:"🔄",
+    coros:"Thoracic Rotation",
+    prescription:"8 herhalingen per zijde",
+    rest:"15 seconden",
+    cue:"Volg je hand met je ogen en houd je heupen zo stil mogelijk."
+  },
+  breathing:{
+    name:"Herstelademhaling",
+    icon:"🌬️",
+    coros:"Breathing Exercise",
+    prescription:"2 minuten",
+    rest:"0 seconden",
+    cue:"Adem vier tellen in en zes tellen rustig uit."
+  }
+};
+
+const VISUAL_WORKOUTS={
+  core:{
+    title:"Core Running Power",
+    type:"Core",
+    rounds:3,
+    exercises:["plank","deadBug","birdDog","sidePlank","gluteBridge","copenhagen"]
+  },
+  mobility:{
+    title:"Mobiliteit & herstel",
+    type:"Mobility",
+    rounds:2,
+    exercises:["hipMobility","ankleMobility","hamstring","thoracic","gluteBridge","breathing"]
+  }
+};
+
+let activeVisualWorkout="core";
+
+function renderVisualWorkout(key="core"){
+  activeVisualWorkout=key;
+  const workout=VISUAL_WORKOUTS[key];
+  const exercises=workout.exercises.map(id=>VISUAL_EXERCISES[id]);
+
+  document.getElementById("recipeTitle").textContent=workout.title;
+
+  document.getElementById("exerciseLibrary").innerHTML=exercises.map(exercise=>`
+    <div class="exercise-card">
+      <div class="exercise-head">
+        <div class="exercise-visual">${exercise.icon}</div>
+        <div>
+          <h3>${safe(exercise.name)}</h3>
+          <strong>${safe(exercise.prescription)}</strong>
+        </div>
+      </div>
+      <p>${safe(exercise.cue)}</p>
+      <span class="coros-name">COROS: ${safe(exercise.coros)}</span>
+    </div>
+  `).join("");
+
+  let phase=1;
+  const rows=[];
+
+  for(let round=1;round<=workout.rounds;round++){
+    for(const exercise of exercises){
+      rows.push({
+        number:phase++,
+        title:`Ronde ${round} · ${exercise.name}`,
+        detail:`${exercise.prescription} · daarna ${exercise.rest} rust`,
+        coros:exercise.coros
+      });
+    }
+  }
+
+  document.getElementById("corosRecipe").innerHTML=rows.map(row=>`
+    <div class="recipe-row">
+      <div class="recipe-number">${row.number}</div>
+      <div>
+        <strong>${safe(row.title)}</strong>
+        <small>${safe(row.detail)}</small>
+      </div>
+      <code>${safe(row.coros)}</code>
+    </div>
+  `).join("");
+
+  document.getElementById("corosRecipeText").textContent=buildCorosRecipeText(workout,exercises);
+}
+
+function buildCorosRecipeText(workout,exercises){
+  const lines=[
+    workout.title,
+    "COROS workout type: Strength",
+    `Rondes: ${workout.rounds}`,
+    ""
+  ];
+
+  for(let round=1;round<=workout.rounds;round++){
+    lines.push(`RONDE ${round}`);
+    exercises.forEach((exercise,index)=>{
+      lines.push(
+        `${index+1}. ${exercise.name}`,
+        `   Zoek in COROS: ${exercise.coros}`,
+        `   Doel: ${exercise.prescription}`,
+        `   Rust: ${exercise.rest}`,
+        `   Uitvoering: ${exercise.cue}`
+      );
+    });
+    lines.push("");
+  }
+
+  lines.push(
+    "Synchroniseer daarna via de COROS-app naar je horloge.",
+    "Ondersteunde oefeningen tonen een animatie wanneer Strength Animation Files zijn gedownload."
+  );
+
+  return lines.join("\n");
+}
+
+async function copyCorosRecipe(){
+  const text=document.getElementById("corosRecipeText").textContent;
+  const status=document.getElementById("copyRecipeStatus");
+
+  try{
+    await navigator.clipboard.writeText(text);
+    status.className="status ok";
+    status.textContent="COROS-recept gekopieerd.";
+  }catch{
+    status.className="status error";
+    status.textContent="Kopiëren lukte niet. Houd de tekst ingedrukt en kies Kopieer.";
+  }
+}
 
 const TRAINING_TYPES={
   Run:{label:"Hardlopen",icon:"🏃",css:"sport-run",unit:"km",uploadable:true},
@@ -4256,6 +4559,9 @@ document.getElementById("duplicateModal").onclick=event=>{
 };
 
 
+document.getElementById("showCoreRecipe").onclick=()=>renderVisualWorkout("core");
+document.getElementById("showMobilityRecipe").onclick=()=>renderVisualWorkout("mobility");
+document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
 document.getElementById("refreshTodayCoach").onclick=async()=>{
@@ -4303,6 +4609,7 @@ loadWellnessDashboard();
 renderTodayCoach();
 renderCoachBrain();
 buildCoachHorizon();
+renderVisualWorkout("core");
 loadServer();
 </script>
 </body>
