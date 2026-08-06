@@ -2767,12 +2767,40 @@ function createTodayRecommendation(readiness,race,phase,availability,currentWork
   const date=todayDateString();
 
   if(!availability.available){
+    const minutes=15;
+    const workout={
+      date,
+      type:"Mobility",
+      distanceKm:0,
+      durationMinutes:minutes,
+      name:"Mobiliteit en herstel 15 min",
+      uploadName:"Jaco - Mobiliteit en herstel 15 min",
+      rpe:"2/10",
+      status:"planned",
+      priority:"could",
+      planType:"mobility",
+      displaySteps:[
+        "3 min rustige heupmobiliteit",
+        "3 min enkelmobiliteit",
+        "3 min hamstring en bilspieren",
+        "3 min rug en borstrotaties",
+        "3 min rustig foamrollen of ademhaling"
+      ],
+      intervalsDescription:`Mobiliteit en herstel 15 minuten.
+
+- Heupmobiliteit
+- Enkelmobiliteit
+- Hamstrings en bilspieren
+- Rug- en borstrotaties
+- Rustige ademhaling`
+    };
+
     return{
       kind:"rest",
-      workout:null,
-      title:"Rustdag",
-      text:"Vandaag staat als niet beschikbaar ingesteld. Herstel, slaap en eventueel korte mobiliteit hebben prioriteit.",
-      steps:["10–15 minuten mobiliteit indien gewenst","Geen verplichte training"]
+      workout,
+      title:"Rustdag + mobiliteit 15 min",
+      text:"Vandaag staat als niet beschikbaar ingesteld. De coach plant daarom geen looptraining, maar je kunt wel een korte mobiliteitssessie toevoegen.",
+      steps:workout.displaySteps
     };
   }
 
@@ -2966,7 +2994,9 @@ function renderTodayCoach(){
     ? "Vervang training van vandaag"
     : pendingTodayAdvice.kind==="keep"
       ? "Training staat al goed"
-      : "Plan advies voor vandaag";
+      : pendingTodayAdvice.kind==="rest"
+        ? (existing ? "Vervang door mobiliteit" : "Plan mobiliteit voor vandaag")
+        : "Plan advies voor vandaag";
 
   renderCurrentTodayWorkout(existing);
 }
@@ -2977,8 +3007,14 @@ function applyTodayRecommendation(){
   const date=todayDateString();
   const existing=customWorkouts[date];
 
-  if(existing && !confirm(`De bestaande training "${existing.name}" vervangen?`)){
-    return;
+  if(existing){
+    const replacement=pendingTodayAdvice.kind==="rest"
+      ? `De bestaande training "${existing.name}" vervangen door 15 minuten mobiliteit?`
+      : `De bestaande training "${existing.name}" vervangen door "${pendingTodayAdvice.workout.name}"?`;
+
+    if(!confirm(replacement)){
+      return;
+    }
   }
 
   const workout=JSON.parse(JSON.stringify(pendingTodayAdvice.workout));
