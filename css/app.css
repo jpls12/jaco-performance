@@ -446,3 +446,34 @@
       .performance-main-score{margin-top:12px}
       .performance-score-grid{grid-template-columns:1fr}
     }
+
+
+    .ai-generator-card{
+      background:linear-gradient(155deg,rgba(17,38,61,.98),rgba(14,30,48,.98));
+      border-color:#315677
+    }
+    .ai-generator-head{
+      display:flex;justify-content:space-between;gap:16px;align-items:flex-start
+    }
+    .generator-context-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px
+    }
+    .generator-result{margin-top:14px}
+    .generator-alternatives{
+      display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-top:12px
+    }
+    .generator-alt{
+      text-align:left;background:#0d1928;border:1px solid #29415e;
+      border-radius:14px;padding:12px;cursor:pointer
+    }
+    .generator-alt strong{display:block}
+    .generator-alt small{display:block;color:var(--muted);margin-top:4px}
+    .generator-alt.active{
+      border-color:#45c983;box-shadow:0 0 0 1px #45c983 inset
+    }
+    @media(max-width:650px){
+      .ai-generator-head{display:block}
+      .ai-generator-head button{margin-top:12px;width:100%!important}
+      .generator-context-grid{grid-template-columns:1fr}
+      .generator-alternatives{grid-template-columns:1fr}
+    }
