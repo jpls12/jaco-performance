@@ -507,3 +507,31 @@
       .ai-week-row{grid-template-columns:78px 1fr}
       .ai-week-volume{grid-column:2;justify-self:start}
     }
+
+    .coach-intelligence-card{
+      background:linear-gradient(155deg,rgba(24,41,61,.98),rgba(13,28,45,.98));
+      border-color:#395b78
+    }
+    .intelligence-period-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px
+    }
+    .intelligence-period{
+      background:#0d1928;border:1px solid #29415e;border-radius:14px;padding:13px
+    }
+    .intelligence-period span,.intelligence-period small{
+      display:block;color:var(--muted)
+    }
+    .intelligence-period strong{
+      display:block;font-size:1.5rem;margin:5px 0
+    }
+    .intelligence-balance{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px
+    }
+    .intelligence-balance>div{
+      background:#0d1928;border:1px solid #29415e;border-radius:14px;padding:13px
+    }
+    .intelligence-balance span{font-weight:850}
+    .intelligence-balance small{color:var(--muted);line-height:1.35}
+    @media(max-width:650px){
+      .intelligence-period-grid,.intelligence-balance{grid-template-columns:1fr}
+    }
