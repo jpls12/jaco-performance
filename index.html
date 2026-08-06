@@ -138,6 +138,25 @@
     .readiness-badge{padding:6px 9px;border-radius:999px;font-size:.76rem;font-weight:800;background:#173d2a;color:#9ce7b5;border:1px solid #2f6d49}
 
 
+
+    .sport-run{--sport:#56b8ff}
+    .sport-bike{--sport:#ffd76a}
+    .sport-swim{--sport:#69d7ff}
+    .sport-strength{--sport:#ff9f68}
+    .sport-core{--sport:#cda2ff}
+    .sport-mobility{--sport:#83dfb0}
+    .sport-rest{--sport:#95a8c2}
+    .sport-badge{
+      display:inline-flex;align-items:center;gap:7px;padding:6px 10px;
+      border:1px solid color-mix(in srgb,var(--sport) 55%,#314965);
+      background:color-mix(in srgb,var(--sport) 13%,#17293e);
+      border-radius:999px;font-size:.8rem;font-weight:800
+    }
+    .sport-dot{
+      width:10px;height:10px;border-radius:50%;background:var(--sport);display:inline-block
+    }
+    .non-run-fields[hidden],.run-fields[hidden]{display:none!important}
+
     .hero-score{
       display:grid;grid-template-columns:130px 1fr;gap:18px;align-items:center
     }
@@ -284,7 +303,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 2.0</span>
+      <span class="v2-badge">Jaco Performance 3.0 · fase 1</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -538,6 +557,24 @@
         </div>
 
         <div class="grid2">
+          <label>Trainingstype
+            <select id="workoutType">
+              <option value="Run">🏃 Hardlopen</option>
+              <option value="Ride">🚴 Fietsen</option>
+              <option value="Swim">🏊 Zwemmen</option>
+              <option value="Strength">💪 Kracht</option>
+              <option value="Core">🧱 Core</option>
+              <option value="Mobility">🧘 Mobiliteit</option>
+              <option value="Rest">😴 Rust</option>
+            </select>
+          </label>
+          <label>Duur (minuten)
+            <input id="durationMinutes" type="number" min="0" step="5" value="60">
+          </label>
+        </div>
+
+        <div id="runFields" class="run-fields">
+        <div class="grid2">
           <label>Geschatte afstand (km)
             <input id="distanceKm" type="number" min="0" step="0.1" placeholder="12" required>
           </label>
@@ -597,8 +634,24 @@
           </label>
         </div>
 
+
+        </div>
+
+        <div id="nonRunFields" class="non-run-fields" hidden>
+          <label>Onderdelen of oefeningen
+            <textarea id="activitySteps" placeholder="Eén onderdeel per regel, bijvoorbeeld:
+10 min rustig inrijden
+4 × 8 min sweet spot
+10 min uitrijden"></textarea>
+          </label>
+
+          <label>Beschrijving
+            <textarea id="activityDescription" placeholder="Doel, intensiteit, techniek of aandachtspunten"></textarea>
+          </label>
+        </div>
+
         <label>Coachnotitie (optioneel)
-          <textarea id="notes" placeholder="Bijv. eerste herhalingen gecontroleerd lopen."></textarea>
+          <textarea id="notes" placeholder="Bijv. rustig uitvoeren en stoppen bij klachten."></textarea>
         </label>
 
         <button id="saveButton" type="submit">Training opslaan</button>
@@ -817,6 +870,53 @@
 </div>
 
 <script>
+
+const TRAINING_TYPES={
+  Run:{label:"Hardlopen",icon:"🏃",css:"sport-run",unit:"km",uploadable:true},
+  Ride:{label:"Fietsen",icon:"🚴",css:"sport-bike",unit:"km",uploadable:false},
+  Swim:{label:"Zwemmen",icon:"🏊",css:"sport-swim",unit:"m",uploadable:false},
+  Strength:{label:"Kracht",icon:"💪",css:"sport-strength",unit:"min",uploadable:false},
+  Core:{label:"Core",icon:"🧱",css:"sport-core",unit:"min",uploadable:false},
+  Mobility:{label:"Mobiliteit",icon:"🧘",css:"sport-mobility",unit:"min",uploadable:false},
+  Rest:{label:"Rust",icon:"😴",css:"sport-rest",unit:"",uploadable:false}
+};
+
+function trainingTypeInfo(type){
+  return TRAINING_TYPES[type] || TRAINING_TYPES.Run;
+}
+
+function trainingVolumeLabel(workout){
+  const info=trainingTypeInfo(workout?.type);
+  if(workout?.type==="Swim" && Number(workout?.distanceMeters)>0){
+    return `${workout.distanceMeters} m`;
+  }
+  if(["Strength","Core","Mobility"].includes(workout?.type)){
+    return `${Number(workout?.durationMinutes)||0} min`;
+  }
+  if(workout?.type==="Rest") return "Rust";
+  if(Number(workout?.distanceKm)>0) return `${workout.distanceKm} km`;
+  if(Number(workout?.durationMinutes)>0) return `${workout.durationMinutes} min`;
+  return "—";
+}
+
+function updateWorkoutTypeFields(){
+  const type=document.getElementById("workoutType")?.value || "Run";
+  const isRun=type==="Run";
+  document.getElementById("runFields").hidden=!isRun;
+  document.getElementById("nonRunFields").hidden=isRun;
+
+  const duration=document.getElementById("durationMinutes");
+  if(type==="Rest"){
+    duration.value=0;
+    duration.disabled=true;
+  }else{
+    duration.disabled=false;
+    if(!Number(duration.value)) duration.value=type==="Core"||type==="Mobility"?15:60;
+  }
+
+  updatePreview();
+}
+
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -965,8 +1065,10 @@ function renderSelected(){
     <div class="workout-title">${safe(workout.name)}</div>
 
     <div class="meta">
-      <span class="pill">${safe(workout.type || "Run")}</span>
-      <span class="pill">± ${safe(workout.distanceKm)} km</span>
+      <span class="sport-badge ${trainingTypeInfo(workout.type).css}">
+        <span class="sport-dot"></span>${trainingTypeInfo(workout.type).icon} ${trainingTypeInfo(workout.type).label}
+      </span>
+      <span class="pill">${trainingVolumeLabel(workout)}</span>
       <span class="pill">RPE ${safe(workout.rpe)}</span>
       <span class="pill">${done?"Voltooid":isCustom?"Eigen training":"Schema"}</span>
       ${uploaded?`<span class="pill">In Intervals ✓</span>`:""}
@@ -983,8 +1085,11 @@ function renderSelected(){
         ${done?"Markeer als gepland":"Markeer als voltooid"}
       </button>
 
-      <button class="secondary" type="button" onclick="uploadSelected()">
-        ${uploaded?"Opnieuw naar Intervals":"Zet in Intervals.icu"}
+      <button class="secondary" type="button" onclick="uploadSelected()"
+        ${trainingTypeInfo(workout.type).uploadable ? "" : "disabled"}>
+        ${trainingTypeInfo(workout.type).uploadable
+          ? (uploaded?"Opnieuw naar Intervals":"Zet in Intervals.icu")
+          : "Intervals-export volgt"}
       </button>
 
       ${isCustom?`
@@ -1017,6 +1122,15 @@ function toggleDone(){
 async function uploadSelected(){
   const workout=allWorkouts()[selectedDate];
   if(!workout) return;
+
+  if(!trainingTypeInfo(workout.type).uploadable){
+    const status=document.getElementById("uploadStatus");
+    if(status){
+      status.className="status error";
+      status.textContent=`Intervals.icu-export voor ${trainingTypeInfo(workout.type).label.toLowerCase()} wordt in fase 2 toegevoegd.`;
+    }
+    return;
+  }
 
   const pin=prompt("Voer je Jaco Performance app-pincode in:");
   if(pin===null) return;
@@ -1061,6 +1175,10 @@ function setDefaultForm(date=ymd(today)){
   document.getElementById("workoutForm").reset();
   document.getElementById("originalDate").value="";
   document.getElementById("date").value=date;
+  document.getElementById("workoutType").value="Run";
+  document.getElementById("durationMinutes").value=60;
+  document.getElementById("activitySteps").value="";
+  document.getElementById("activityDescription").value="";
   document.getElementById("rpe").value="8/10";
   document.getElementById("warmupKm").value=3;
   document.getElementById("warmupPace").value="5:00-5:30/km";
@@ -1077,6 +1195,7 @@ function setDefaultForm(date=ymd(today)){
   document.getElementById("cancelEdit").hidden=true;
   document.getElementById("formStatus").textContent="";
   updateRecoveryLabel();
+  updateWorkoutTypeFields();
   updatePreview();
 }
 
@@ -1513,6 +1632,42 @@ function parseSmartTraining(){
 }
 
 function buildWorkout(){
+  const type=document.getElementById("workoutType").value || "Run";
+  const name=safe(document.getElementById("name").value).trim();
+  const notes=safe(document.getElementById("notes").value).trim();
+  const durationMinutes=Number(document.getElementById("durationMinutes").value || 0);
+
+  if(type!=="Run"){
+    const steps=document.getElementById("activitySteps").value
+      .split(/\n+/)
+      .map(step=>safe(step).trim())
+      .filter(Boolean);
+
+    const description=safe(document.getElementById("activityDescription").value).trim();
+    const info=trainingTypeInfo(type);
+
+    return{
+      name,
+      uploadName:`Jaco - ${name}`,
+      date:document.getElementById("date").value,
+      type,
+      distanceKm:0,
+      durationMinutes,
+      rpe:document.getElementById("rpe").value,
+      status:"planned",
+      editorData:{
+        durationMinutes,
+        activitySteps:document.getElementById("activitySteps").value,
+        activityDescription:document.getElementById("activityDescription").value,
+        notes
+      },
+      displaySteps:steps.length?steps:[
+        type==="Rest"?"Volledige rustdag":`${durationMinutes} minuten ${info.label.toLowerCase()}`
+      ],
+      intervalsDescription:[description,notes].filter(Boolean).join("\n\n")
+    };
+  }
+
   const recoveryType=document.getElementById("recoveryType").value;
   const recoveryValue=Number(document.getElementById("recoveryValue").value);
   const warmupKm=Number(document.getElementById("warmupKm").value || 0);
@@ -1520,13 +1675,10 @@ function buildWorkout(){
   const repeats=Number(document.getElementById("repeats").value);
   const workMeters=Number(document.getElementById("workMeters").value);
   const target=safe(document.getElementById("targetPace").value).trim() || "Z1";
-  const notes=safe(document.getElementById("notes").value).trim();
   const displaySteps=[];
   const lines=[];
 
-  if(notes){
-    lines.push(notes,"");
-  }
+  if(notes) lines.push(notes,"");
 
   if(warmupKm>0){
     const warmupPace=safe(document.getElementById("warmupPace").value).trim() || "Z1";
@@ -1536,18 +1688,14 @@ function buildWorkout(){
 
   displaySteps.push(
     `${repeats} × ${workMeters} m @ ${target}, ${
-      recoveryType==="time"
-        ? `${recoveryValue} min herstel`
-        : `${recoveryValue} m herstel`
+      recoveryType==="time" ? `${recoveryValue} min herstel` : `${recoveryValue} m herstel`
     }`
   );
 
   lines.push(`Main set ${repeats}x`);
   lines.push(`- ${workMeters}mtr ${target} Pace`);
   lines.push(
-    recoveryType==="time"
-      ? `- ${recoveryValue}m Z1 Pace`
-      : `- ${recoveryValue}mtr Z1 Pace`,
+    recoveryType==="time" ? `- ${recoveryValue}m Z1 Pace` : `- ${recoveryValue}mtr Z1 Pace`,
     ""
   );
 
@@ -1556,17 +1704,17 @@ function buildWorkout(){
     lines.push("Cooldown",`- ${cooldownKm}km Z1 Pace`);
   }
 
-  const name=safe(document.getElementById("name").value).trim();
-
   return{
     name,
     uploadName:`Jaco - ${name}`,
     date:document.getElementById("date").value,
     type:"Run",
     distanceKm:Number(document.getElementById("distanceKm").value),
+    durationMinutes,
     rpe:document.getElementById("rpe").value,
     status:"planned",
     editorData:{
+      durationMinutes,
       warmupKm,
       warmupPace:document.getElementById("warmupPace").value,
       repeats,
@@ -1575,7 +1723,7 @@ function buildWorkout(){
       recoveryType,
       recoveryValue,
       cooldownKm,
-      notes:document.getElementById("notes").value
+      notes
     },
     displaySteps,
     intervalsDescription:lines.join("\n")
@@ -1588,6 +1736,10 @@ function fillEditor(workout,originalDate){
   document.getElementById("originalDate").value=originalDate || "";
   document.getElementById("date").value=workout.date;
   document.getElementById("name").value=workout.name || "";
+  document.getElementById("workoutType").value=workout.type || "Run";
+  document.getElementById("durationMinutes").value=workout.durationMinutes ?? editor.durationMinutes ?? 60;
+  document.getElementById("activitySteps").value=editor.activitySteps || (workout.type!=="Run" ? (workout.displaySteps||[]).join("\n") : "");
+  document.getElementById("activityDescription").value=editor.activityDescription || (workout.type!=="Run" ? workout.intervalsDescription||"" : "");
   document.getElementById("distanceKm").value=workout.distanceKm ?? "";
   document.getElementById("rpe").value=workout.rpe || "8/10";
   document.getElementById("warmupKm").value=editor.warmupKm ?? 3;
@@ -1606,6 +1758,7 @@ function fillEditor(workout,originalDate){
   document.getElementById("cancelEdit").hidden=false;
   document.getElementById("formStatus").textContent="";
   updateRecoveryLabel();
+  updateWorkoutTypeFields();
   updatePreview();
 }
 
@@ -1651,8 +1804,11 @@ function copyServerWorkout(date){
 
 function updatePreview(){
   try{
+    const workout=buildWorkout();
+    const info=trainingTypeInfo(workout.type);
+    const steps=(workout.displaySteps||[]).map(step=>`- ${step}`).join("\n");
     document.getElementById("preview").textContent=
-      buildWorkout().intervalsDescription || "Vul de training in.";
+      `${info.icon} ${info.label}\n${workout.name || "Naam ontbreekt"}\n${trainingVolumeLabel(workout)} · RPE ${workout.rpe}\n\n${steps || workout.intervalsDescription || "Vul de training in."}`;
   }catch{
     document.getElementById("preview").textContent="Vul de training in.";
   }
@@ -1797,7 +1953,8 @@ function renderSaved(){
           <strong>${safe(workout.name)}</strong>
           <small>
             ${fullDate.format(new Date(date+"T12:00:00"))}
-            · ${safe(workout.distanceKm)} km
+            · ${trainingVolumeLabel(workout)}
+            · ${trainingTypeInfo(workout.type).label}
             · RPE ${safe(workout.rpe)}
             ${uploadedWorkouts[date] ? " · In Intervals ✓" : ""}
           </small>
@@ -3584,6 +3741,7 @@ document.getElementById("recoveryType").onchange=()=>{
 document.getElementById("parseSmartInput").onclick=parseSmartTraining;
 document.getElementById("generateSmartWorkout").onclick=generateSmartWorkout;
 
+document.getElementById("workoutType").onchange=updateWorkoutTypeFields;
 document.getElementById("workoutForm").addEventListener("input",updatePreview);
 document.getElementById("workoutForm").onsubmit=saveWorkout;
 document.getElementById("cancelEdit").onclick=()=>{
