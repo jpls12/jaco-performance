@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=710">
+  <link rel="stylesheet" href="/css/app.css?v=720">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 7.1 · Coach Intelligence</span>
+      <span class="v2-badge">Jaco Performance 7.2 · Performance Trend</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -88,6 +88,77 @@
 
 
     
+    
+    <article class="card performance-trend-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 7.2 · Performance Trend</p>
+          <h2>Hoe ontwikkelt je vorm?</h2>
+          <p class="help">
+            Volg de richting van performance, fitness, herstel, vermoeidheid en
+            vorm op basis van je recente Intervals.icu-wellnessdata.
+          </p>
+        </div>
+        <button id="refreshPerformanceTrend" class="secondary" type="button" style="width:auto">
+          Herbereken
+        </button>
+      </div>
+
+      <div class="trend-period-tabs">
+        <button type="button" class="trend-period active" data-trend-days="7">7 dagen</button>
+        <button type="button" class="trend-period" data-trend-days="28">28 dagen</button>
+        <button type="button" class="trend-period" data-trend-days="90">90 dagen</button>
+      </div>
+
+      <div class="trend-summary-grid">
+        <div class="trend-summary">
+          <span>Performance</span>
+          <strong id="trendPerformanceValue">—</strong>
+          <small id="trendPerformanceDirection">—</small>
+        </div>
+        <div class="trend-summary">
+          <span>Fitness</span>
+          <strong id="trendFitnessValue">—</strong>
+          <small id="trendFitnessDirection">—</small>
+        </div>
+        <div class="trend-summary">
+          <span>Herstel</span>
+          <strong id="trendRecoveryValue">—</strong>
+          <small id="trendRecoveryDirection">—</small>
+        </div>
+        <div class="trend-summary">
+          <span>Vorm</span>
+          <strong id="trendFormValue">—</strong>
+          <small id="trendFormDirection">—</small>
+        </div>
+      </div>
+
+      <div class="trend-chart-wrap">
+        <div class="trend-chart-head">
+          <strong>Performanceverloop</strong>
+          <span id="trendChartRange">Laatste 7 dagen</span>
+        </div>
+        <svg id="performanceTrendChart" class="trend-chart" viewBox="0 0 700 240" role="img" aria-label="Performance trendgrafiek">
+          <line x1="35" y1="25" x2="35" y2="205" class="trend-axis"></line>
+          <line x1="35" y1="205" x2="680" y2="205" class="trend-axis"></line>
+          <g id="performanceTrendGrid"></g>
+          <polyline id="performanceTrendLine" points="" class="trend-line"></polyline>
+          <g id="performanceTrendDots"></g>
+        </svg>
+        <div id="trendChartEmpty" class="help" hidden>
+          Nog onvoldoende wellnesshistorie om een trend te tekenen.
+        </div>
+      </div>
+
+      <div id="performanceTrendSignals" class="reason-list"></div>
+
+      <div class="coach-box">
+        <p class="label">Trendconclusie</p>
+        <h3 id="performanceTrendHeadline">Trend wordt berekend…</h3>
+        <p class="help" id="performanceTrendConclusion"></p>
+      </div>
+    </article>
+
     <article class="card coach-intelligence-card">
       <div class="ai-generator-head">
         <div>
@@ -954,8 +1025,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=710" defer></script>
-<script src="/js/bootstrap.js?v=710" defer></script>
+<script src="/js/app.js?v=720" defer></script>
+<script src="/js/bootstrap.js?v=720" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
