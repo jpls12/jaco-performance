@@ -577,3 +577,30 @@
     @media(max-width:650px){
       .trend-summary-grid{grid-template-columns:repeat(2,1fr)}
     }
+
+    .smart-week-coach-card{
+      background:linear-gradient(155deg,rgba(18,42,59,.98),rgba(11,29,44,.98));
+      border-color:#3b6c7d
+    }
+    .smart-week-metrics{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px
+    }
+    .smart-week-row{
+      display:grid;grid-template-columns:92px 1fr auto;gap:12px;align-items:center;
+      padding:13px;background:#0d1928;border:1px solid #29415e;border-radius:14px
+    }
+    .smart-week-row.quality{border-color:#844653}
+    .smart-week-row.long{border-color:#806a34}
+    .smart-week-row.recovery{border-color:#2f654d}
+    .smart-week-row.core,.smart-week-row.mobility{border-color:#5e4c83}
+    .smart-week-row .day{font-weight:900}
+    .smart-week-row small{display:block;color:var(--muted);margin-top:4px}
+    .smart-week-pill{
+      border-radius:999px;padding:6px 9px;font-size:.76rem;font-weight:900;
+      background:#14283d;border:1px solid #355775
+    }
+    @media(max-width:650px){
+      .smart-week-metrics{grid-template-columns:repeat(2,1fr)}
+      .smart-week-row{grid-template-columns:76px 1fr}
+      .smart-week-pill{grid-column:2;justify-self:start}
+    }
