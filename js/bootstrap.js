@@ -54,6 +54,9 @@ document.getElementById("showMobilityRecipe").onclick=()=>renderVisualWorkout("m
 document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
+document.getElementById("optimizeSmartWeek").onclick=generateSmartWeekOptions;
+document.getElementById("smartWeekAlternative").onclick=selectNextSmartWeek;
+document.getElementById("applySmartWeek").onclick=applySmartWeekPlan;
 document.getElementById("refreshPerformanceTrend").onclick=()=>renderPerformanceTrend(activeTrendDays);
 document.querySelectorAll(".trend-period").forEach(button=>{
   button.onclick=()=>renderPerformanceTrend(Number(button.dataset.trendDays));
@@ -135,6 +138,7 @@ async function initializeJacoPerformance(){
   renderAiWeekPlanner();
   renderCoachIntelligence();
   renderPerformanceTrend(7);
+  renderSmartWeekCoach();
 }
 
 window.addEventListener("error",event=>{
