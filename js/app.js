@@ -586,6 +586,398 @@ let profile = loadObject(PROFILE_KEY);
 let pendingWeekPlan = [];
 let pendingAdaptiveWeek = [];
 let latestWellnessSnapshot = null;
+
+let smartWeekOptions=[];
+let selectedSmartWeekIndex=0;
+
+function weekdayIndexFromDate(dateString){
+  const day=new Date(dateString+"T12:00:00").getDay();
+  return day===0?6:day-1;
+}
+
+function isHardWorkout(workout){
+  const type=String(workout?.planType||"").toLowerCase();
+  const rpe=Number(String(workout?.rpe||"0").split("/")[0])||0;
+  const name=String(workout?.name||"").toLowerCase();
+
+  return["quality","threshold","vo2"].includes(type) ||
+    rpe>=7 ||
+    /interval|vo₂|vo2|drempel|threshold|tempo|400|800|1000|2000|3000/.test(name);
+}
+
+function isLongWorkout(workout){
+  const type=String(workout?.planType||"").toLowerCase();
+  return type==="long" || Number(workout?.distanceKm||0)>=16;
+}
+
+function smartWeekContext(){
+  const profileData=getProfile();
+  const availability=availableDaysForPlanner();
+  const readiness=determineReadiness(getWellnessSnapshot());
+  const race=getRaceFocus();
+  const phase=classifyRacePhase(race);
+  const start=nextMonday();
+  const end=addDays(start,6);
+
+  const existing=Object.entries(customWorkouts)
+    .filter(([date])=>date>=start && date<=end)
+    .map(([date,workout])=>({...JSON.parse(JSON.stringify(workout)),date}));
+
+  return{profile:profileData,availability,readiness,race,phase,start,end,existing};
+}
+
+function availableDayInfo(context,dateString){
+  const index=weekdayIndexFromDate(dateString);
+  return context.availability.find(day=>day.index===index)||null;
+}
+
+function compatibleWithDay(workout,dayInfo){
+  if(!dayInfo) return false;
+  const pref=String(dayInfo.preference||"").toLowerCase();
+  const type=String(workout.planType||workout.type||"").toLowerCase();
+
+  if(pref==="rust") return false;
+  if(pref==="core") return type==="core";
+  if(pref==="mobiliteit") return type==="mobility";
+  if(pref==="lange-duur") return type==="long" || type==="easy";
+  if(pref==="drempel") return isHardWorkout(workout);
+  if(pref==="herstel") return ["recovery","easy","mobility"].includes(type);
+  return true;
+}
+
+function estimatedWorkoutMinutes(workout){
+  if(Number(workout.durationMinutes)>0) return Number(workout.durationMinutes);
+
+  const km=Number(workout.distanceKm)||0;
+  if(!km) return 20;
+
+  const type=String(workout.planType||"").toLowerCase();
+  let pace=5.15;
+  if(isHardWorkout(workout)) pace=4.6;
+  if(type==="long") pace=5.1;
+  if(type==="recovery") pace=5.45;
+
+  return Math.round(km*pace);
+}
+
+function fitsTime(workout,dayInfo){
+  if(!dayInfo) return false;
+  const max=Number(dayInfo.maxMinutes)||999;
+  return estimatedWorkoutMinutes(workout)<=max+10;
+}
+
+function dateGapDays(a,b){
+  return Math.round(
+    Math.abs(
+      new Date(a+"T12:00:00")-new Date(b+"T12:00:00")
+    )/86400000
+  );
+}
+
+function smartWeekWarningsFor(workouts,context){
+  const sorted=[...workouts].sort((a,b)=>a.date.localeCompare(b.date));
+  const warnings=[];
+
+  const hard=sorted.filter(isHardWorkout);
+  const long=sorted.filter(isLongWorkout);
+
+  for(let i=1;i<hard.length;i++){
+    const gap=dateGapDays(hard[i-1].date,hard[i].date);
+    if(gap<2){
+      warnings.push({
+        state:"warn",
+        icon:"!",
+        text:`Zware sessies op ${hard[i-1].date} en ${hard[i].date} staan te dicht op elkaar.`
+      });
+    }
+  }
+
+  if(hard.length>2){
+    warnings.push({
+      state:"warn",icon:"!",
+      text:`${hard.length} zware loopsessies in één week is relatief veel.`
+    });
+  }
+
+  if(long.length>1){
+    warnings.push({
+      state:"warn",icon:"!",
+      text:"Er staan meerdere lange duurlopen in dezelfde week."
+    });
+  }
+
+  sorted.forEach(workout=>{
+    const dayInfo=availableDayInfo(context,workout.date);
+    if(!dayInfo){
+      warnings.push({
+        state:"warn",icon:"!",
+        text:`${workout.name} staat op ${workout.date}, maar die dag is niet beschikbaar ingesteld.`
+      });
+    }else if(!fitsTime(workout,dayInfo)){
+      warnings.push({
+        state:"warn",icon:"!",
+        text:`${workout.name} past waarschijnlijk niet binnen ${dayInfo.maxMinutes} beschikbare minuten.`
+      });
+    }
+  });
+
+  if(!warnings.length){
+    warnings.push({
+      state:"good",icon:"✓",
+      text:"De week heeft een goede spreiding tussen belasting en herstel."
+    });
+  }
+
+  return warnings;
+}
+
+function chooseBestDateForWorkout(workout,context,usedDates,variant=0){
+  const candidates=context.availability
+    .map(day=>({...day,date:addDays(context.start,day.index)}))
+    .filter(day=>!usedDates.has(day.date))
+    .filter(day=>compatibleWithDay(workout,day))
+    .filter(day=>fitsTime(workout,day));
+
+  if(!candidates.length){
+    const fallback=context.availability
+      .map(day=>({...day,date:addDays(context.start,day.index)}))
+      .filter(day=>!usedDates.has(day.date))
+      .filter(day=>fitsTime(workout,day));
+    if(!fallback.length) return null;
+    candidates.push(...fallback);
+  }
+
+  const hard=isHardWorkout(workout);
+  const long=isLongWorkout(workout);
+
+  const scored=candidates.map(day=>{
+    let score=50;
+
+    if(day.priority==="must") score+=20;
+    if(day.priority==="should") score+=10;
+
+    const pref=String(day.preference||"").toLowerCase();
+
+    if(hard && pref==="drempel") score+=30;
+    if(long && pref==="lange-duur") score+=35;
+    if(!hard && !long && pref==="rustig") score+=20;
+    if(String(workout.planType||"").toLowerCase()==="recovery" && pref==="herstel") score+=30;
+    if(workout.type==="Core" && pref==="core") score+=40;
+    if(workout.type==="Mobility" && pref==="mobiliteit") score+=40;
+
+    if(variant===1) score+=day.index*2;
+    if(variant===2) score+=(6-day.index)*2;
+
+    return{...day,score};
+  });
+
+  scored.sort((a,b)=>b.score-a.score);
+  return scored[0];
+}
+
+function optimizeWeekWorkouts(sourceWorkouts,context,variant=0){
+  const ordered=[...sourceWorkouts].sort((a,b)=>{
+    const weight=workout=>{
+      if(isHardWorkout(workout)) return 1;
+      if(isLongWorkout(workout)) return 2;
+      const type=String(workout.planType||workout.type||"").toLowerCase();
+      if(type==="easy") return 3;
+      if(type==="recovery") return 4;
+      if(type==="core" || type==="mobility") return 5;
+      return 6;
+    };
+    return weight(a)-weight(b);
+  });
+
+  const scheduled=[];
+  const usedDates=new Set();
+
+  for(const workout of ordered){
+    const candidate=chooseBestDateForWorkout(workout,context,usedDates,variant);
+    if(!candidate) continue;
+
+    let date=candidate.date;
+
+    if(isHardWorkout(workout)){
+      const conflicting=scheduled.find(existing=>
+        isHardWorkout(existing) && dateGapDays(existing.date,date)<2
+      );
+
+      if(conflicting){
+        const alternates=context.availability
+          .map(day=>({...day,date:addDays(context.start,day.index)}))
+          .filter(day=>!usedDates.has(day.date))
+          .filter(day=>fitsTime(workout,day))
+          .filter(day=>
+            scheduled
+              .filter(isHardWorkout)
+              .every(existing=>dateGapDays(existing.date,day.date)>=2)
+          );
+
+        if(alternates.length){
+          date=alternates[0].date;
+        }
+      }
+    }
+
+    scheduled.push({...JSON.parse(JSON.stringify(workout)),date});
+    usedDates.add(date);
+  }
+
+  return scheduled.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function generateSmartWeekOptions(){
+  const context=smartWeekContext();
+
+  let baseWeek=[];
+
+  if(aiWeekOptions?.length && aiWeekOptions[selectedAiWeekIndex]?.workouts?.length){
+    baseWeek=aiWeekOptions[selectedAiWeekIndex].workouts;
+  }else{
+    const generated=createUnscheduledAiWeek(context,0);
+    baseWeek=generated.workouts;
+  }
+
+  smartWeekOptions=[0,1,2].map(variant=>
+    optimizeWeekWorkouts(baseWeek,context,variant)
+  );
+
+  selectedSmartWeekIndex=0;
+  renderSmartWeekCoach(context);
+}
+
+function smartWeekBalanceScore(workouts,context){
+  let score=100;
+  const warnings=smartWeekWarningsFor(workouts,context);
+
+  score-=warnings.filter(item=>item.state==="warn").length*12;
+
+  const hard=workouts.filter(isHardWorkout).length;
+  const recovery=workouts.filter(workout=>
+    ["recovery","easy","mobility"].includes(
+      String(workout.planType||workout.type||"").toLowerCase()
+    )
+  ).length;
+
+  if(hard<=2) score+=4;
+  if(recovery>=2) score+=4;
+
+  return clampScore(score);
+}
+
+function renderSmartWeekCoach(context=smartWeekContext()){
+  const balance=document.getElementById("smartWeekBalance");
+  if(!balance) return;
+
+  const option=smartWeekOptions[selectedSmartWeekIndex];
+
+  if(!option){
+    balance.textContent="—";
+    document.getElementById("smartWeekHardSessions").textContent="—";
+    document.getElementById("smartWeekRecoveryDays").textContent="—";
+    document.getElementById("smartWeekAvailability").textContent=`${context.availability.length} dagen`;
+    document.getElementById("smartWeekWarnings").innerHTML="";
+    document.getElementById("smartWeekPlan").innerHTML='<p class="help">Hier verschijnt de geoptimaliseerde week.</p>';
+    document.getElementById("applySmartWeek").disabled=true;
+    document.getElementById("smartWeekAlternative").disabled=true;
+    return;
+  }
+
+  const warnings=smartWeekWarningsFor(option,context);
+  const hard=option.filter(isHardWorkout).length;
+  const recovery=option.filter(workout=>
+    ["recovery","easy","mobility"].includes(
+      String(workout.planType||workout.type||"").toLowerCase()
+    )
+  ).length;
+  const score=smartWeekBalanceScore(option,context);
+
+  balance.textContent=`${score}/100`;
+  document.getElementById("smartWeekHardSessions").textContent=hard;
+  document.getElementById("smartWeekRecoveryDays").textContent=recovery;
+  document.getElementById("smartWeekAvailability").textContent=`${context.availability.length} dagen`;
+
+  document.getElementById("smartWeekWarnings").innerHTML=
+    warnings.map(item=>`
+      <div class="reason-item">
+        <div class="reason-icon ${item.state}">${item.icon}</div>
+        <div>${safe(item.text)}</div>
+      </div>
+    `).join("");
+
+  let headline="Week is goed verdeeld";
+  let conclusion="Kwaliteit, duur en herstel zijn logisch over de week verspreid.";
+
+  if(score<60){
+    headline="Week vraagt aanpassing";
+    conclusion="Er zijn meerdere conflicten met herstel of beschikbaarheid. Kies een alternatieve verdeling.";
+  }else if(score<80){
+    headline="Week is bruikbaar, maar niet optimaal";
+    conclusion="De week kan worden uitgevoerd, maar let op de gemarkeerde belasting- of tijdsconflicten.";
+  }
+
+  document.getElementById("smartWeekHeadline").textContent=headline;
+  document.getElementById("smartWeekConclusion").textContent=conclusion;
+
+  document.getElementById("smartWeekPlan").innerHTML=
+    option.map(workout=>`
+      <div class="smart-week-row ${safe(workout.planType||workout.type.toLowerCase())}">
+        <div class="day">
+          ${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(workout.date+"T12:00:00"))}
+        </div>
+        <div>
+          <strong>${safe(workout.name)}</strong>
+          <small>${safe((workout.displaySteps||[])[0]||"")}</small>
+        </div>
+        <div class="smart-week-pill">
+          ${trainingVolumeLabel(workout)}
+        </div>
+      </div>
+    `).join("");
+
+  document.getElementById("applySmartWeek").disabled=false;
+  document.getElementById("smartWeekAlternative").disabled=false;
+}
+
+function selectNextSmartWeek(){
+  if(!smartWeekOptions.length){
+    generateSmartWeekOptions();
+    return;
+  }
+  selectedSmartWeekIndex=(selectedSmartWeekIndex+1)%smartWeekOptions.length;
+  renderSmartWeekCoach();
+}
+
+function applySmartWeekPlan(){
+  const option=smartWeekOptions[selectedSmartWeekIndex];
+  const status=document.getElementById("smartWeekStatus");
+  if(!option?.length) return;
+
+  let added=0;
+  let skipped=0;
+
+  for(const workout of option){
+    if(customWorkouts[workout.date]){
+      skipped++;
+      continue;
+    }
+
+    customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
+    added++;
+  }
+
+  saveObject(STORAGE_KEY,customWorkouts);
+  renderMonth();
+  renderSaved();
+  renderTodayCoach();
+  renderPerformanceEngine();
+  renderCoachIntelligence();
+
+  status.className="status ok";
+  status.textContent=`${added} trainingen toegepast${skipped?` · ${skipped} bestaande dagen behouden`:""}.`;
+}
+
 let latestWellnessRecords=[];
 let pendingTodayAdvice = null;
 
@@ -3824,6 +4216,7 @@ function regenerateAiWeek(){
   renderAiWeekPlanner();
   renderCoachIntelligence();
   renderPerformanceTrend(activeTrendDays);
+  renderSmartWeekCoach();
 }
 
 function saveAiGeneratedWeek(){
