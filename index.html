@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=720">
+  <link rel="stylesheet" href="/css/app.css?v=730">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 7.2 · Performance Trend</span>
+      <span class="v2-badge">Jaco Performance 7.3 · Slimme Weekcoach</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -89,6 +89,67 @@
 
     
     
+    
+    <article class="card smart-week-coach-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 7.3 · Slimme Weekcoach</p>
+          <h2>Optimaliseer mijn trainingsweek</h2>
+          <p class="help">
+            De weekcoach controleert je week op herstel, spreiding van kwaliteit,
+            lange duur, beschikbaarheid en bestaande trainingen.
+          </p>
+        </div>
+        <button id="optimizeSmartWeek" type="button" style="width:auto">
+          Optimaliseer week
+        </button>
+      </div>
+
+      <div class="smart-week-metrics">
+        <div class="today-metric">
+          <span>Weekbalans</span>
+          <strong id="smartWeekBalance">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Zware sessies</span>
+          <strong id="smartWeekHardSessions">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Hersteldagen</span>
+          <strong id="smartWeekRecoveryDays">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Beschikbaarheid</span>
+          <strong id="smartWeekAvailability">—</strong>
+        </div>
+      </div>
+
+      <div id="smartWeekWarnings" class="reason-list"></div>
+
+      <div class="coach-box">
+        <p class="label">Weekcoachbesluit</p>
+        <h3 id="smartWeekHeadline">Nog geen week geanalyseerd</h3>
+        <p class="help" id="smartWeekConclusion">
+          Tik op Optimaliseer week om je huidige week te laten controleren.
+        </p>
+      </div>
+
+      <div id="smartWeekPlan" class="ai-week-plan">
+        <p class="help">Hier verschijnt de geoptimaliseerde week.</p>
+      </div>
+
+      <div class="today-actions">
+        <button id="smartWeekAlternative" class="secondary" type="button" disabled>
+          Andere verdeling
+        </button>
+        <button id="applySmartWeek" type="button" disabled>
+          Pas week toe
+        </button>
+      </div>
+
+      <p id="smartWeekStatus" class="status"></p>
+    </article>
+
     <article class="card performance-trend-card">
       <div class="ai-generator-head">
         <div>
@@ -1025,8 +1086,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=720" defer></script>
-<script src="/js/bootstrap.js?v=720" defer></script>
+<script src="/js/app.js?v=730" defer></script>
+<script src="/js/bootstrap.js?v=730" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
