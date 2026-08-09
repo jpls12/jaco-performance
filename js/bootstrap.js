@@ -54,6 +54,18 @@ document.getElementById("showMobilityRecipe").onclick=()=>renderVisualWorkout("m
 document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
+document.getElementById("sendCoachChat").onclick=sendCoachChatMessage;
+document.getElementById("clearCoachChat").onclick=clearCoachChat;
+document.getElementById("applyCoachChatAction").onclick=applyCoachChatWorkout;
+document.querySelectorAll(".coach-chip").forEach(button=>{
+  button.onclick=()=>handleCoachChat(button.dataset.coachPrompt);
+});
+document.getElementById("coachChatInput").addEventListener("keydown",event=>{
+  if(event.key==="Enter" && !event.shiftKey){
+    event.preventDefault();
+    sendCoachChatMessage();
+  }
+});
 document.getElementById("optimizeSmartWeek").onclick=generateSmartWeekOptions;
 document.getElementById("smartWeekAlternative").onclick=selectNextSmartWeek;
 document.getElementById("applySmartWeek").onclick=applySmartWeekPlan;
