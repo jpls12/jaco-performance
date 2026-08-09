@@ -587,6 +587,216 @@ let pendingWeekPlan = [];
 let pendingAdaptiveWeek = [];
 let latestWellnessSnapshot = null;
 
+
+let pendingCoachChatWorkout=null;
+
+function coachChatContext(){
+  const availability=todayAvailabilityInfo();
+  const snapshot=getWellnessSnapshot();
+  const readiness=determineReadiness(snapshot);
+  const race=getRaceFocus();
+  const phase=classifyRacePhase(race);
+  const profileData=getProfile();
+  const existing=currentTodayWorkout();
+  return{availability,snapshot,readiness,race,phase,profile:profileData,existing};
+}
+
+function normalizeCoachMessage(message){
+  return String(message||"").trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+
+function extractMinutesFromMessage(message){
+  const normalized=normalizeCoachMessage(message);
+  const match=normalized.match(/(\d{2,3})\s*(min|minuten|minute)/);
+  if(match) return Number(match[1]);
+  const hourMatch=normalized.match(/(\d+(?:[.,]\d+)?)\s*(uur|u)/);
+  if(hourMatch) return Math.round(Number(hourMatch[1].replace(",","."))*60);
+  return null;
+}
+
+function coachChatAddMessage(role,text){
+  const box=document.getElementById("coachChatMessages");
+  if(!box) return;
+  const row=document.createElement("div");
+  row.className=`coach-message ${role}`;
+  const avatar=document.createElement("div");
+  avatar.className="coach-avatar";
+  avatar.textContent=role==="user"?"J":"C";
+  const bubble=document.createElement("div");
+  bubble.className="coach-bubble";
+  bubble.textContent=text;
+  row.appendChild(avatar);
+  row.appendChild(bubble);
+  box.appendChild(row);
+  box.scrollTop=box.scrollHeight;
+}
+
+function coachChatResponse(message){
+  const text=normalizeCoachMessage(message);
+  const context=coachChatContext();
+  const minutes=extractMinutesFromMessage(message);
+  let response="";
+  let workout=null;
+
+  const heavyLegs=/zwaar|vermoeid|stram|stijf|moe|lood/.test(text);
+  const poorSleep=/slecht geslapen|weinig geslapen|korte nacht/.test(text);
+  const feelGood=/heel goed|fris|topfit|sterk vandaag|voel me goed|goede benen/.test(text);
+  const unavailableTomorrow=/morgen.*niet|niet.*morgen|morgen kan ik niet|morgen geen tijd/.test(text);
+  const missed=/gemist|training overgeslagen|niet kunnen trainen/.test(text);
+  const wantsLong=/lange duur|lange duurloop|long run/.test(text);
+  const pain=/pijn|blessure|stekende|scherpe pijn|gezwollen/.test(text);
+
+  if(pain){
+    response="Bij pijn maak ik geen intensieve trainingsaanpassing. Kies vandaag voor rust of zeer lichte mobiliteit en beoordeel eerst of trainen verantwoord voelt. Bij aanhoudende of duidelijke pijn is professionele beoordeling verstandiger.";
+    workout=createGeneratorWorkout("mobility",context);
+    return{response,workout};
+  }
+
+  if(heavyLegs || poorSleep || context.readiness.level==="low"){
+    if(context.availability.available){
+      response="Je herstel krijgt vandaag voorrang. Ik zou de intensiteit schrappen en kiezen voor een korte herstelloop of mobiliteit. Zo behouden we ritme zonder extra vermoeidheid op te stapelen.";
+      const adjusted={...context,availability:{...context.availability,maxMinutes:minutes||context.availability.maxMinutes}};
+      workout=createGeneratorWorkout(minutes && minutes<=25 ? "mobility" : "recovery",adjusted);
+    }else{
+      response="Vandaag staat al als rustdag of niet beschikbaar. Met zware benen is dat passend: laat de geplande rust staan en voeg alleen korte mobiliteit toe als dat prettig voelt.";
+      workout=createGeneratorWorkout("mobility",context);
+    }
+    return{response,workout};
+  }
+
+  if(minutes){
+    const adjusted={...context,availability:{...context.availability,available:true,maxMinutes:minutes}};
+    if(minutes<=25){
+      response=`Met ${minutes} minuten beschikbaar is een volledige loopkwaliteitssessie niet zinvol. Ik kies liever een korte core- of mobiliteitssessie.`;
+      workout=createGeneratorWorkout("core",adjusted);
+    }else if(minutes<=45){
+      response=`Met ${minutes} minuten houden we de training compact. Geen onnodig lange warming-up of extra volume; de trainingsprikkel blijft centraal staan.`;
+      workout=context.readiness.level==="good"
+        ? createGeneratorWorkout("sharpen",adjusted)
+        : createGeneratorWorkout("easy",adjusted);
+    }else{
+      response=`${minutes} minuten is voldoende om een volwaardige training te doen. Ik laat wedstrijdfase en herstel bepalen of dat kwaliteit of rustige duur wordt.`;
+      const kinds=chooseGeneratorKinds(adjusted);
+      workout=createGeneratorWorkout(kinds[0],adjusted);
+    }
+    workout=fitGeneratedWorkout(workout,adjusted);
+    return{response,workout};
+  }
+
+  if(unavailableTomorrow){
+    response="Dan zou ik morgen niet proberen te compenseren met een dubbele sessie. We houden de belangrijkste kwaliteitsprikkel op de eerstvolgende geschikte beschikbare dag en laten de rest van de week daaromheen schuiven.";
+    return{response,workout:null};
+  }
+
+  if(missed){
+    response="Een gemiste training hoeft niet automatisch ingehaald te worden. Ik zou alleen de belangrijkste kwaliteitstraining behouden en extra kilometers niet stapelen. De weekcoach kan de resterende sessies opnieuw verdelen.";
+    return{response,workout:null};
+  }
+
+  if(wantsLong){
+    if(context.readiness.level==="good" && context.availability.available){
+      response="Je herstel laat een langere duurprikkel toe. Ik zou hem wel rustig houden en geen zware intervaltraining er direct naast plannen.";
+      workout=createGeneratorWorkout("long",context);
+    }else{
+      response="Een lange duurloop past vandaag minder goed bij je herstel of beschikbaarheid. Ik zou hem verplaatsen naar de eerstvolgende ruime, goed herstelde dag.";
+    }
+    return{response,workout};
+  }
+
+  if(feelGood){
+    if(!context.availability.available){
+      response="Je voelt je goed, maar vandaag staat als niet beschikbaar. Ik zou dat niet automatisch veranderen. Bewaar de frisheid voor de volgende geplande kwaliteitstraining.";
+      return{response,workout:null};
+    }
+    const kinds=chooseGeneratorKinds(context);
+    workout=createGeneratorWorkout(kinds[0],context);
+    response=`Je herstel en gevoel zijn positief. Daarom kan vandaag een gerichte trainingsprikkel, passend bij ${context.race?context.race.name:"je huidige opbouw"}.`;
+    return{response,workout};
+  }
+
+  response=`Ik combineer je bericht met een coachscore van ${context.readiness.score}/100${context.race?`, ${context.race.name} over ${context.phase.days} dagen`:""} en je huidige beschikbaarheid. Voor een concrete wijziging kun je aangeven hoeveel tijd je hebt, hoe je benen voelen of welke training je wilt verplaatsen.`;
+  return{response,workout:null};
+}
+
+function showCoachChatAction(workout){
+  const box=document.getElementById("coachChatAction");
+  pendingCoachChatWorkout=workout||null;
+  if(!workout){
+    box.hidden=true;
+    return;
+  }
+  box.hidden=false;
+  document.getElementById("coachChatActionTitle").textContent=workout.name;
+  document.getElementById("coachChatActionText").textContent=
+    `${trainingVolumeLabel(workout)} · RPE ${workout.rpe||"—"} · ${(workout.displaySteps||[]).join(" · ")}`;
+}
+
+function handleCoachChat(message){
+  const input=String(message||"").trim();
+  if(!input) return;
+  coachChatAddMessage("user",input);
+  const result=coachChatResponse(input);
+  setTimeout(()=>{
+    coachChatAddMessage("coach",result.response);
+    showCoachChatAction(result.workout);
+  },120);
+}
+
+function sendCoachChatMessage(){
+  const input=document.getElementById("coachChatInput");
+  const message=input.value.trim();
+  if(!message) return;
+  input.value="";
+  handleCoachChat(message);
+}
+
+function clearCoachChat(){
+  const box=document.getElementById("coachChatMessages");
+  box.innerHTML=`
+    <div class="coach-message coach">
+      <div class="coach-avatar">C</div>
+      <div class="coach-bubble">
+        Vertel me wat er verandert. Bijvoorbeeld: “Mijn benen voelen zwaar”
+        of “Ik heb vandaag maar 40 minuten.”
+      </div>
+    </div>
+  `;
+  pendingCoachChatWorkout=null;
+  document.getElementById("coachChatAction").hidden=true;
+  document.getElementById("coachChatStatus").textContent="";
+}
+
+function applyCoachChatWorkout(){
+  const status=document.getElementById("coachChatStatus");
+  if(!pendingCoachChatWorkout) return;
+
+  const date=todayDateString();
+  const existing=customWorkouts[date];
+
+  if(existing){
+    const confirmed=confirm(`De bestaande training "${existing.name}" vervangen door "${pendingCoachChatWorkout.name}"?`);
+    if(!confirmed) return;
+  }
+
+  const saved=JSON.parse(JSON.stringify(pendingCoachChatWorkout));
+  saved.date=date;
+  saved.status="planned";
+  customWorkouts[date]=saved;
+  saveObject(STORAGE_KEY,customWorkouts);
+
+  renderMonth();
+  renderSelected();
+  renderSaved();
+  renderTodayCoach();
+  renderPerformanceEngine();
+  renderCoachIntelligence();
+  renderPerformanceTrend(activeTrendDays);
+
+  status.className="status ok";
+  status.textContent=`${saved.name} is voor vandaag ingepland.`;
+  coachChatAddMessage("coach",`${saved.name} staat nu in je kalender voor vandaag.`);
+}
+
 let smartWeekOptions=[];
 let selectedSmartWeekIndex=0;
 
