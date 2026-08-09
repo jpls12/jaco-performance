@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=730">
+  <link rel="stylesheet" href="/css/app.css?v=740">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 7.3 · Slimme Weekcoach</span>
+      <span class="v2-badge">Jaco Performance 7.4 · Coach Chat</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -90,6 +90,56 @@
     
     
     
+    
+    <article class="card coach-chat-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 7.4 · Coach Chat</p>
+          <h2>Praat met je coach</h2>
+          <p class="help">
+            Beschrijf hoe je je voelt of wat er vandaag verandert. De coach
+            combineert je bericht met herstel, planning en wedstrijdfocus.
+          </p>
+        </div>
+        <button id="clearCoachChat" class="secondary" type="button" style="width:auto">
+          Wis chat
+        </button>
+      </div>
+
+      <div id="coachChatMessages" class="coach-chat-messages">
+        <div class="coach-message coach">
+          <div class="coach-avatar">C</div>
+          <div class="coach-bubble">
+            Vertel me wat er verandert. Bijvoorbeeld: “Mijn benen voelen zwaar”
+            of “Ik heb vandaag maar 40 minuten.”
+          </div>
+        </div>
+      </div>
+
+      <div class="coach-chat-chips">
+        <button type="button" class="coach-chip" data-coach-prompt="Mijn benen voelen zwaar">Zware benen</button>
+        <button type="button" class="coach-chip" data-coach-prompt="Ik heb vandaag maar 40 minuten">40 minuten</button>
+        <button type="button" class="coach-chip" data-coach-prompt="Ik voel me heel goed vandaag">Voel me goed</button>
+        <button type="button" class="coach-chip" data-coach-prompt="Ik kan morgen niet trainen">Morgen niet beschikbaar</button>
+      </div>
+
+      <div class="coach-chat-input-row">
+        <textarea id="coachChatInput" rows="3" placeholder="Bijv. Ik heb slecht geslapen en mijn benen voelen zwaar..."></textarea>
+        <button id="sendCoachChat" type="button">Vraag coach</button>
+      </div>
+
+      <div id="coachChatAction" class="coach-chat-action" hidden>
+        <p class="label">Voorgestelde aanpassing</p>
+        <h3 id="coachChatActionTitle">—</h3>
+        <p class="help" id="coachChatActionText"></p>
+        <button id="applyCoachChatAction" type="button">
+          Pas advies toe op vandaag
+        </button>
+      </div>
+
+      <p id="coachChatStatus" class="status"></p>
+    </article>
+
     <article class="card smart-week-coach-card">
       <div class="ai-generator-head">
         <div>
@@ -1086,8 +1136,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=730" defer></script>
-<script src="/js/bootstrap.js?v=730" defer></script>
+<script src="/js/app.js?v=740" defer></script>
+<script src="/js/bootstrap.js?v=740" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
