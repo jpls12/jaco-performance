@@ -645,3 +645,34 @@
       .coach-chat-input-row{grid-template-columns:1fr}
       .coach-bubble{max-width:86%}
     }
+
+    .data-integrity-box{
+      margin-top:12px;padding:13px;border-radius:15px;
+      background:#0b1827;border:1px solid #29415e
+    }
+    .data-integrity-head{
+      display:flex;justify-content:space-between;align-items:center;gap:12px;
+      margin-bottom:9px
+    }
+    .data-integrity-head span{
+      color:var(--muted);font-size:.82rem;font-weight:800
+    }
+    .data-integrity-head strong{
+      font-size:.82rem
+    }
+    .data-source-list{
+      display:grid;grid-template-columns:repeat(2,1fr);gap:7px
+    }
+    .data-source-list>div{
+      padding:8px 9px;border-radius:10px;background:#101f31;
+      color:var(--muted);font-size:.78rem;line-height:1.35
+    }
+    .data-source-list .source-fresh{color:#bcebd0}
+    .data-source-list .source-stale{color:#e6c38a}
+    .data-source-list .source-missing{color:#a9b4c2}
+    .score-ring.data-unknown{
+      filter:saturate(.25)
+    }
+    @media(max-width:650px){
+      .data-source-list{grid-template-columns:1fr}
+    }
