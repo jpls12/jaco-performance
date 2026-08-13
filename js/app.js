@@ -714,7 +714,11 @@ function coachChatResponse(message){
     return{response,workout};
   }
 
-  response=`Ik combineer je bericht met een coachscore van ${context.readiness.score}/100${context.race?`, ${context.race.name} over ${context.phase.days} dagen`:""} en je huidige beschikbaarheid. Voor een concrete wijziging kun je aangeven hoeveel tijd je hebt, hoe je benen voelen of welke training je wilt verplaatsen.`;
+  const recoveryText=context.readiness.sufficientData
+    ? `een coachscore van ${context.readiness.score}/100`
+    :"onvoldoende actuele hersteldata voor een coachscore";
+
+  response=`Ik combineer je bericht met ${recoveryText}${context.race?`, ${context.race.name} over ${context.phase.days} dagen`:""} en je huidige beschikbaarheid. Voor een concrete wijziging kun je aangeven hoeveel tijd je hebt, hoe je benen voelen of welke training je wilt verplaatsen.`;
   return{response,workout:null};
 }
 
@@ -2716,6 +2720,108 @@ function averageRecent(records,key,count=7){
   return values.reduce((a,b)=>a+b,0)/values.length;
 }
 
+
+function wellnessRecordDate(record){
+  const raw=record?.id || record?.date || null;
+  if(!raw) return null;
+  const value=String(raw).slice(0,10);
+  const parsed=new Date(value+"T12:00:00");
+  return Number.isNaN(parsed.getTime()) ? null : value;
+}
+
+function wellnessDaysOld(dateString){
+  if(!dateString) return null;
+  const measurement=new Date(dateString+"T12:00:00");
+  if(Number.isNaN(measurement.getTime())) return null;
+
+  const today=new Date();
+  today.setHours(12,0,0,0);
+
+  return Math.floor((today-measurement)/86400000);
+}
+
+function latestMetric(records,key,maxAgeDays=1){
+  for(let i=records.length-1;i>=0;i--){
+    const value=numberOrNull(records[i]?.[key]);
+    if(value===null) continue;
+
+    const date=wellnessRecordDate(records[i]);
+    const ageDays=wellnessDaysOld(date);
+    const fresh=ageDays!==null && ageDays>=0 && ageDays<=maxAgeDays;
+
+    return{key,value,date,ageDays,fresh,maxAgeDays};
+  }
+
+  return{
+    key,
+    value:null,
+    date:null,
+    ageDays:null,
+    fresh:false,
+    maxAgeDays
+  };
+}
+
+function averageBeforeDate(records,key,dateString,count=7){
+  const values=[];
+
+  for(let i=records.length-1;i>=0 && values.length<count;i--){
+    const date=wellnessRecordDate(records[i]);
+    if(dateString && date && date>=dateString) continue;
+
+    const value=numberOrNull(records[i]?.[key]);
+    if(value!==null) values.push(value);
+  }
+
+  if(!values.length) return null;
+  return values.reduce((sum,value)=>sum+value,0)/values.length;
+}
+
+function sourceFreshnessText(source,label){
+  if(!source || source.value===null){
+    return{
+      cls:"source-missing",
+      text:`${label}: geen data beschikbaar`
+    };
+  }
+
+  if(source.fresh){
+    return{
+      cls:"source-fresh",
+      text:`${label}: actueel · ${source.date}`
+    };
+  }
+
+  const age=source.ageDays===null
+    ? "datum onbekend"
+    : `${source.ageDays} d oud`;
+
+  return{
+    cls:"source-stale",
+    text:`${label}: niet actueel · laatste ${source.date || "onbekend"} (${age})`
+  };
+}
+
+function weightedAvailableScore(items){
+  const valid=items.filter(item=>
+    item &&
+    item.value!==null &&
+    item.value!==undefined &&
+    Number.isFinite(Number(item.value)) &&
+    Number(item.weight)>0
+  );
+
+  if(!valid.length) return null;
+
+  const weight=valid.reduce((sum,item)=>sum+Number(item.weight),0);
+  const total=valid.reduce(
+    (sum,item)=>sum+Number(item.value)*Number(item.weight),
+    0
+  );
+
+  return clampScore(total/weight);
+}
+
 function formatMetric(value,digits=0){
   return value===null || value===undefined ? "—" : Number(value).toFixed(digits);
 }
@@ -2799,31 +2905,73 @@ function buildCoachAdvice(latest,averages){
   };
 }
 
+
 function renderWellnessDashboard(data){
   const records=Array.isArray(data.records)?data.records:[];
   latestWellnessRecords=records;
   const latest=data.latest || records[records.length-1] || {};
-  const ctl=latestValue(records,"ctl");
-  const atl=latestValue(records,"atl");
+
+  // Trainingsbelasting mag iets ouder zijn dan herstelmetingen.
+  const ctlSource=latestMetric(records,"ctl",2);
+  const atlSource=latestMetric(records,"atl",2);
+
+  // Herstelmetingen moeten van vandaag of maximaal gisteren zijn.
+  const hrvSource=latestMetric(records,"hrv",1);
+  const restingSource=latestMetric(records,"restingHR",1);
+  const sleepSource=latestMetric(records,"sleepSecs",1);
+  const sleepScoreSource=latestMetric(records,"sleepScore",1);
+  const readinessSource=latestMetric(records,"readiness",1);
+
+  const ctl=ctlSource.fresh?ctlSource.value:null;
+  const atl=atlSource.fresh?atlSource.value:null;
   const form=ctl!==null && atl!==null ? ctl-atl : null;
-  const hrv=latestValue(records,"hrv");
-  const restingHR=latestValue(records,"restingHR");
-  const sleepSecs=latestValue(records,"sleepSecs");
-  const sleepScore=latestValue(records,"sleepScore");
+  const hrv=hrvSource.fresh?hrvSource.value:null;
+  const restingHR=restingSource.fresh?restingSource.value:null;
+  const sleepSecs=sleepSource.fresh?sleepSource.value:null;
+  const sleepScore=sleepScoreSource.fresh?sleepScoreSource.value:null;
+  const readinessValue=readinessSource.fresh?readinessSource.value:null;
 
   const averages={
-    hrv:averageRecent(records,"hrv",7),
-    restingHR:averageRecent(records,"restingHR",7),
-    sleepSecs:averageRecent(records,"sleepSecs",7)
+    hrv:hrvSource.date
+      ? averageBeforeDate(records,"hrv",hrvSource.date,7)
+      : null,
+    restingHR:restingSource.date
+      ? averageBeforeDate(records,"restingHR",restingSource.date,7)
+      : null,
+    sleepSecs:sleepSource.date
+      ? averageBeforeDate(records,"sleepSecs",sleepSource.date,7)
+      : null
   };
+
+  const hrvDelta=
+    hrv!==null && averages.hrv!==null ? hrv-averages.hrv : null;
+  const rhrDelta=
+    restingHR!==null && averages.restingHR!==null
+      ? restingHR-averages.restingHR
+      : null;
+
+  const freshRecoverySignals=[
+    hrvSource,
+    restingSource,
+    sleepSource,
+    readinessSource
+  ].filter(source=>source.fresh).length;
+
+  const requiredRecoverySignals=2;
+  const dataSufficient=freshRecoverySignals>=requiredRecoverySignals;
 
   document.getElementById("metricCtl").textContent=formatMetric(ctl,1);
   document.getElementById("metricAtl").textContent=formatMetric(atl,1);
   document.getElementById("metricForm").textContent=formatMetric(form,1);
-  document.getElementById("metricHrv").textContent=hrv===null?"—":`${formatMetric(hrv,0)} ms`;
-  document.getElementById("metricRestingHr").textContent=restingHR===null?"—":`${formatMetric(restingHR,0)} bpm`;
+  document.getElementById("metricHrv").textContent=
+    hrv===null?"—":`${formatMetric(hrv,0)} ms`;
+  document.getElementById("metricRestingHr").textContent=
+    restingHR===null?"—":`${formatMetric(restingHR,0)} bpm`;
   document.getElementById("metricSleep").textContent=formatSleep(sleepSecs);
-  document.getElementById("sleepScore").textContent=sleepScore===null?"Geen slaapscore":`Slaapscore ${formatMetric(sleepScore,0)}`;
+  document.getElementById("sleepScore").textContent=
+    sleepScore===null
+      ?"Geen actuele slaapscore"
+      :`Slaapscore ${formatMetric(sleepScore,0)}`;
 
   const formEl=document.getElementById("metricForm");
   formEl.className="";
@@ -2838,20 +2986,71 @@ function renderWellnessDashboard(data){
       formEl.classList.add("form-neutral");
       document.getElementById("formLabel").textContent="Neutraal";
     }
+  }else{
+    document.getElementById("formLabel").textContent="Geen actuele data";
   }
 
-  document.getElementById("hrvTrend").textContent=trendLabel(hrv,averages.hrv," ms");
-  document.getElementById("restingHrTrend").textContent=trendLabel(restingHR,averages.restingHR," bpm");
+  document.getElementById("hrvTrend").textContent=
+    hrv===null
+      ?"Geen actuele HRV"
+      :trendLabel(hrv,averages.hrv," ms");
 
-  latestWellnessSnapshot={ctl,atl,form,hrv,restingHR,sleepSecs,averages};
+  document.getElementById("restingHrTrend").textContent=
+    restingHR===null
+      ?"Geen actuele rusthartslag"
+      :trendLabel(restingHR,averages.restingHR," bpm");
 
-  const advice=buildCoachAdvice(latest,averages);
+  latestWellnessSnapshot={
+    dataIntegrityVersion:"7.4.1",
+    ctl,
+    atl,
+    form,
+    hrv,
+    restingHR,
+    sleepSecs,
+    sleepHours:sleepSecs===null?null:sleepSecs/3600,
+    readinessValue,
+    hrvDelta,
+    rhrDelta,
+    averages,
+    freshRecoverySignals,
+    requiredRecoverySignals,
+    dataSufficient,
+    sources:{
+      ctl:ctlSource,
+      atl:atlSource,
+      hrv:hrvSource,
+      restingHR:restingSource,
+      sleep:sleepSource,
+      sleepScore:sleepScoreSource,
+      readiness:readinessSource
+    }
+  };
+
+  const advice=dataSufficient
+    ? buildCoachAdvice(
+        {
+          ctl,
+          atl,
+          hrv,
+          restingHR,
+          sleepSecs,
+          readiness:readinessValue
+        },
+        averages
+      )
+    : {
+        headline:"Onvoldoende actuele hersteldata",
+        advice:`Slechts ${freshRecoverySignals} van minimaal ${requiredRecoverySignals} actuele herstelsignalen beschikbaar. Er wordt geen hersteladvies berekend.`
+      };
+
   document.getElementById("coachHeadline").textContent=advice.headline;
   document.getElementById("coachAdvice").textContent=advice.advice;
+
   renderTodayCoach();
 
   document.getElementById("dashboardUpdated").textContent=
-    `Bijgewerkt met Intervals.icu-data t/m ${latest.id || latest.date || "vandaag"}.`;
+    `Intervals.icu gecontroleerd t/m ${latest.id || latest.date || "onbekende datum"}.`;
 
   renderPerformanceEngine();
   renderPerformanceTrend(activeTrendDays);
@@ -2861,7 +3060,11 @@ function renderWellnessDashboard(data){
     ? history.map(record=>{
         const recordCtl=numberOrNull(record.ctl);
         const recordAtl=numberOrNull(record.atl);
-        const recordForm=recordCtl!==null && recordAtl!==null ? recordCtl-recordAtl : null;
+        const recordForm=
+          recordCtl!==null && recordAtl!==null
+            ? recordCtl-recordAtl
+            : null;
+
         return `
           <div class="wellness-row">
             <div>
@@ -2874,7 +3077,13 @@ function renderWellnessDashboard(data){
             </div>
           </div>`;
       }).join("")
-    : '<p class="help">Geen wellnessdata gevonden.</p>';
+    : '<p class="help">Nog geen historie beschikbaar.</p>';
+
+  document.getElementById("wellnessStatus").className="status ok";
+  document.getElementById("wellnessStatus").textContent=
+    dataSufficient
+      ? "Actuele hersteldata geladen."
+      : "Data geladen, maar onvoldoende actuele herstelmetingen voor een coachscore.";
 }
 
 async function loadWellnessDashboard(){
@@ -3290,7 +3499,9 @@ function scoreLibraryItem(item,context){
     score-=25;
   }
 
-  if(item.readiness.includes(context.readiness.level)){
+  if(context.readiness.level==="unknown"){
+    reasons.push("hersteldata onvoldoende; herstel niet meegewogen");
+  }else if(item.readiness.includes(context.readiness.level)){
     score+=25;
     reasons.push(`past bij herstelstatus ${context.readiness.level}`);
   }else{
@@ -3316,10 +3527,20 @@ function scoreLibraryItem(item,context){
     score-=100;
   }
 
-  if(context.readiness.level==="low" && ["vo2_run","threshold_run","long_run"].includes(
-    Object.keys(TRAINING_LIBRARY).find(key=>TRAINING_LIBRARY[key]===item)
-  )){
+  const itemKey=Object.keys(TRAINING_LIBRARY).find(
+    key=>TRAINING_LIBRARY[key]===item
+  );
+
+  if(context.readiness.level==="low" &&
+    ["vo2_run","threshold_run","long_run"].includes(itemKey)
+  ){
     score-=70;
+  }
+
+  if(context.readiness.level==="unknown" &&
+    ["vo2_run","threshold_run"].includes(itemKey)
+  ){
+    score-=45;
   }
 
   if(context.existing && item.type===context.existing.type){
@@ -3485,9 +3706,23 @@ function renderCoachBrain(){
 
   const factorRows=[
     {
-      cls:context.readiness.level==="good"?"good":context.readiness.level==="moderate"?"warn":"bad",
-      icon:context.readiness.level==="good"?"✓":context.readiness.level==="moderate"?"!":"×",
-      text:`Herstelstatus: ${context.readiness.level} (${context.readiness.score}/100)`
+      cls:context.readiness.level==="unknown"
+        ?"warn"
+        :context.readiness.level==="good"
+          ?"good"
+          :context.readiness.level==="moderate"
+            ?"warn"
+            :"bad",
+      icon:context.readiness.level==="unknown"
+        ?"?"
+        :context.readiness.level==="good"
+          ?"✓"
+          :context.readiness.level==="moderate"
+            ?"!"
+            :"×",
+      text:context.readiness.level==="unknown"
+        ?"Herstelstatus: onbekend · onvoldoende actuele data"
+        :`Herstelstatus: ${context.readiness.level} (${context.readiness.score}/100)`
     },
     {
       cls:context.availability.available?"good":"warn",
@@ -3627,20 +3862,30 @@ function trendAverage(values){
   return valid.reduce((sum,value)=>sum+value,0)/valid.length;
 }
 
+
 function recordPerformanceScore(record,index,records){
   const ctl=trendNumber(record.ctl);
   const atl=trendNumber(record.atl);
   const hrv=trendNumber(record.hrv);
   const restingHR=trendNumber(record.restingHR);
   const sleepSecs=trendNumber(record.sleepSecs);
+  const readinessValue=trendNumber(record.readiness);
 
-  const previous=records.slice(Math.max(0,index-6),index);
-  const avgHrv=trendAverage(previous.map(item=>trendNumber(item.hrv)));
-  const avgRhr=trendAverage(previous.map(item=>trendNumber(item.restingHR)));
+  const previous=records.slice(Math.max(0,index-7),index);
+  const avgHrv=trendAverage(
+    previous.map(item=>trendNumber(item.hrv))
+  );
+  const avgRhr=trendAverage(
+    previous.map(item=>trendNumber(item.restingHR))
+  );
 
-  const fitness=ctl===null?55:clampScore(35+(ctl/70)*55);
+  const fitness=
+    ctl===null
+      ? null
+      : clampScore(35+(ctl/70)*55);
 
-  let fatigue=65;
+  let fatigue=null;
+
   if(ctl!==null && ctl>0 && atl!==null){
     const ratio=atl/ctl;
     if(ratio<.65) fatigue=74;
@@ -3650,33 +3895,60 @@ function recordPerformanceScore(record,index,records){
     else fatigue=35;
   }
 
-  let recovery=70;
-  const form=ctl!==null && atl!==null?ctl-atl:null;
-  if(form!==null){
-    if(form<-20) recovery-=30;
-    else if(form<-10) recovery-=15;
-    else if(form>5) recovery+=10;
+  const form=
+    ctl!==null && atl!==null
+      ? ctl-atl
+      : null;
+
+  const recoverySignals=[
+    hrv,
+    restingHR,
+    sleepSecs,
+    readinessValue
+  ].filter(value=>value!==null).length;
+
+  let recovery=null;
+
+  if(recoverySignals>=2){
+    let value=70;
+
+    if(form!==null){
+      if(form<-20) value-=30;
+      else if(form<-10) value-=15;
+      else if(form>5) value+=10;
+    }
+
+    if(hrv!==null && avgHrv!==null){
+      const diff=hrv-avgHrv;
+      if(diff<=-6) value-=20;
+      else if(diff>=4) value+=8;
+    }
+
+    if(restingHR!==null && avgRhr!==null){
+      const diff=restingHR-avgRhr;
+      if(diff>=5) value-=20;
+      else if(diff<=-3) value+=5;
+    }
+
+    if(sleepSecs!==null){
+      const hours=sleepSecs/3600;
+      if(hours<6.5) value-=15;
+      else if(hours>=7.5) value+=5;
+    }
+
+    if(readinessValue!==null){
+      if(readinessValue<50) value-=15;
+      else if(readinessValue>=75) value+=8;
+    }
+
+    recovery=clampScore(value);
   }
 
-  if(hrv!==null && avgHrv!==null){
-    const diff=hrv-avgHrv;
-    if(diff<=-6) recovery-=20;
-    else if(diff>=4) recovery+=8;
-  }
-
-  if(restingHR!==null && avgRhr!==null){
-    const diff=restingHR-avgRhr;
-    if(diff>=5) recovery-=20;
-    else if(diff<=-3) recovery+=5;
-  }
-
-  if(sleepSecs!==null){
-    const hours=sleepSecs/3600;
-    if(hours<6.5) recovery-=15;
-    else if(hours>=7.5) recovery+=5;
-  }
-
-  recovery=clampScore(recovery);
+  const performance=weightedAvailableScore([
+    {value:fitness,weight:.40},
+    {value:fatigue,weight:.22},
+    {value:recovery,weight:.38}
+  ]);
 
   return{
     date:record.id||record.date||"",
@@ -3684,7 +3956,8 @@ function recordPerformanceScore(record,index,records){
     atl,
     form,
     recovery,
-    performance:clampScore(fitness*.40+fatigue*.22+recovery*.38)
+    recoverySignals,
+    performance
   };
 }
 
@@ -3762,6 +4035,7 @@ function renderTrendChart(points){
   }).join("");
 }
 
+
 function renderPerformanceTrend(days=activeTrendDays){
   activeTrendDays=days;
 
@@ -3775,73 +4049,111 @@ function renderPerformanceTrend(days=activeTrendDays){
   const points=selectedTrendRecords(days);
   const latest=points[points.length-1]||null;
 
-  const performanceDirection=trendDirection(points.map(point=>point.performance));
-  const fitnessDirection=trendDirection(points.map(point=>point.ctl));
-  const recoveryDirection=trendDirection(points.map(point=>point.recovery));
-  const formDirection=trendDirection(points.map(point=>point.form));
+  const performanceDirection=
+    trendDirection(points.map(point=>point.performance));
+  const fitnessDirection=
+    trendDirection(points.map(point=>point.ctl));
+  const recoveryDirection=
+    trendDirection(points.map(point=>point.recovery));
+  const formDirection=
+    trendDirection(points.map(point=>point.form));
 
   const setMetric=(valueId,directionId,value,direction,suffix="")=>{
     document.getElementById(valueId).textContent=
-      value===null || value===undefined?"—":`${Math.round(value)}${suffix}`;
+      value===null || value===undefined
+        ?"—"
+        :`${Math.round(value)}${suffix}`;
+
     document.getElementById(directionId).textContent=
       `${direction.symbol} ${direction.label}${direction.delta===null?"":` (${direction.delta>=0?"+":""}${direction.delta.toFixed(1)})`}`;
   };
 
   setMetric(
-    "trendPerformanceValue","trendPerformanceDirection",
-    latest?.performance??null,performanceDirection,""
+    "trendPerformanceValue",
+    "trendPerformanceDirection",
+    latest?.performance??null,
+    performanceDirection
   );
+
   setMetric(
-    "trendFitnessValue","trendFitnessDirection",
-    latest?.ctl??null,fitnessDirection,""
+    "trendFitnessValue",
+    "trendFitnessDirection",
+    latest?.ctl??null,
+    fitnessDirection
   );
+
   setMetric(
-    "trendRecoveryValue","trendRecoveryDirection",
-    latest?.recovery??null,recoveryDirection,""
+    "trendRecoveryValue",
+    "trendRecoveryDirection",
+    latest?.recovery??null,
+    recoveryDirection
   );
+
   setMetric(
-    "trendFormValue","trendFormDirection",
-    latest?.form??null,formDirection,""
+    "trendFormValue",
+    "trendFormDirection",
+    latest?.form??null,
+    formDirection
   );
 
   document.getElementById("trendChartRange").textContent=
     `Laatste ${days} dagen`;
 
-  renderTrendChart(points);
+  renderTrendChart(
+    points.filter(point=>point.performance!==null)
+  );
 
   const signals=[];
 
-  signals.push({
-    state:performanceDirection.label==="Stijgend"
-      ?"good"
-      :performanceDirection.label==="Dalend"
-        ?"warn"
-        :"good",
-    icon:performanceDirection.symbol,
-    text:`Performance is ${performanceDirection.label.toLowerCase()} over de gekozen periode.`
-  });
+  if(performanceDirection.label==="Onvoldoende data"){
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:"Onvoldoende complete dagrecords om een betrouwbare performancetrend te bepalen."
+    });
+  }else{
+    signals.push({
+      state:performanceDirection.label==="Stijgend"
+        ?"good"
+        :performanceDirection.label==="Dalend"
+          ?"warn"
+          :"good",
+      icon:performanceDirection.symbol,
+      text:`Performance is ${performanceDirection.label.toLowerCase()} over de gekozen periode.`
+    });
+  }
 
   if(fitnessDirection.label==="Stijgend"){
     signals.push({
-      state:"good",icon:"✓",
+      state:"good",
+      icon:"✓",
       text:"Je langetermijnfitness laat een positieve richting zien."
     });
   }else if(fitnessDirection.label==="Dalend"){
     signals.push({
-      state:"warn",icon:"!",
+      state:"warn",
+      icon:"!",
       text:"Je fitnessbelasting daalt; controleer of dit herstel, taper of gemiste training is."
     });
   }
 
   if(recoveryDirection.label==="Dalend"){
     signals.push({
-      state:"warn",icon:"!",
+      state:"warn",
+      icon:"!",
       text:"Herstel ontwikkelt zich neerwaarts; bewaak slaap en opeenvolgende zware trainingen."
     });
   }else if(recoveryDirection.label==="Stijgend"){
     signals.push({
-      state:"good",icon:"✓",
+      state:"good",
+      icon:"✓",
       text:"Herstel ontwikkelt zich positief."
+    });
+  }else if(recoveryDirection.label==="Onvoldoende data"){
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:"Hersteltrend niet berekend: te weinig dagen met minimaal twee herstelsignalen."
     });
   }
 
@@ -3853,25 +4165,52 @@ function renderPerformanceTrend(days=activeTrendDays){
       </div>
     `).join("");
 
-  let headline="Trend is stabiel";
-  let conclusion="Je recente ontwikkeling geeft geen sterke reden om de trainingskoers aan te passen.";
+  let headline="Onvoldoende data voor trendconclusie";
+  let conclusion=
+    "De app wacht op voldoende complete wellnessdagen en vult ontbrekende hersteldata niet meer aan met neutrale standaardscores.";
 
-  if(performanceDirection.label==="Stijgend" && recoveryDirection.label!=="Dalend"){
-    headline="Je vorm beweegt de goede kant op";
-    conclusion="Fitness en herstel ondersteunen verdere opbouw. Houd de belasting gecontroleerd progressief.";
-  }else if(performanceDirection.label==="Dalend" && recoveryDirection.label==="Dalend"){
-    headline="Herstel eerst stabiliseren";
-    conclusion="Performance en herstel bewegen neerwaarts. Verminder tijdelijk intensiteit of omvang.";
-  }else if(fitnessDirection.label==="Stijgend" && recoveryDirection.label==="Dalend"){
-    headline="Fitness stijgt, maar herstel komt onder druk";
-    conclusion="De trainingsprikkel werkt, maar plan extra herstel om vermoeidheid niet te laten opstapelen.";
-  }else if(fitnessDirection.label==="Dalend" && recoveryDirection.label==="Stijgend"){
-    headline="Frisser, maar met minder trainingsprikkel";
-    conclusion="Dit kan passend zijn bij taper of herstel. Buiten die fases kan een gerichte kwaliteitsprikkel nodig zijn.";
+  if(performanceDirection.label!=="Onvoldoende data"){
+    headline="Trend is stabiel";
+    conclusion=
+      "Je recente ontwikkeling geeft geen sterke reden om de trainingskoers aan te passen.";
+
+    if(
+      performanceDirection.label==="Stijgend" &&
+      recoveryDirection.label!=="Dalend" &&
+      recoveryDirection.label!=="Onvoldoende data"
+    ){
+      headline="Je vorm beweegt de goede kant op";
+      conclusion=
+        "Fitness en herstel ondersteunen verdere opbouw. Houd de belasting gecontroleerd progressief.";
+    }else if(
+      performanceDirection.label==="Dalend" &&
+      recoveryDirection.label==="Dalend"
+    ){
+      headline="Herstel eerst stabiliseren";
+      conclusion=
+        "Performance en herstel bewegen neerwaarts. Verminder tijdelijk intensiteit of omvang.";
+    }else if(
+      fitnessDirection.label==="Stijgend" &&
+      recoveryDirection.label==="Dalend"
+    ){
+      headline="Fitness stijgt, maar herstel komt onder druk";
+      conclusion=
+        "De trainingsprikkel werkt, maar plan extra herstel om vermoeidheid niet te laten opstapelen.";
+    }else if(
+      fitnessDirection.label==="Dalend" &&
+      recoveryDirection.label==="Stijgend"
+    ){
+      headline="Frisser, maar met minder trainingsprikkel";
+      conclusion=
+        "Dit kan passend zijn bij taper of herstel. Buiten die fases kan een gerichte kwaliteitsprikkel nodig zijn.";
+    }
   }
 
-  document.getElementById("performanceTrendHeadline").textContent=headline;
-  document.getElementById("performanceTrendConclusion").textContent=conclusion;
+  document.getElementById("performanceTrendHeadline").textContent=
+    headline;
+
+  document.getElementById("performanceTrendConclusion").textContent=
+    conclusion;
 }
 
 function historicalWorkoutEntries(days){
@@ -4394,7 +4733,9 @@ function renderAiWeekPlanner(context=weekPlanningContext()){
     :"algemene opbouw";
 
   document.getElementById("aiWeekReason").textContent=
-    `Gebaseerd op herstelstatus ${context.readiness.level}, ${context.availability.length} beschikbare dagen en ${raceText}.`;
+    context.readiness.level==="unknown"
+      ?`Gebaseerd op ${context.availability.length} beschikbare dagen en ${raceText}; hersteldata is onvoldoende en daarom niet meegewogen.`
+      :`Gebaseerd op herstelstatus ${context.readiness.level}, ${context.availability.length} beschikbare dagen en ${raceText}.`;
 
   document.getElementById("aiWeekPlan").innerHTML=
     option.workouts.map(workout=>{
@@ -4492,6 +4833,7 @@ function generatorTargetLabel(context){
 }
 
 function generatorIntensityLabel(context){
+  if(context.readiness.level==="unknown") return "Hersteldata onbekend";
   if(context.readiness.level==="low") return "Herstel";
   if(context.readiness.level==="moderate") return "Gecontroleerd";
   if(context.phase.phase==="race-week") return "Kort en scherp";
@@ -4672,6 +5014,14 @@ function chooseGeneratorKinds(context){
     return["mobility","rest","core"];
   }
 
+  if(context.readiness.level==="unknown"){
+    const preference=context.availability.preference;
+    if(preference==="core") return["core","mobility","easy"];
+    if(preference==="mobiliteit") return["mobility","core","easy"];
+    if(preference==="herstel") return["recovery","easy","mobility"];
+    return["easy","core","mobility"];
+  }
+
   if(context.readiness.level==="low"){
     return["recovery","mobility","rest"];
   }
@@ -4741,7 +5091,9 @@ function renderAiTrainingGenerator(context=generatorContext()){
   document.getElementById("generatorTitle").textContent=workout.name;
 
   const reasonParts=[
-    `herstelstatus ${context.readiness.level}`,
+    context.readiness.level==="unknown"
+      ?"hersteldata niet meegewogen"
+      :`herstelstatus ${context.readiness.level}`,
     context.availability.available
       ? `${context.availability.maxMinutes} minuten beschikbaar`
       :"vandaag niet beschikbaar",
@@ -4867,6 +5219,7 @@ function calculateConsistencyScore(){
   };
 }
 
+
 function calculatePerformanceEngine(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
@@ -4878,13 +5231,15 @@ function calculatePerformanceEngine(){
   const atl=snapshot.atl;
 
   const fitness=ctl===null
-    ? 55
+    ? null
     : clampScore(35+(ctl/70)*55);
 
   let loadRatio=null;
-  let fatigue=65;
+  let fatigue=null;
+
   if(ctl!==null && ctl>0 && atl!==null){
     loadRatio=atl/ctl;
+
     if(loadRatio<0.65) fatigue=74;
     else if(loadRatio<=1.05) fatigue=92;
     else if(loadRatio<=1.25) fatigue=78;
@@ -4892,59 +5247,81 @@ function calculatePerformanceEngine(){
     else fatigue=35;
   }
 
-  const recovery=clampScore(readiness.score);
+  const recovery=readiness.sufficientData
+    ? readiness.score
+    : null;
 
   let phaseScore=62;
   if(phase.phase==="specific") phaseScore=78;
   if(phase.phase==="taper") phaseScore=88;
   if(phase.phase==="race-week") phaseScore=90;
-  if(!race) phaseScore=58;
+  if(!race) phaseScore=null;
 
-  let raceReadiness=clampScore(
-    fitness*0.32+
-    recovery*0.30+
-    consistency.score*0.23+
-    phaseScore*0.15
-  );
+  let raceReadiness=weightedAvailableScore([
+    {value:fitness,weight:.32},
+    {value:recovery,weight:.30},
+    {value:consistency.score,weight:.23},
+    {value:phaseScore,weight:.15}
+  ]);
 
-  if(race && phase.days!==null && phase.days<=7 && recovery<55){
+  if(
+    race &&
+    phase.days!==null &&
+    phase.days<=7 &&
+    recovery!==null &&
+    recovery<55 &&
+    raceReadiness!==null
+  ){
     raceReadiness=clampScore(raceReadiness-10);
   }
 
   let dataPoints=0;
   const possibleDataPoints=8;
-  if(snapshot.ctl!==null) dataPoints++;
-  if(snapshot.atl!==null) dataPoints++;
+  const freshness=snapshot.sources||{};
+
+  if(freshness.ctl?.fresh) dataPoints++;
+  if(freshness.atl?.fresh) dataPoints++;
   if(snapshot.form!==null) dataPoints++;
-  if(snapshot.hrv!==null) dataPoints++;
-  if(snapshot.restingHR!==null) dataPoints++;
-  if(snapshot.sleepHours!==null) dataPoints++;
+  if(freshness.hrv?.fresh) dataPoints++;
+  if(freshness.restingHR?.fresh) dataPoints++;
+  if(freshness.sleep?.fresh) dataPoints++;
   if(race) dataPoints++;
   if(getProfile()?.availability) dataPoints++;
 
-  const confidence=clampScore(35+(dataPoints/possibleDataPoints)*65);
-
-  const performance=clampScore(
-    fitness*0.23+
-    fatigue*0.17+
-    recovery*0.27+
-    consistency.score*0.16+
-    raceReadiness*0.12+
-    confidence*0.05
+  const confidence=clampScore(
+    20+(dataPoints/possibleDataPoints)*80
   );
 
+  const performance=weightedAvailableScore([
+    {value:fitness,weight:.23},
+    {value:fatigue,weight:.17},
+    {value:recovery,weight:.27},
+    {value:consistency.score,weight:.16},
+    {value:raceReadiness,weight:.12},
+    {value:confidence,weight:.05}
+  ]);
+
   const signals=[];
-  signals.push({
-    state:recovery>=75?"good":recovery>=55?"warn":"bad",
-    icon:recovery>=75?"✓":recovery>=55?"!":"×",
-    text:`Recovery ${recovery}/100: ${readiness.reasons.length?readiness.reasons.join(", "):"geen duidelijke negatieve signalen"}`
-  });
+
+  if(recovery===null){
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:`Recovery niet berekend: ${readiness.currentSignalCount}/${readiness.requiredSignals} actuele herstelsignalen`
+    });
+  }else{
+    signals.push({
+      state:recovery>=75?"good":recovery>=55?"warn":"bad",
+      icon:recovery>=75?"✓":recovery>=55?"!":"×",
+      text:`Recovery ${recovery}/100: ${readiness.reasons.length?readiness.reasons.join(", "):"geen duidelijke negatieve signalen"}`
+    });
+  }
 
   signals.push({
-    state:fatigue>=75?"good":fatigue>=55?"warn":"bad",
-    icon:fatigue>=75?"✓":fatigue>=55?"!":"×",
+    state:fatigue===null?"warn":fatigue>=75?"good":fatigue>=55?"warn":"bad",
+    icon:fatigue===null?"?":fatigue>=75?"✓":fatigue>=55?"!":"×",
     text:loadRatio===null
-      ?"Belastingsverhouding nog niet volledig beschikbaar"
+      ?"Belastingsverhouding niet actueel genoeg beschikbaar"
       :`ATL/CTL-verhouding ${loadRatio.toFixed(2)}`
   });
 
@@ -4956,7 +5333,13 @@ function calculatePerformanceEngine(){
 
   if(race){
     signals.push({
-      state:raceReadiness>=75?"good":raceReadiness>=55?"warn":"bad",
+      state:raceReadiness===null
+        ?"warn"
+        :raceReadiness>=75
+          ?"good"
+          :raceReadiness>=55
+            ?"warn"
+            :"bad",
       icon:"🏁",
       text:`${race.name}: ${phase.days} dagen · ${phaseLabel(phase.phase)}`
     });
@@ -4976,40 +5359,56 @@ function calculatePerformanceEngine(){
     signals,
     explanations:{
       fitness:ctl===null
-        ?"CTL ontbreekt; neutrale basisscore gebruikt"
+        ?"Geen actuele CTL; fitnessscore niet berekend"
         :`CTL ${ctl.toFixed(1)} als indicatie van langetermijnfitness`,
       fatigue:loadRatio===null
-        ?"CTL of ATL ontbreekt"
+        ?"Geen actuele combinatie van CTL en ATL"
         :loadRatio<=1.05
           ?"Acute belasting is goed in balans"
           :loadRatio<=1.25
             ?"Acute belasting is verhoogd maar beheersbaar"
             :"Acute belasting ligt hoog ten opzichte van je fitness",
-      recovery:`Coach-readiness ${recovery}/100`,
+      recovery:recovery===null
+        ?"Onvoldoende actuele HRV-, slaap-, rusthartslag- of readinessdata"
+        :`Coach-readiness ${recovery}/100`,
       consistency:consistency.explanation,
       race:race
         ? `${phaseLabel(phase.phase)} richting ${race.name}`
-        :"Voeg een komende wedstrijd toe voor een gerichtere score",
-      confidence:`${dataPoints} van ${possibleDataPoints} databronnen beschikbaar`
+        :"Voeg een komende wedstrijd toe voor race readiness",
+      confidence:`${dataPoints} van ${possibleDataPoints} actuele databronnen beschikbaar`
     }
   };
 }
 
 function scoreHeadline(score){
+  if(score===null || score===undefined) return "Onvoldoende actuele data";
   if(score>=85) return "Sterke performancepositie";
   if(score>=72) return "Goede basis om gericht te trainen";
   if(score>=58) return "Train gecontroleerd en bewaak herstel";
   return "Herstel en belastingsbeheersing hebben prioriteit";
 }
 
+
 function setPerformanceMetric(id,barId,value,explanationId,explanation){
   const valueElement=document.getElementById(id);
   const bar=document.getElementById(barId);
   const explanationElement=document.getElementById(explanationId);
 
-  if(valueElement) valueElement.textContent=value;
-  if(bar) bar.style.width=`${clampScore(value)}%`;
-  if(explanationElement) explanationElement.textContent=explanation;
+  if(valueElement){
+    valueElement.textContent=
+      value===null || value===undefined ? "—" : value;
+  }
+
+  if(bar){
+    bar.style.width=
+      value===null || value===undefined
+        ?"0%"
+        :`${clampScore(value)}%`;
+  }
+
+  if(explanationElement){
+    explanationElement.textContent=explanation;
+  }
 }
 
 function renderPerformanceEngine(){
@@ -5018,7 +5417,8 @@ function renderPerformanceEngine(){
 
   const engine=calculatePerformanceEngine();
 
-  scoreElement.textContent=engine.performance;
+  scoreElement.textContent=
+    engine.performance===null ? "—" : engine.performance;
   document.getElementById("performanceHeadline").textContent=
     scoreHeadline(engine.performance);
 
@@ -5027,7 +5427,9 @@ function renderPerformanceEngine(){
     :"Voeg een toekomstige wedstrijd toe om race readiness specifieker te maken.";
 
   document.getElementById("performanceExplanation").textContent=
-    `Performance ${engine.performance}/100. ${raceText}`;
+    engine.performance===null
+      ?"Nog onvoldoende actuele data om de samengestelde performancescore te berekenen."
+      :`Performance ${engine.performance}/100. ${raceText}`;
 
   setPerformanceMetric(
     "fitnessScore","fitnessBar",engine.fitness,
@@ -5131,6 +5533,27 @@ function createTodayRecommendation(readiness,race,phase,availability,currentWork
       title:"Rustdag + mobiliteit 15 min",
       text:"Vandaag staat als niet beschikbaar ingesteld. De coach plant daarom geen looptraining, maar je kunt wel een korte mobiliteitssessie toevoegen.",
       steps:workout.displaySteps
+    };
+  }
+
+
+  if(readiness.level==="unknown"){
+    if(currentWorkout){
+      return{
+        kind:"keep",
+        workout:currentWorkout,
+        title:currentWorkout.name,
+        text:"Er zijn te weinig actuele herstelmetingen om je training op basis van herstel aan te passen. De bestaande planning blijft daarom ongewijzigd.",
+        steps:currentWorkout.displaySteps||[]
+      };
+    }
+
+    return{
+      kind:"keep",
+      workout:null,
+      title:"Geen hersteladvies",
+      text:"Er zijn te weinig actuele herstelmetingen om automatisch een training te adviseren. Je beschikbaarheid en wedstrijd blijven zichtbaar, maar herstel wordt niet geïnterpreteerd.",
+      steps:[]
     };
   }
 
@@ -5249,6 +5672,41 @@ function renderCurrentTodayWorkout(workout){
     </div>`;
 }
 
+
+function renderTodayDataSources(snapshot,readiness){
+  const quality=document.getElementById("todayDataQuality");
+  const box=document.getElementById("todayDataSources");
+  if(!quality || !box) return;
+
+  quality.textContent=readiness.sufficientData
+    ? `${readiness.currentSignalCount} actuele signalen`
+    : `${readiness.currentSignalCount}/${readiness.requiredSignals} actueel`;
+
+  const sources=snapshot.sources||{};
+  const rows=[
+    sourceFreshnessText(sources.hrv,"HRV"),
+    sourceFreshnessText(sources.sleep,"Slaap"),
+    sourceFreshnessText(sources.restingHR,"Rusthartslag"),
+    {
+      cls:sources.ctl?.fresh && sources.atl?.fresh
+        ?"source-fresh"
+        :(sources.ctl?.value!==null || sources.atl?.value!==null)
+          ?"source-stale"
+          :"source-missing",
+      text:sources.ctl?.fresh && sources.atl?.fresh
+        ? `CTL/ATL: actueel · ${sources.ctl.date || sources.atl.date}`
+        :(sources.ctl?.value!==null || sources.atl?.value!==null)
+          ? `CTL/ATL: niet actueel · laatste ${sources.ctl?.date || sources.atl?.date || "onbekend"}`
+          :"CTL/ATL: geen data beschikbaar"
+    }
+  ];
+
+  box.innerHTML=rows.map(row=>
+    `<div class="${row.cls}">${safe(row.text)}</div>`
+  ).join("");
+}
+
+
 function renderTodayCoach(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
@@ -5257,32 +5715,61 @@ function renderTodayCoach(){
   const availability=todayAvailabilityInfo();
   const existing=currentTodayWorkout();
 
-  pendingTodayAdvice=createTodayRecommendation(readiness,race,phase,availability,existing);
+  pendingTodayAdvice=createTodayRecommendation(
+    readiness,
+    race,
+    phase,
+    availability,
+    existing
+  );
 
-  document.getElementById("coachScore").textContent=readiness.score;
-  document.getElementById("coachScoreRing").style.setProperty("--score",readiness.score);
+  const score=document.getElementById("coachScore");
+  const ring=document.getElementById("coachScoreRing");
+
+  if(readiness.sufficientData){
+    score.textContent=readiness.score;
+    ring.style.setProperty("--score",readiness.score);
+    ring.classList.remove("data-unknown");
+  }else{
+    score.textContent="—";
+    ring.style.setProperty("--score",0);
+    ring.classList.add("data-unknown");
+  }
 
   let headline="Train volgens plan";
   if(readiness.level==="good") headline="Je bent klaar om te trainen";
   if(readiness.level==="moderate") headline="Vandaag gecontroleerd trainen";
   if(readiness.level==="low") headline="Herstel heeft vandaag prioriteit";
+  if(readiness.level==="unknown") headline="Herstelstatus onbekend";
   document.getElementById("todayHeadline").textContent=headline;
 
-  const reasons=readiness.reasons.length
-    ? readiness.reasons.join(", ")
-    : "geen duidelijke negatieve herstelsignalen";
-  document.getElementById("todaySummary").textContent=
-    `Coachscore ${readiness.score}/100: ${reasons}.`;
+  if(readiness.sufficientData){
+    const reasons=readiness.reasons.length
+      ? readiness.reasons.join(", ")
+      : "geen duidelijke negatieve herstelsignalen";
 
-  document.getElementById("todayAvailability").textContent=availability.available
-    ? `${availability.maxMinutes} min · ${availability.daypart}`
-    : "Niet beschikbaar";
-  document.getElementById("todayRace").textContent=race
-    ? `${race.name} · ${daysUntil(race.date)} d`
-    : "Geen wedstrijd";
-  document.getElementById("todayPhase").textContent=phaseLabel(phase.phase);
+    document.getElementById("todaySummary").textContent=
+      `Coachscore ${readiness.score}/100: ${reasons}.`;
+  }else{
+    document.getElementById("todaySummary").textContent=
+      `Onvoldoende actuele hersteldata: ${readiness.currentSignalCount} van minimaal ${readiness.requiredSignals} signalen beschikbaar.`;
+  }
+
+  document.getElementById("todayAvailability").textContent=
+    availability.available
+      ? `${availability.maxMinutes} min · ${availability.daypart}`
+      : "Niet beschikbaar";
+
+  document.getElementById("todayRace").textContent=
+    race
+      ? `${race.name} · ${daysUntil(race.date)} d`
+      : "Geen wedstrijd";
+
+  document.getElementById("todayPhase").textContent=
+    phaseLabel(phase.phase);
 
   const reasonRows=[];
+
   reasonRows.push({
     cls:availability.available?"good":"warn",
     icon:availability.available?"✓":"—",
@@ -5291,11 +5778,27 @@ function renderTodayCoach(){
       : "Vandaag staat als rustdag of niet beschikbaar ingesteld."
   });
 
-  reasonRows.push({
-    cls:readiness.level==="good"?"good":readiness.level==="moderate"?"warn":"bad",
-    icon:readiness.level==="good"?"✓":readiness.level==="moderate"?"!":"×",
-    text:`Herstelniveau: ${readiness.level} (${readiness.score}/100).`
-  });
+  if(readiness.sufficientData){
+    reasonRows.push({
+      cls:readiness.level==="good"
+        ?"good"
+        :readiness.level==="moderate"
+          ?"warn"
+          :"bad",
+      icon:readiness.level==="good"
+        ?"✓"
+        :readiness.level==="moderate"
+          ?"!"
+          :"×",
+      text:`Herstelniveau: ${readiness.level} (${readiness.score}/100).`
+    });
+  }else{
+    reasonRows.push({
+      cls:"warn",
+      icon:"?",
+      text:`Hersteldata onvoldoende: ${readiness.currentSignalCount}/${readiness.requiredSignals} actuele signalen. Geen herstel-score berekend.`
+    });
+  }
 
   if(race){
     reasonRows.push({
@@ -5305,28 +5808,47 @@ function renderTodayCoach(){
     });
   }
 
-  document.getElementById("todayReasons").innerHTML=reasonRows.map(row=>`
-    <div class="reason-item">
-      <div class="reason-icon ${row.cls}">${row.icon}</div>
-      <div>${safe(row.text)}</div>
-    </div>`).join("");
+  document.getElementById("todayReasons").innerHTML=
+    reasonRows.map(row=>`
+      <div class="reason-item">
+        <div class="reason-icon ${row.cls}">${row.icon}</div>
+        <div>${safe(row.text)}</div>
+      </div>
+    `).join("");
 
-  document.getElementById("todayRecommendationTitle").textContent=pendingTodayAdvice.title;
-  document.getElementById("todayRecommendationText").textContent=pendingTodayAdvice.text;
+  renderTodayDataSources(snapshot,readiness);
+
+  document.getElementById("todayRecommendationTitle").textContent=
+    pendingTodayAdvice.title;
+
+  document.getElementById("todayRecommendationText").textContent=
+    pendingTodayAdvice.text;
+
   document.getElementById("todayRecommendationSteps").innerHTML=
     (pendingTodayAdvice.steps||[]).map((step,index)=>`
-      <li><span class="step">${index+1}</span><span>${safe(step)}</span></li>`
-    ).join("");
+      <li>
+        <span class="step">${index+1}</span>
+        <span>${safe(step)}</span>
+      </li>
+    `).join("");
 
   const apply=document.getElementById("applyTodayAdvice");
-  apply.disabled=!pendingTodayAdvice.workout || pendingTodayAdvice.kind==="keep";
-  apply.textContent=pendingTodayAdvice.kind==="replace" && existing
-    ? "Vervang training van vandaag"
-    : pendingTodayAdvice.kind==="keep"
-      ? "Training staat al goed"
-      : pendingTodayAdvice.kind==="rest"
-        ? (existing ? "Vervang door mobiliteit" : "Plan mobiliteit voor vandaag")
-        : "Plan advies voor vandaag";
+  apply.disabled=
+    !pendingTodayAdvice.workout ||
+    pendingTodayAdvice.kind==="keep";
+
+  apply.textContent=
+    pendingTodayAdvice.kind==="replace" && existing
+      ?"Vervang training van vandaag"
+      :pendingTodayAdvice.kind==="keep"
+        ?readiness.level==="unknown"
+          ?"Geen automatische aanpassing"
+          :"Training staat al goed"
+        :pendingTodayAdvice.kind==="rest"
+          ?(existing
+              ?"Vervang door mobiliteit"
+              :"Plan mobiliteit voor vandaag")
+          :"Plan advies voor vandaag";
 
   renderCurrentTodayWorkout(existing);
   renderPerformanceEngine();
@@ -5382,53 +5904,118 @@ async function refreshTodayCoach(){
   }
 }
 
-function getWellnessSnapshot(){
-  const ctl=numberOrNull(document.getElementById("metricCtl")?.textContent);
-  const atl=numberOrNull(document.getElementById("metricAtl")?.textContent);
-  const form=numberOrNull(document.getElementById("metricForm")?.textContent);
-  const hrv=numberOrNull((document.getElementById("metricHrv")?.textContent || "").replace(" ms",""));
-  const restingHR=numberOrNull((document.getElementById("metricRestingHr")?.textContent || "").replace(" bpm",""));
-  const sleepText=document.getElementById("metricSleep")?.textContent || "";
-  const sleepMatch=sleepText.match(/(\d+)u\s*(\d+)/);
-  const sleepHours=sleepMatch ? Number(sleepMatch[1])+Number(sleepMatch[2])/60 : null;
-  const hrvTrend=document.getElementById("hrvTrend")?.textContent || "";
-  const rhrTrend=document.getElementById("restingHrTrend")?.textContent || "";
 
-  return {ctl,atl,form,hrv,restingHR,sleepHours,hrvTrend,rhrTrend};
+function getWellnessSnapshot(){
+  if(latestWellnessSnapshot?.dataIntegrityVersion==="7.4.1"){
+    return{
+      ...latestWellnessSnapshot,
+      sources:{...(latestWellnessSnapshot.sources||{})}
+    };
+  }
+
+  return{
+    dataIntegrityVersion:"7.4.1",
+    ctl:null,
+    atl:null,
+    form:null,
+    hrv:null,
+    restingHR:null,
+    sleepSecs:null,
+    sleepHours:null,
+    readinessValue:null,
+    hrvDelta:null,
+    rhrDelta:null,
+    averages:{hrv:null,restingHR:null,sleepSecs:null},
+    freshRecoverySignals:0,
+    requiredRecoverySignals:2,
+    dataSufficient:false,
+    sources:{}
+  };
 }
 
+
 function determineReadiness(snapshot){
+  const required=Number(snapshot?.requiredRecoverySignals||2);
+  const currentSignals=Number(snapshot?.freshRecoverySignals||0);
+
+  if(!snapshot?.dataSufficient || currentSignals<required){
+    return{
+      score:null,
+      level:"unknown",
+      reasons:["onvoldoende actuele hersteldata"],
+      sufficientData:false,
+      currentSignalCount:currentSignals,
+      requiredSignals:required
+    };
+  }
+
   let score=70;
   const reasons=[];
 
   if(snapshot.form!==null){
-    if(snapshot.form<-20){score-=30;reasons.push("vorm sterk negatief");}
-    else if(snapshot.form<-10){score-=15;reasons.push("vermoeidheid verhoogd");}
-    else if(snapshot.form>5){score+=10;reasons.push("vorm positief");}
+    if(snapshot.form<-20){
+      score-=30;
+      reasons.push("vorm sterk negatief");
+    }else if(snapshot.form<-10){
+      score-=15;
+      reasons.push("vermoeidheid verhoogd");
+    }else if(snapshot.form>5){
+      score+=10;
+      reasons.push("vorm positief");
+    }
   }
 
-  const hrvDiff=snapshot.hrvTrend.match(/([+-]?\d+(?:\.\d+)?)\s*ms/);
-  if(hrvDiff){
-    const diff=Number(hrvDiff[1]);
-    if(diff<=-6){score-=20;reasons.push("HRV duidelijk lager");}
-    else if(diff>=4){score+=8;reasons.push("HRV boven gemiddeld");}
+  if(snapshot.hrvDelta!==null){
+    if(snapshot.hrvDelta<=-6){
+      score-=20;
+      reasons.push("HRV duidelijk lager");
+    }else if(snapshot.hrvDelta>=4){
+      score+=8;
+      reasons.push("HRV boven gemiddeld");
+    }
   }
 
-  const rhrDiff=snapshot.rhrTrend.match(/([+-]?\d+(?:\.\d+)?)\s*bpm/);
-  if(rhrDiff){
-    const diff=Number(rhrDiff[1]);
-    if(diff>=5){score-=20;reasons.push("rusthartslag verhoogd");}
-    else if(diff<=-3){score+=5;reasons.push("rusthartslag gunstig");}
+  if(snapshot.rhrDelta!==null){
+    if(snapshot.rhrDelta>=5){
+      score-=20;
+      reasons.push("rusthartslag verhoogd");
+    }else if(snapshot.rhrDelta<=-3){
+      score+=5;
+      reasons.push("rusthartslag gunstig");
+    }
   }
 
   if(snapshot.sleepHours!==null){
-    if(snapshot.sleepHours<6.5){score-=15;reasons.push("korte slaap");}
-    else if(snapshot.sleepHours>=7.5){score+=5;reasons.push("goede slaapduur");}
+    if(snapshot.sleepHours<6.5){
+      score-=15;
+      reasons.push("korte slaap");
+    }else if(snapshot.sleepHours>=7.5){
+      score+=5;
+      reasons.push("goede slaapduur");
+    }
+  }
+
+  if(snapshot.readinessValue!==null){
+    if(snapshot.readinessValue<50){
+      score-=15;
+      reasons.push("readiness laag");
+    }else if(snapshot.readinessValue>=75){
+      score+=8;
+      reasons.push("readiness goed");
+    }
   }
 
   score=Math.max(0,Math.min(100,score));
   const level=score<45?"low":score<70?"moderate":"good";
-  return {score,level,reasons};
+
+  return{
+    score,
+    level,
+    reasons,
+    sufficientData:true,
+    currentSignalCount:currentSignals,
+    requiredSignals:required
+  };
 }
 
 function getRaceFocus(){
@@ -5661,17 +6248,28 @@ function buildAdaptiveWeek(){
 
   const headline=document.getElementById("adaptiveCoachHeadline");
   const reason=document.getElementById("adaptiveCoachReason");
-  const tag=readiness.level==="good"?"Goede trainingsbereidheid":
-    readiness.level==="moderate"?"Train gecontroleerd":"Herstel heeft prioriteit";
+  const tag=readiness.level==="unknown"
+    ?"Hersteldata onvoldoende"
+    :readiness.level==="good"
+      ?"Goede trainingsbereidheid"
+      :readiness.level==="moderate"
+        ?"Train gecontroleerd"
+        :"Herstel heeft prioriteit";
 
-  headline.textContent=`${tag} · ${readiness.score}/100`;
+  headline.textContent=readiness.level==="unknown"
+    ?tag
+    :`${tag} · ${readiness.score}/100`;
 
   const raceText=race
     ? `${race.name} over ${phase.days} dagen (${phase.phase})`
     : "geen komende wedstrijd gevonden";
 
   reason.textContent=
-    `${readiness.reasons.length?readiness.reasons.join(", "):"geen duidelijke negatieve herstelsignalen"}. `+
+    `${readiness.level==="unknown"
+      ?"Herstel is niet meegewogen wegens onvoldoende actuele data"
+      :readiness.reasons.length
+        ?readiness.reasons.join(", ")
+        :"geen duidelijke negatieve herstelsignalen"}. `+
     `Focus: ${raceText}. De trainingen zijn verdeeld over je beschikbare dagen.`;
 
   renderAdaptiveWeek(readiness,race,phase);
@@ -5712,7 +6310,9 @@ function renderAdaptiveWeek(readiness,race,phase){
   status.className="status";
   status.textContent=
     `${Math.round(totalKm)} km voorgesteld${race?` richting ${race.name}`:""}. `+
-    `Herstelniveau: ${readiness.level}.`;
+    readiness.level==="unknown"
+      ?"Hersteldata onvoldoende; herstel is niet meegewogen."
+      :`Herstelniveau: ${readiness.level}.`;
   document.getElementById("saveAdaptiveWeek").disabled=false;
 }
 
