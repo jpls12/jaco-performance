@@ -113,6 +113,7 @@ document.getElementById("generatePlan").onclick=generateRacePlan;
 document.getElementById("planStartDate").value=ymd(today);
 
 async function initializeJacoPerformance(){
+  repairStoredWorkoutMismatches();
   const greeting=document.getElementById("greeting");
   if(greeting){
     greeting.textContent=
