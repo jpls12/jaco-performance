@@ -1959,6 +1959,11 @@ function buildWorkout(){
   const target=safe(document.getElementById("targetPace").value).trim() || "Z1";
   const displaySteps=[];
   const lines=[];
+  const synchronizedName=synchronizedIntervalTitle(
+    name,
+    repeats,
+    workMeters
+  );
 
   if(notes) lines.push(notes,"");
 
@@ -1987,8 +1992,8 @@ function buildWorkout(){
   }
 
   return{
-    name,
-    uploadName:`Jaco - ${name}`,
+    name:synchronizedName,
+    uploadName:`Jaco - ${synchronizedName}`,
     date:document.getElementById("date").value,
     type:"Run",
     distanceKm:Number(document.getElementById("distanceKm").value),
@@ -2044,8 +2049,206 @@ function fillEditor(workout,originalDate){
   updatePreview();
 }
 
-function inferEditorData(workout){
+
+function parseLocaleNumber(value){
+  const number=Number(String(value??"").replace(",","."));
+  return Number.isFinite(number)?number:null;
+}
+
+function parseStructuredRunData(workout){
+  if(!workout || workout.type!=="Run") return null;
+
+  const steps=Array.isArray(workout.displaySteps)
+    ? workout.displaySteps.join("\n")
+    :"";
+
+  const description=String(workout.intervalsDescription||"");
+  const text=`${steps}\n${description}`;
+
+  let warmupKm=null;
+  let cooldownKm=null;
+  let repeats=null;
+  let workMeters=null;
+  let targetPace=null;
+  let recoveryType=null;
+  let recoveryValue=null;
+
+  const warmupMatch=text.match(
+    /(\d+(?:[.,]\d+)?)\s*km[^\n]*(?:inlopen|warmup|warm-up)/i
+  );
+  if(warmupMatch){
+    warmupKm=parseLocaleNumber(warmupMatch[1]);
+  }
+
+  const cooldownMatch=text.match(
+    /(\d+(?:[.,]\d+)?)\s*km[^\n]*(?:uitlopen|cooldown|cool-down)/i
+  );
+  if(cooldownMatch){
+    cooldownKm=parseLocaleNumber(cooldownMatch[1]);
+  }
+
+  // Beste bron: de zichtbare trainingsstap.
+  const stepMatch=steps.match(
+    /(\d+)\s*[×x]\s*(\d+(?:[.,]\d+)?)\s*m(?:tr)?\s*@\s*([^,\n]+?)(?:,\s*(\d+(?:[.,]\d+)?)\s*(min(?:uten?)?|m(?:eter)?)\s*herstel)?(?:\n|$)/i
+  );
+
+  if(stepMatch){
+    repeats=Number(stepMatch[1]);
+    workMeters=Math.round(parseLocaleNumber(stepMatch[2]));
+    targetPace=String(stepMatch[3]||"").trim();
+
+    if(stepMatch[4]){
+      recoveryValue=parseLocaleNumber(stepMatch[4]);
+      recoveryType=/min/i.test(stepMatch[5]||"") ? "time" : "distance";
+    }
+  }
+
+  // Ook stappen als "5 × 1000 m op 5 km-tempo" herkennen.
+  if(repeats===null || workMeters===null){
+    const simpleStep=text.match(
+      /(\d+)\s*[×x]\s*(\d+(?:[.,]\d+)?)\s*m\b/i
+    );
+    if(simpleStep){
+      repeats=Number(simpleStep[1]);
+      workMeters=Math.round(parseLocaleNumber(simpleStep[2]));
+    }
+  }
+
+  // Fallback naar Intervals-description.
+  const mainSetMatch=description.match(/Main set\s+(\d+)x/i);
+  if(repeats===null && mainSetMatch){
+    repeats=Number(mainSetMatch[1]);
+  }
+
+  const workLine=description.match(
+    /-\s*(\d+(?:[.,]\d+)?)\s*(km|mtr|m)\s+([^\n]+?)\s+Pace/i
+  );
+  if(workMeters===null && workLine){
+    const value=parseLocaleNumber(workLine[1]);
+    workMeters=workLine[2].toLowerCase()==="km"
+      ?Math.round(value*1000)
+      :Math.round(value);
+  }
+  if(!targetPace && workLine){
+    targetPace=String(workLine[3]||"").trim();
+  }
+
+  const recoveryLine=description.match(
+    /-\s*(\d+(?:[.,]\d+)?)\s*(mtr|m)\s+Z1 Pace/i
+  );
+  if(recoveryValue===null && recoveryLine){
+    const value=parseLocaleNumber(recoveryLine[1]);
+    const unit=recoveryLine[2].toLowerCase();
+
+    // In bestaande Intervals export betekent "2m" minuten,
+    // terwijl "200mtr" afstand is.
+    if(unit==="mtr" || value>=50){
+      recoveryType="distance";
+      recoveryValue=value;
+    }else{
+      recoveryType="time";
+      recoveryValue=value;
+    }
+  }
+
+  if(repeats===null || workMeters===null){
+    return null;
+  }
+
   return{
+    warmupKm:warmupKm ?? 3,
+    warmupPace:"5:00-5:30/km",
+    repeats,
+    workMeters,
+    targetPace:targetPace || "Z1",
+    recoveryType:recoveryType || "time",
+    recoveryValue:recoveryValue ?? 2,
+    cooldownKm:cooldownKm ?? 2,
+    notes:""
+  };
+}
+
+function isGenericIntervalTitle(name){
+  return /^\s*\d+\s*[×x]\s*\d+(?:[.,]\d+)?\s*m\b/i.test(
+    String(name||"")
+  );
+}
+
+function synchronizedIntervalTitle(name,repeats,workMeters){
+  const current=String(name||"").trim();
+
+  if(!isGenericIntervalTitle(current)){
+    return current;
+  }
+
+  const suffix=/vo(?:₂|2)\s*max/i.test(current)
+    ?" VO₂max"
+    :"";
+
+  return `${repeats} × ${workMeters} m${suffix}`;
+}
+
+function repairStructuredWorkout(workout){
+  if(!workout || workout.type!=="Run") return false;
+
+  const inferred=parseStructuredRunData(workout);
+  if(!inferred) return false;
+
+  let changed=false;
+
+  if(!workout.editorData){
+    workout.editorData={...inferred};
+    changed=true;
+  }
+
+  if(isGenericIntervalTitle(workout.name)){
+    const synced=synchronizedIntervalTitle(
+      workout.name,
+      inferred.repeats,
+      inferred.workMeters
+    );
+
+    if(synced!==workout.name){
+      workout.name=synced;
+      workout.uploadName=`Jaco - ${synced}`;
+      changed=true;
+    }
+  }
+
+  return changed;
+}
+
+function repairStoredWorkoutMismatches(){
+  let changed=false;
+
+  Object.values(customWorkouts).forEach(workout=>{
+    if(repairStructuredWorkout(workout)){
+      changed=true;
+    }
+  });
+
+  if(changed){
+    saveObject(STORAGE_KEY,customWorkouts);
+  }
+
+  return changed;
+}
+
+
+
+function inferEditorData(workout){
+  const parsed=parseStructuredRunData(workout);
+
+  if(parsed){
+    return{
+      durationMinutes:Number(workout.durationMinutes)||0,
+      ...parsed,
+      notes:""
+    };
+  }
+
+  return{
+    durationMinutes:Number(workout.durationMinutes)||0,
     warmupKm:3,
     warmupPace:"5:00-5:30/km",
     repeats:5,
@@ -2061,6 +2264,11 @@ function inferEditorData(workout){
 function editWorkout(date){
   const workout=customWorkouts[date];
   if(!workout) return;
+
+  if(repairStructuredWorkout(workout)){
+    saveObject(STORAGE_KEY,customWorkouts);
+  }
+
   fillEditor(workout,date);
   switchView("editor");
 }
