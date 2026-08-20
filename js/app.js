@@ -2306,9 +2306,29 @@ function updatePreview(){
 
 function updateRecoveryLabel(){
   const isTime=document.getElementById("recoveryType").value==="time";
+  const input=document.getElementById("recoveryValue");
+
   document.getElementById("recoveryValueLabel").firstChild.textContent=
     isTime ? "Herstel (minuten)" : "Herstel (meter)";
-  document.getElementById("recoveryValue").step=isTime ? "0.5" : "50";
+
+  input.min=isTime ? "0.5" : "50";
+  input.step=isTime ? "0.5" : "50";
+  input.inputMode=isTime ? "decimal" : "numeric";
+
+  const value=Number(input.value);
+
+  if(Number.isFinite(value)){
+    if(isTime && value<0.5){
+      input.value="0.5";
+    }
+
+    if(!isTime && value<50){
+      input.value="50";
+    }
+  }
+
+  // Safari/iOS opnieuw laten valideren met de actuele min/step-combinatie.
+  input.setCustomValidity("");
 }
 
 function saveWorkout(event){
