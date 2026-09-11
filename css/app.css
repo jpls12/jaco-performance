@@ -676,3 +676,37 @@
     @media(max-width:650px){
       .data-source-list{grid-template-columns:1fr}
     }
+
+
+    .race-simulator-card{
+      background:linear-gradient(155deg,rgba(32,38,59,.98),rgba(14,29,45,.98));
+      border-color:#566688
+    }
+    .race-sim-grid{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px
+    }
+    .race-sim-metric{
+      background:#0d1928;border:1px solid #29415e;border-radius:14px;padding:13px
+    }
+    .race-sim-metric span,.race-sim-metric small{
+      display:block;color:var(--muted)
+    }
+    .race-sim-metric strong{
+      display:block;font-size:1.45rem;margin:5px 0
+    }
+    .race-sim-section{margin-top:16px}
+    .race-sim-plan{display:grid;gap:8px;margin-top:8px}
+    .race-sim-row{
+      display:grid;grid-template-columns:110px 1fr;gap:12px;
+      background:#0d1928;border:1px solid #29415e;border-radius:13px;padding:11px 12px
+    }
+    .race-sim-row strong{font-size:.88rem}
+    .race-sim-row span{color:var(--muted);line-height:1.4}
+    .race-sim-note{
+      padding:10px 12px;border-radius:12px;background:#10263a;
+      border:1px solid #31536f;color:var(--muted);line-height:1.45
+    }
+    @media(max-width:700px){
+      .race-sim-grid{grid-template-columns:repeat(2,1fr)}
+      .race-sim-row{grid-template-columns:92px 1fr}
+    }
