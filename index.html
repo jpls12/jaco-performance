@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=743">
+  <link rel="stylesheet" href="/css/app.css?v=750">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 7.4.3 · Recovery Input Fix</span>
+      <span class="v2-badge">Jaco Performance 7.5 · Race Simulator</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -888,6 +888,89 @@
   </section>
 
   <section id="races" class="view">
+
+    <article class="card race-simulator-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 7.5 · Race Simulator</p>
+          <h2>Simuleer mijn wedstrijd</h2>
+          <p class="help">
+            Vergelijk je doel met een profielgebaseerde prognose en maak een
+            pacing-, taper- en voedingsplan. De simulator vermeldt altijd waarop
+            de voorspelling is gebaseerd.
+          </p>
+        </div>
+        <button id="simulateRace" type="button" style="width:auto">
+          Simuleer
+        </button>
+      </div>
+
+      <label>Wedstrijd
+        <select id="raceSimulatorSelect"></select>
+      </label>
+
+      <div class="race-sim-grid">
+        <div class="race-sim-metric">
+          <span>Voorspelling</span>
+          <strong id="raceSimPrediction">—</strong>
+          <small id="raceSimPredictionSource">Nog niet berekend</small>
+        </div>
+        <div class="race-sim-metric">
+          <span>Doel</span>
+          <strong id="raceSimTarget">—</strong>
+          <small id="raceSimTargetGap">—</small>
+        </div>
+        <div class="race-sim-metric">
+          <span>Doeltempo</span>
+          <strong id="raceSimPace">—</strong>
+          <small id="raceSimPaceSource">—</small>
+        </div>
+        <div class="race-sim-metric">
+          <span>Race readiness</span>
+          <strong id="raceSimReadiness">—</strong>
+          <small id="raceSimReadinessConfidence">—</small>
+        </div>
+      </div>
+
+      <div id="raceSimSignals" class="reason-list"></div>
+
+      <div class="race-sim-section">
+        <p class="label">Pacingstrategie</p>
+        <div id="raceSimPacing" class="race-sim-plan">
+          <p class="help">Kies een wedstrijd en tik op Simuleer.</p>
+        </div>
+      </div>
+
+      <div class="race-sim-section">
+        <p class="label">Taper</p>
+        <div id="raceSimTaper" class="race-sim-plan"></div>
+      </div>
+
+      <div class="race-sim-section">
+        <p class="label">Voeding & drinken</p>
+        <div id="raceSimFuel" class="race-sim-plan"></div>
+      </div>
+
+      <div class="coach-box">
+        <p class="label">Racecoachbesluit</p>
+        <h3 id="raceSimHeadline">Nog geen simulatie</h3>
+        <p class="help" id="raceSimConclusion">
+          De simulator gebruikt geen ontbrekende hersteldata als fictieve score.
+        </p>
+      </div>
+
+      <div class="today-actions">
+        <button id="saveRaceSimulation" class="secondary" type="button" disabled>
+          Bewaar raceplan
+        </button>
+        <button id="editSimulatedRace" class="secondary" type="button" disabled>
+          Bewerk wedstrijd
+        </button>
+      </div>
+
+      <p id="raceSimStatus" class="status"></p>
+    </article>
+
     <article class="card">
       <p class="label">Wedstrijdkalender</p>
       <h2>Wedstrijd toevoegen</h2>
@@ -1150,8 +1233,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=743" defer></script>
-<script src="/js/bootstrap.js?v=743" defer></script>
+<script src="/js/app.js?v=750" defer></script>
+<script src="/js/bootstrap.js?v=750" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
