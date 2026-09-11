@@ -2,7 +2,7 @@ const VISUAL_EXERCISES={
   plank:{
     name:"Plank",
     icon:"🧍",
-    coros:"Plank",
+    corps:"Plank",
     prescription:"40 seconden",
     rest:"20 seconden",
     cue:"Maak een rechte lijn van schouders tot hielen en span buik en billen aan."
@@ -2491,6 +2491,631 @@ function openSaved(date){
 }
 
 
+
+const RACE_SIM_KEY="jp_race_simulations_v1";
+let raceSimulations=loadObject(RACE_SIM_KEY);
+let activeRaceSimulation=null;
+
+function formatRaceTime(totalSeconds){
+  const seconds=Math.round(Number(totalSeconds)||0);
+  if(!seconds) return null;
+
+  const hours=Math.floor(seconds/3600);
+  const minutes=Math.floor((seconds%3600)/60);
+  const secs=seconds%60;
+
+  if(hours>0){
+    return `${hours}:${String(minutes).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+  }
+
+  return `${minutes}:${String(secs).padStart(2,"0")}`;
+}
+
+function riegelPrediction(sourceSeconds,sourceDistance,targetDistance){
+  const seconds=Number(sourceSeconds);
+  const d1=Number(sourceDistance);
+  const d2=Number(targetDistance);
+
+  if(!seconds || !d1 || !d2) return null;
+  return seconds*Math.pow(d2/d1,1.06);
+}
+
+function profilePerformanceSources(profileData=getProfile()){
+  const sources=[];
+
+  const five=parseTimeToSeconds(profileData.fiveKPr);
+  if(five){
+    sources.push({
+      distance:5,
+      seconds:five,
+      label:`5 km PR ${profileData.fiveKPr}`,
+      type:"pr"
+    });
+  }
+
+  const ten=parseTimeToSeconds(profileData.tenKPr);
+  if(ten){
+    sources.push({
+      distance:10,
+      seconds:ten,
+      label:`10 km PR ${profileData.tenKPr}`,
+      type:"pr"
+    });
+  }
+
+  return sources;
+}
+
+function bestProfilePrediction(race,profileData=getProfile()){
+  const distance=Number(race?.distanceKm||0);
+  const sources=profilePerformanceSources(profileData);
+
+  if(!distance || !sources.length){
+    const target=parseTimeToSeconds(race?.targetTime);
+    if(target){
+      return{
+        seconds:target,
+        source:"Alleen ingesteld wedstrijddoel",
+        confidence:"Laag",
+        independent:false
+      };
+    }
+
+    return{
+      seconds:null,
+      source:"Geen PR of streeftijd beschikbaar",
+      confidence:"Onvoldoende",
+      independent:false
+    };
+  }
+
+  const exact=sources.find(source=>
+    Math.abs(source.distance-distance)<0.01
+  );
+
+  if(exact){
+    return{
+      seconds:exact.seconds,
+      source:`Exacte profielreferentie · ${exact.label}`,
+      confidence:"Hoog",
+      independent:true
+    };
+  }
+
+  const ranked=[...sources].sort((a,b)=>
+    Math.abs(Math.log(distance/a.distance))-
+    Math.abs(Math.log(distance/b.distance))
+  );
+
+  const source=ranked[0];
+  const predicted=riegelPrediction(
+    source.seconds,
+    source.distance,
+    distance
+  );
+
+  const ratio=Math.max(distance/source.distance,source.distance/distance);
+  const confidence=
+    ratio<=1.7
+      ?"Redelijk"
+      :ratio<=2.5
+        ?"Matig"
+        :"Laag";
+
+  return{
+    seconds:predicted,
+    source:`Riegel-prognose vanuit ${source.label}`,
+    confidence,
+    independent:true
+  };
+}
+
+function adjustedRacePrediction(race,basePrediction){
+  if(!basePrediction.seconds) return basePrediction;
+
+  const phase=classifyRacePhase(race);
+  const readiness=determineReadiness(getWellnessSnapshot());
+
+  // Alleen een kleine actuele aanpassing wanneer de wedstrijd dichtbij is
+  // én voldoende verse hersteldata beschikbaar is.
+  if(
+    !readiness.sufficientData ||
+    phase.days===null ||
+    phase.days>14
+  ){
+    return{
+      ...basePrediction,
+      adjustment:0,
+      adjustmentText:
+        readiness.sufficientData
+          ?"Geen vormcorrectie: wedstrijd is nog verder dan 14 dagen."
+          :"Geen vormcorrectie: onvoldoende actuele hersteldata."
+    };
+  }
+
+  let adjustment=0;
+
+  if(readiness.score>=85) adjustment=-0.008;
+  else if(readiness.score>=75) adjustment=-0.004;
+  else if(readiness.score<45) adjustment=0.018;
+  else if(readiness.score<60) adjustment=0.010;
+
+  return{
+    ...basePrediction,
+    seconds:basePrediction.seconds*(1+adjustment),
+    adjustment,
+    adjustmentText:
+      adjustment===0
+        ?"Actueel herstel geeft geen correctie."
+        :adjustment<0
+          ?`Kleine positieve vormcorrectie (${Math.abs(adjustment*100).toFixed(1)}%).`
+          :`Voorzichtige herstelcorrectie (+${(adjustment*100).toFixed(1)}%).`
+  };
+}
+
+function raceGoalComparison(race,prediction){
+  const target=parseTimeToSeconds(race?.targetTime);
+
+  if(!target){
+    return{
+      target:null,
+      gapSeconds:null,
+      gapPercent:null,
+      label:"Geen streeftijd"
+    };
+  }
+
+  if(!prediction?.seconds || !prediction.independent){
+    return{
+      target,
+      gapSeconds:null,
+      gapPercent:null,
+      label:"Geen onafhankelijke vergelijking"
+    };
+  }
+
+  const gap=target-prediction.seconds;
+  const percent=(prediction.seconds-target)/prediction.seconds*100;
+
+  let label="Realistisch";
+  if(percent>1.5 && percent<=3) label="Ambitieus";
+  if(percent>3) label="Agressief";
+  if(percent<-2) label="Conservatief";
+
+  return{
+    target,
+    gapSeconds:gap,
+    gapPercent:percent,
+    label
+  };
+}
+
+function customRaceReadiness(race){
+  const snapshot=getWellnessSnapshot();
+  const readiness=determineReadiness(snapshot);
+  const phase=classifyRacePhase(race);
+  const consistency=calculateConsistencyScore();
+
+  const fitness=snapshot.ctl===null
+    ?null
+    :clampScore(35+(snapshot.ctl/70)*55);
+
+  const recovery=readiness.sufficientData
+    ?readiness.score
+    :null;
+
+  let phaseScore=null;
+  if(phase.days!==null){
+    if(phase.phase==="race-week") phaseScore=90;
+    else if(phase.phase==="taper") phaseScore=86;
+    else if(phase.phase==="specific") phaseScore=76;
+    else phaseScore=66;
+  }
+
+  const consistencyValue=
+    consistency.completed>0
+      ?consistency.score
+      :null;
+
+  const inputs=[
+    {label:"fitness",value:fitness,weight:.36},
+    {label:"herstel",value:recovery,weight:.34},
+    {label:"consistentie",value:consistencyValue,weight:.16},
+    {label:"wedstrijdfase",value:phaseScore,weight:.14}
+  ];
+
+  const available=inputs.filter(item=>item.value!==null);
+  const score=available.length>=2
+    ?weightedAvailableScore(inputs)
+    :null;
+
+  let confidence="Onvoldoende";
+  if(available.length===2) confidence="Laag";
+  if(available.length===3) confidence="Redelijk";
+  if(available.length===4) confidence="Goed";
+
+  return{
+    score,
+    confidence,
+    availableInputs:available.map(item=>item.label),
+    missingInputs:inputs.filter(item=>item.value===null).map(item=>item.label),
+    fitness,
+    recovery,
+    consistency:consistencyValue,
+    phaseScore,
+    phase
+  };
+}
+
+function paceTextWithOffset(baseSeconds,offsetSeconds){
+  if(!baseSeconds) return "—";
+  return `${formatPace(baseSeconds+offsetSeconds)}/km`;
+}
+
+function racePacingPlan(race,paceSeconds){
+  const d=Number(race.distanceKm);
+
+  if(!paceSeconds){
+    return[{
+      label:"Pacing",
+      text:"Geen tempo beschikbaar. Vul een streeftijd of bruikbare profielreferentie in."
+    }];
+  }
+
+  if(d<=5.5){
+    return[
+      {label:"Start",text:`Eerste 1 km rond ${paceTextWithOffset(paceSeconds,3)}. Niet sneller openen.`},
+      {label:"Midden",text:`Km 2–4 rond ${paceTextWithOffset(paceSeconds,0)}. Ritme en ontspanning vasthouden.`},
+      {label:"Finish",text:`Laatste km progressief. Vanaf ongeveer 600 m te gaan versnellen als je nog controle hebt.`}
+    ];
+  }
+
+  if(d<=10.5){
+    return[
+      {label:"Km 0–2",text:`Open gecontroleerd rond ${paceTextWithOffset(paceSeconds,3)}.`},
+      {label:"Km 2–8",text:`Stabiliseer rond ${paceTextWithOffset(paceSeconds,0)}.`},
+      {label:"Km 8–10",text:`Tempo vasthouden; laatste 1–2 km versnellen als de marge er is.`}
+    ];
+  }
+
+  if(d<=23){
+    return[
+      {label:"Km 0–3",text:`Rustige opening rond ${paceTextWithOffset(paceSeconds,4)}.`},
+      {label:"Km 3–16",text:`Hoofdblok rond ${paceTextWithOffset(paceSeconds,0)}.`},
+      {label:"Km 16–20",text:`Blijf bij doeltempo; alleen versnellen als ademhaling en benen stabiel zijn.`},
+      {label:"Laatste 1,1",text:"Progressief naar maximaal haalbare inspanning."}
+    ];
+  }
+
+  return[
+    {label:"Km 0–5",text:`Beheerst openen rond ${paceTextWithOffset(paceSeconds,7)}.`},
+    {label:"Km 5–30",text:`Zo constant mogelijk rond ${paceTextWithOffset(paceSeconds,0)}.`},
+    {label:"Km 30–38",text:"Niet forceren om kleine achterstand terug te pakken; tempo op gevoel en voeding bewaken."},
+    {label:"Laatste 4,2",text:"Pas hier versnellen als energie, spieren en maag nog goed functioneren."}
+  ];
+}
+
+function raceTaperPlan(race){
+  const days=daysUntil(race.date);
+  const d=Number(race.distanceKm);
+
+  if(days<0){
+    return[{label:"Status",text:"Deze wedstrijd is al geweest."}];
+  }
+
+  if(days<=3){
+    return[
+      {label:"Volume",text:"Geen zware trainingsprikkel meer. Alleen kort en rustig."},
+      {label:"Scherpte",text:d<=10?"Eventueel 4–6 korte ontspannen versnellingen.":"Enkele korte strides, geen vermoeiende blokken."},
+      {label:"Prioriteit",text:"Slaap, normale voeding en frisse benen."}
+    ];
+  }
+
+  if(days<=7){
+    return[
+      {label:"Volume",text:`Ongeveer ${d>=21?"50–60%":"60–70%"} van een normale trainingsweek.`},
+      {label:"Laatste prikkel",text:"Eén korte wedstrijdspecifieke prikkel, daarna vooral gemakkelijk."},
+      {label:"Herstel",text:"Geen gemiste kilometers meer proberen in te halen."}
+    ];
+  }
+
+  if(days<=14){
+    return[
+      {label:"Volume",text:`Bouw richting ongeveer ${d>=21?"65–75%":"70–80%"} van normaal.`},
+      {label:"Kwaliteit",text:"Laatste stevige kwaliteit vroeg in deze periode; daarna korter en specifieker."},
+      {label:"Doel",text:"Fitness behouden, vermoeidheid laten dalen."}
+    ];
+  }
+
+  return[
+    {label:"Nu",text:"Nog geen volledige taper nodig."},
+    {label:"Training",text:"Blijf wedstrijdspecifiek trainen met voldoende herstel tussen zware sessies."},
+    {label:"Laatste 14 dagen",text:"Dan pas gericht volume afbouwen."}
+  ];
+}
+
+function raceFuelPlan(race,expectedSeconds){
+  const duration=Number(expectedSeconds)||null;
+  const minutes=duration?duration/60:null;
+
+  if(!minutes){
+    return[
+      {label:"Voeding",text:"Vul eerst een streeftijd of bruikbare prognose in."}
+    ];
+  }
+
+  if(minutes<=45){
+    return[
+      {label:"Vooraf",text:"Normale koolhydraatrijke maaltijd 2–3 uur vooraf; niets nieuws proberen."},
+      {label:"Tijdens",text:"Geen koolhydraten nodig tijdens deze korte race."},
+      {label:"Drinken",text:"Meestal alleen drinken naar dorst; bij warmte vooraf goed gehydrateerd starten."}
+    ];
+  }
+
+  if(minutes<=75){
+    return[
+      {label:"Vooraf",text:"Koolhydraatrijke maaltijd 2–3 uur vooraf. Een kleine gel vlak voor de start kan als je dit gewend bent."},
+      {label:"Tijdens",text:"Ongeveer 20–30 g koolhydraten kan voldoende zijn; bij een 10 km vaak niet noodzakelijk."},
+      {label:"Drinken",text:"Kleine slokken bij posten, vooral bij warm weer."}
+    ];
+  }
+
+  if(minutes<=150){
+    return[
+      {label:"Koolhydraten",text:"Richtlijn 45–60 g koolhydraten per uur, vooraf in training testen."},
+      {label:"Timing",text:"Begin vroeg; bijvoorbeeld een gel ongeveer iedere 25–30 minuten afhankelijk van product."},
+      {label:"Drinken",text:"Globaal 400–750 ml per uur, aangepast aan temperatuur en je eigen zweetverlies."},
+      {label:"Natrium",text:"Gebruik je normale elektrolytenstrategie; behoefte verschilt sterk per persoon."}
+    ];
+  }
+
+  return[
+    {label:"Koolhydraten",text:"Richtlijn 60–90 g koolhydraten per uur, alleen als je maag dit in training verdraagt."},
+    {label:"Timing",text:"Start binnen het eerste halfuur en voer consequent door."},
+    {label:"Drinken",text:"Globaal 450–750 ml per uur, aangepast aan weer en persoonlijk zweetverlies."},
+    {label:"Natrium",text:"Gebruik een vooraf geteste elektrolytenstrategie; niet op racedag experimenteren."}
+  ];
+}
+
+function raceSimulationSignals(race,prediction,goal,readiness){
+  const signals=[];
+
+  signals.push({
+    state:prediction.independent?"good":"warn",
+    icon:prediction.independent?"✓":"?",
+    text:`Voorspelling: ${prediction.source}. Betrouwbaarheid: ${prediction.confidence}.`
+  });
+
+  if(goal.target && goal.gapPercent!==null){
+    signals.push({
+      state:goal.label==="Agressief"
+        ?"warn"
+        :"good",
+      icon:goal.label==="Agressief"
+        ?"!"
+        :"✓",
+      text:`Doel versus profielprognose: ${goal.label.toLowerCase()} (${goal.gapPercent>=0?goal.gapPercent.toFixed(1)+"% sneller":Math.abs(goal.gapPercent).toFixed(1)+"% rustiger"}).`
+    });
+  }
+
+  if(readiness.score===null){
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:`Race readiness niet berekend: onvoldoende actuele databronnen (${readiness.availableInputs.join(", ") || "geen"}).`
+    });
+  }else{
+    signals.push({
+      state:readiness.score>=75
+        ?"good"
+        :readiness.score>=55
+          ?"warn"
+          :"bad",
+      icon:readiness.score>=75
+        ?"✓"
+        :readiness.score>=55
+          ?"!"
+          :"×",
+      text:`Race readiness ${readiness.score}/100 op basis van ${readiness.availableInputs.join(", ")}.`
+    });
+  }
+
+  if(readiness.missingInputs.length){
+    signals.push({
+      state:"warn",
+      icon:"i",
+      text:`Niet meegewogen: ${readiness.missingInputs.join(", ")}.`
+    });
+  }
+
+  return signals;
+}
+
+function buildRaceSimulation(race){
+  const base=bestProfilePrediction(race,getProfile());
+  const prediction=adjustedRacePrediction(race,base);
+  const goal=raceGoalComparison(race,prediction);
+  const readiness=customRaceReadiness(race);
+
+  const pacingSeconds=
+    goal.target ||
+    prediction.seconds ||
+    null;
+
+  const expectedSeconds=
+    goal.target ||
+    prediction.seconds ||
+    null;
+
+  return{
+    race,
+    prediction,
+    goal,
+    readiness,
+    pacingSeconds,
+    pacing:racePacingPlan(race,pacingSeconds),
+    taper:raceTaperPlan(race),
+    fuel:raceFuelPlan(race,expectedSeconds),
+    createdAt:new Date().toISOString()
+  };
+}
+
+function renderRaceSimulationPlan(targetId,rows){
+  const target=document.getElementById(targetId);
+  if(!target) return;
+
+  target.innerHTML=rows.map(row=>`
+    <div class="race-sim-row">
+      <strong>${safe(row.label)}</strong>
+      <span>${safe(row.text)}</span>
+    </div>
+  `).join("");
+}
+
+function renderRaceSimulator(){
+  const select=document.getElementById("raceSimulatorSelect");
+  if(!select) return;
+
+  const race=races[select.value];
+
+  if(!race){
+    activeRaceSimulation=null;
+    document.getElementById("raceSimPrediction").textContent="—";
+    document.getElementById("raceSimPredictionSource").textContent="Voeg eerst een toekomstige wedstrijd toe";
+    document.getElementById("raceSimTarget").textContent="—";
+    document.getElementById("raceSimTargetGap").textContent="—";
+    document.getElementById("raceSimPace").textContent="—";
+    document.getElementById("raceSimPaceSource").textContent="—";
+    document.getElementById("raceSimReadiness").textContent="—";
+    document.getElementById("raceSimReadinessConfidence").textContent="—";
+    document.getElementById("raceSimSignals").innerHTML="";
+    document.getElementById("raceSimPacing").innerHTML='<p class="help">Voeg eerst een toekomstige wedstrijd toe.</p>';
+    document.getElementById("raceSimTaper").innerHTML="";
+    document.getElementById("raceSimFuel").innerHTML="";
+    document.getElementById("raceSimHeadline").textContent="Geen wedstrijd geselecteerd";
+    document.getElementById("raceSimConclusion").textContent="De simulator heeft een wedstrijd nodig.";
+    document.getElementById("saveRaceSimulation").disabled=true;
+    document.getElementById("editSimulatedRace").disabled=true;
+    return;
+  }
+
+  const simulation=buildRaceSimulation(race);
+  activeRaceSimulation=simulation;
+
+  document.getElementById("raceSimPrediction").textContent=
+    simulation.prediction.seconds
+      ?formatRaceTime(simulation.prediction.seconds)
+      :"—";
+
+  document.getElementById("raceSimPredictionSource").textContent=
+    `${simulation.prediction.source} · ${simulation.prediction.confidence}`;
+
+  document.getElementById("raceSimTarget").textContent=
+    race.targetTime || "—";
+
+  document.getElementById("raceSimTargetGap").textContent=
+    simulation.goal.gapPercent===null
+      ?simulation.goal.label
+      :simulation.goal.label;
+
+  document.getElementById("raceSimPace").textContent=
+    simulation.pacingSeconds
+      ?`${formatPace(simulation.pacingSeconds/Number(race.distanceKm))}/km`
+      :"—";
+
+  document.getElementById("raceSimPaceSource").textContent=
+    simulation.goal.target
+      ?"Gebaseerd op streeftijd"
+      :simulation.prediction.seconds
+        ?"Gebaseerd op prognose"
+        :"Geen tempo beschikbaar";
+
+  document.getElementById("raceSimReadiness").textContent=
+    simulation.readiness.score===null
+      ?"—"
+      :`${simulation.readiness.score}/100`;
+
+  document.getElementById("raceSimReadinessConfidence").textContent=
+    `Datadekking: ${simulation.readiness.confidence}`;
+
+  const signals=raceSimulationSignals(
+    race,
+    simulation.prediction,
+    simulation.goal,
+    simulation.readiness
+  );
+
+  document.getElementById("raceSimSignals").innerHTML=
+    signals.map(signal=>`
+      <div class="reason-item">
+        <div class="reason-icon ${signal.state}">${signal.icon}</div>
+        <div>${safe(signal.text)}</div>
+      </div>
+    `).join("");
+
+  renderRaceSimulationPlan("raceSimPacing",simulation.pacing);
+  renderRaceSimulationPlan("raceSimTaper",simulation.taper);
+  renderRaceSimulationPlan("raceSimFuel",simulation.fuel);
+
+  let headline="Raceplan is bruikbaar";
+  let conclusion=
+    `Gebruik ${race.targetTime?"je ingestelde streeftijd":"de profielprognose"} als uitgangspunt en pas op racedag alleen aan op omstandigheden en gevoel.`;
+
+  if(
+    simulation.goal.gapPercent!==null &&
+    simulation.goal.gapPercent>3
+  ){
+    headline="Doel vraagt een duidelijke stap";
+    conclusion=
+      "Je ingestelde doel ligt meer dan 3% sneller dan de huidige profielprognose. Dat betekent niet dat het onmogelijk is, maar de app heeft nog geen recente pace-data om die stap te onderbouwen.";
+  }
+
+  if(simulation.readiness.score!==null && simulation.readiness.score<55){
+    headline="Race readiness vraagt aandacht";
+    conclusion=
+      "De beschikbare actuele data wijst niet op optimale frisheid. Gebruik de komende dagen vooral om vermoeidheid te laten dalen.";
+  }
+
+  if(!simulation.prediction.independent){
+    headline="Geen onafhankelijke tijdsvoorspelling";
+    conclusion=
+      "De simulator kan wel pacing en taper tonen, maar heeft een bruikbare PR of recente prestatiedata nodig voor een onafhankelijke voorspelling.";
+  }
+
+  document.getElementById("raceSimHeadline").textContent=headline;
+  document.getElementById("raceSimConclusion").textContent=conclusion;
+
+  document.getElementById("saveRaceSimulation").disabled=false;
+  document.getElementById("editSimulatedRace").disabled=false;
+
+  const saved=raceSimulations[race.id];
+  document.getElementById("raceSimStatus").className="status";
+  document.getElementById("raceSimStatus").textContent=
+    saved
+      ?`Eerder raceplan bewaard op ${new Date(saved.createdAt).toLocaleString("nl-NL")}.`
+      :"";
+}
+
+function saveCurrentRaceSimulation(){
+  if(!activeRaceSimulation) return;
+
+  const race=activeRaceSimulation.race;
+  raceSimulations[race.id]=JSON.parse(
+    JSON.stringify(activeRaceSimulation)
+  );
+
+  saveObject(RACE_SIM_KEY,raceSimulations);
+
+  const status=document.getElementById("raceSimStatus");
+  status.className="status ok";
+  status.textContent="Raceplan lokaal bewaard.";
+}
+
+function editCurrentSimulatedRace(){
+  if(!activeRaceSimulation?.race?.id) return;
+  editRace(activeRaceSimulation.race.id);
+}
+
 function raceId(){
   return `race-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
 }
@@ -2576,6 +3201,7 @@ function saveRace(event){
 
   renderRaces();
   renderRaceOptions();
+  renderRaceSimulator();
   renderMonth();
   renderSelected();
 }
@@ -2615,6 +3241,7 @@ function deleteRace(id){
   saveObject(RACES_KEY,races);
   renderRaces();
   renderRaceOptions();
+  renderRaceSimulator();
   renderMonth();
   renderSelected();
 }
@@ -2668,16 +3295,38 @@ function renderRaces(){
   }).join("");
 }
 
+
 function renderRaceOptions(){
-  const select=document.getElementById("planRaceSelect");
-  if(!select) return;
+  const planSelect=document.getElementById("planRaceSelect");
+  const simulatorSelect=document.getElementById("raceSimulatorSelect");
+
   const future=Object.values(races)
     .filter(r=>daysUntil(r.date)>=0)
     .sort((a,b)=>a.date.localeCompare(b.date));
 
-  select.innerHTML=future.length
-    ? future.map(r=>`<option value="${r.id}">${safe(r.name)} — ${r.date}</option>`).join("")
-    : '<option value="">Voeg eerst een wedstrijd toe</option>';
+  const options=future.length
+    ?future.map(r=>`<option value="${r.id}">${safe(r.name)} — ${r.date}</option>`).join("")
+    :'<option value="">Voeg eerst een wedstrijd toe</option>';
+
+  if(planSelect){
+    const previous=planSelect.value;
+    planSelect.innerHTML=options;
+    if(previous && races[previous] && daysUntil(races[previous].date)>=0){
+      planSelect.value=previous;
+    }
+  }
+
+  if(simulatorSelect){
+    const previous=simulatorSelect.value;
+    simulatorSelect.innerHTML=options;
+
+    if(previous && races[previous] && daysUntil(races[previous].date)>=0){
+      simulatorSelect.value=previous;
+    }else{
+      const focus=getRaceFocus();
+      if(focus) simulatorSelect.value=focus.id;
+    }
+  }
 }
 
 function addDays(dateString,days){
