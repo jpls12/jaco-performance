@@ -104,6 +104,10 @@ document.getElementById("planMyWeek").onclick=generatePersonalWeek;
 document.getElementById("saveWeekPlan").onclick=savePersonalWeek;
 document.getElementById("profileForm").onsubmit=saveProfile;
 document.getElementById("planningForm").onsubmit=savePlanning;
+document.getElementById("simulateRace").onclick=renderRaceSimulator;
+document.getElementById("raceSimulatorSelect").onchange=renderRaceSimulator;
+document.getElementById("saveRaceSimulation").onclick=saveCurrentRaceSimulation;
+document.getElementById("editSimulatedRace").onclick=editCurrentSimulatedRace;
 document.getElementById("raceForm").onsubmit=saveRace;
 document.getElementById("raceDistance").onchange=()=>{
   document.getElementById("customRaceDistanceLabel").hidden=
@@ -130,6 +134,7 @@ async function initializeJacoPerformance(){
   renderProfileSummary();
   renderRaces();
   renderRaceOptions();
+  renderRaceSimulator();
   renderVisualWorkout("core");
 
   // Lokale trainingen en wedstrijden eerst tonen.
@@ -152,6 +157,7 @@ async function initializeJacoPerformance(){
   renderCoachIntelligence();
   renderPerformanceTrend(7);
   renderSmartWeekCoach();
+  renderRaceSimulator();
 }
 
 window.addEventListener("error",event=>{
