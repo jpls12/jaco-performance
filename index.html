@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=750">
+  <link rel="stylesheet" href="/css/app.css?v=751">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 7.5 · Race Simulator</span>
+      <span class="v2-badge">Jaco Performance 7.5.1 · Multi-Block Parser</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -731,11 +731,26 @@
       </div>
       <p id="smartStatus" class="status"></p>
 
+      <div id="exactRunPanel" class="exact-run-panel" hidden>
+        <div class="exact-run-head">
+          <div>
+            <p class="label">Exacte multi-block training</p>
+            <strong id="exactRunTitle">Volledige training herkend</strong>
+          </div>
+          <button id="clearExactRun" class="secondary" type="button" style="width:auto">
+            Eenvoudige velden
+          </button>
+        </div>
+        <div id="exactRunSteps" class="exact-run-steps"></div>
+        <p id="exactRunAssumptions" class="help"></p>
+      </div>
+
+
       <p class="help" style="margin-top:12px">
         Voorbeelden:<br>
         • morgen 8 km herstel in 5:15/km<br>
         • zaterdag 12 x 400 m in 78 sec met 200 m dribbel<br>
-        • 5 x 1000 m in 3:28 met 2 min herstel, 3 km inlopen en 2 km uitlopen<br>
+        • 5 x 1000 m in 3:28 met 2 min herstel, 3 km inlopen en 2 km uitlopen<br>        • 3 km warming up, 4 x 20 sec strides, 4 km @ 3:47-3:49/km, 1 km float @ 4:15-4:20/km, 4 km @ 3:47-3:49/km, 2-3 km uitlopen<br>
         • maak vrijdag een pittige 5 km-training voor sub 18<br>
         • maak zondag een rustige duurloop van 18 km
       </p>
@@ -1233,8 +1248,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=750" defer></script>
-<script src="/js/bootstrap.js?v=750" defer></script>
+<script src="/js/app.js?v=751" defer></script>
+<script src="/js/bootstrap.js?v=751" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
