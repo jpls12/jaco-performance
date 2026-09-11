@@ -24,8 +24,19 @@ document.getElementById("recoveryType").onchange=()=>{
 
 document.getElementById("parseSmartInput").onclick=parseSmartTraining;
 document.getElementById("generateSmartWorkout").onclick=generateSmartWorkout;
+document.getElementById("clearExactRun").onclick=()=>{
+  clearExactRunMode();
+  document.getElementById("smartStatus").className="status";
+  document.getElementById("smartStatus").textContent=
+    "Exacte multi-block modus uitgeschakeld. Je kunt nu de eenvoudige velden gebruiken.";
+};
 
-document.getElementById("workoutType").onchange=updateWorkoutTypeFields;
+document.getElementById("workoutType").onchange=()=>{
+  if(document.getElementById("workoutType").value!=="Run"){
+    clearExactRunMode(false);
+  }
+  updateWorkoutTypeFields();
+};
 document.getElementById("workoutForm").addEventListener("input",updatePreview);
 document.getElementById("workoutForm").onsubmit=saveWorkout;
 document.getElementById("cancelEdit").onclick=()=>{
