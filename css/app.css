@@ -710,3 +710,27 @@
       .race-sim-grid{grid-template-columns:repeat(2,1fr)}
       .race-sim-row{grid-template-columns:92px 1fr}
     }
+
+    .exact-run-panel{
+      margin-top:14px;padding:14px;border-radius:16px;
+      background:#0c2131;border:1px solid #3b6b83
+    }
+    .exact-run-head{
+      display:flex;justify-content:space-between;align-items:flex-start;
+      gap:12px;margin-bottom:10px
+    }
+    .exact-run-steps{display:grid;gap:8px}
+    .exact-run-step{
+      display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:start;
+      padding:10px 11px;border-radius:12px;background:#0d1928;
+      border:1px solid #29415e
+    }
+    .exact-run-step .step-number{
+      width:28px;height:28px;border-radius:50%;display:grid;place-items:center;
+      background:#173653;color:#69c4ff;font-weight:900
+    }
+    .exact-run-step strong{display:block}
+    .exact-run-step small{display:block;color:var(--muted);margin-top:3px}
+    @media(max-width:650px){
+      .exact-run-head{display:grid}
+    }
