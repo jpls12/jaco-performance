@@ -2,7 +2,7 @@ const VISUAL_EXERCISES={
   plank:{
     name:"Plank",
     icon:"🧍",
-    corps:"Plank",
+    coros:"Plank",
     prescription:"40 seconden",
     rest:"20 seconden",
     cue:"Maak een rechte lijn van schouders tot hielen en span buik en billen aan."
@@ -556,8 +556,14 @@ function trainingVolumeLabel(workout){
 function updateWorkoutTypeFields(){
   const type=document.getElementById("workoutType")?.value || "Run";
   const isRun=type==="Run";
-  document.getElementById("runFields").hidden=!isRun;
+
+  document.getElementById("runFields").hidden=!isRun || Boolean(exactRunDraft);
   document.getElementById("nonRunFields").hidden=isRun;
+
+  const exactPanel=document.getElementById("exactRunPanel");
+  if(exactPanel){
+    exactPanel.hidden=!isRun || !exactRunDraft;
+  }
 
   const duration=document.getElementById("durationMinutes");
   if(type==="Rest"){
@@ -586,6 +592,7 @@ let profile = loadObject(PROFILE_KEY);
 let pendingWeekPlan = [];
 let pendingAdaptiveWeek = [];
 let latestWellnessSnapshot = null;
+let exactRunDraft = null;
 
 
 let pendingCoachChatWorkout=null;
@@ -1450,6 +1457,7 @@ async function uploadSelected(){
 }
 
 function setDefaultForm(date=ymd(today)){
+  clearExactRunMode(false);
   document.getElementById("workoutForm").reset();
   document.getElementById("originalDate").value="";
   document.getElementById("date").value=date;
@@ -1472,6 +1480,25 @@ function setDefaultForm(date=ymd(today)){
   document.getElementById("saveButton").textContent="Training opslaan";
   document.getElementById("cancelEdit").hidden=true;
   document.getElementById("formStatus").textContent="";
+
+  if(
+    workout.type==="Run" &&
+    (workout.exactStructured || editor.exactStructured) &&
+    (workout.structuredBlocks || editor.structuredBlocks)
+  ){
+    exactRunDraft=clone({
+      ...workout,
+      exactStructured:true,
+      structuredBlocks:clone(
+        workout.structuredBlocks ||
+        editor.structuredBlocks ||
+        []
+      ),
+      assumptions:workout.assumptions || []
+    });
+    renderExactRunDraft();
+  }
+
   updateRecoveryLabel();
   updateWorkoutTypeFields();
   updatePreview();
@@ -1802,6 +1829,7 @@ function generateSmartWorkout(){
   }
 
   try{
+    clearExactRunMode(false);
     const generated=chooseGeneratedWorkout(input);
     applyGeneratedWorkout(generated);
     status.className="status ok";
@@ -1813,6 +1841,379 @@ function generateSmartWorkout(){
   }
 }
 
+
+function normalizedWorkoutText(text){
+  return String(text||"")
+    .replace(/×/g,"x")
+    .replace(/[–—]/g,"-")
+    .replace(/,/g,".")
+    .replace(/\s+/g," ")
+    .trim();
+}
+
+function displayPaceRange(a,b){
+  return b && b!==a ? `${a}-${b}/km` : `${a}/km`;
+}
+
+function paceRangeAverageSeconds(a,b){
+  const first=paceToSeconds(a);
+  const second=b?paceToSeconds(b):first;
+  if(first===null) return null;
+  return Math.round((first+(second??first))/2);
+}
+
+function estimateDistanceFromSeconds(seconds,paceSeconds){
+  if(!seconds || !paceSeconds) return 0;
+  return seconds/paceSeconds;
+}
+
+function buildExactRunName(blocks){
+  const paced=blocks.filter(block=>block.kind==="pace");
+  const floats=blocks.filter(block=>block.kind==="float");
+
+  if(paced.length===2 && floats.length===1){
+    const a=paced[0];
+    const b=paced[1];
+
+    if(
+      Math.abs(a.km-b.km)<0.01 &&
+      a.pace===b.pace
+    ){
+      return `2 × ${a.km} km @ ${a.pace} + ${floats[0].km} km float`;
+    }
+  }
+
+  if(paced.length){
+    return `Tempotraining · ${paced.length} blok${paced.length===1?"":"ken"}`;
+  }
+
+  return "Multi-block hardlooptraining";
+}
+
+function buildExactIntervalsDescription(blocks,notes=[]){
+  const lines=[];
+
+  blocks.forEach(block=>{
+    if(block.kind==="warmup"){
+      lines.push("Warmup",`- ${block.km}km Z1 Pace`,"");
+      return;
+    }
+
+    if(block.kind==="strides"){
+      lines.push(
+        `Strides ${block.repeats}x`,
+        `- ${block.seconds}s ${block.stridePace} Pace`,
+        `- ${block.recoverySeconds}s Z1 Pace`,
+        ""
+      );
+      return;
+    }
+
+    if(block.kind==="pace" || block.kind==="float"){
+      lines.push(
+        block.kind==="float" ? "Float" : "Tempo",
+        `- ${block.km}km ${block.pace} Pace`,
+        ""
+      );
+      return;
+    }
+
+    if(block.kind==="cooldown"){
+      lines.push(
+        "Cooldown",
+        `- ${block.deviceKm}km Z1 Pace`,
+        ""
+      );
+    }
+  });
+
+  if(notes.length){
+    lines.unshift(...notes,"");
+  }
+
+  return lines.join("\n").trim();
+}
+
+function estimateExactRunDistance(blocks){
+  let distance=0;
+
+  blocks.forEach(block=>{
+    if(["warmup","pace","float"].includes(block.kind)){
+      distance+=Number(block.km)||0;
+      return;
+    }
+
+    if(block.kind==="cooldown"){
+      distance+=Number(block.deviceKm)||0;
+      return;
+    }
+
+    if(block.kind==="strides"){
+      const stridePace=paceToSeconds(
+        String(block.stridePace).split("-")[0]
+      ) || 200;
+      const easyPace=330;
+
+      distance+=block.repeats*
+        estimateDistanceFromSeconds(block.seconds,stridePace);
+
+      distance+=block.repeats*
+        estimateDistanceFromSeconds(block.recoverySeconds,easyPace);
+    }
+  });
+
+  return Math.round(distance*10)/10;
+}
+
+function estimateExactRunMinutes(blocks){
+  let seconds=0;
+
+  blocks.forEach(block=>{
+    if(block.kind==="warmup"){
+      seconds+=block.km*315;
+      return;
+    }
+
+    if(block.kind==="strides"){
+      seconds+=block.repeats*
+        (block.seconds+block.recoverySeconds);
+      return;
+    }
+
+    if(block.kind==="pace" || block.kind==="float"){
+      const pace=paceRangeAverageSeconds(
+        block.paceStart,
+        block.paceEnd
+      );
+      if(pace) seconds+=block.km*pace;
+      return;
+    }
+
+    if(block.kind==="cooldown"){
+      seconds+=block.deviceKm*315;
+    }
+  });
+
+  return Math.round(seconds/60);
+}
+
+function parseMultiBlockRun(raw){
+  const text=normalizedWorkoutText(raw);
+  const blocks=[];
+  const assumptions=[];
+
+  const addMatches=(regex,builder)=>{
+    for(const match of text.matchAll(regex)){
+      const block=builder(match);
+      if(block){
+        block.index=match.index;
+        blocks.push(block);
+      }
+    }
+  };
+
+  addMatches(
+    /(\d+(?:\.\d+)?)\s*km\s*(?:warming\s*up|warming-up|warmup|inlopen)/gi,
+    match=>({
+      kind:"warmup",
+      km:Number(match[1]),
+      display:`${match[1]} km rustig inlopen`
+    })
+  );
+
+  addMatches(
+    /(\d+)\s*x\s*(\d+(?:\.\d+)?)\s*(?:sec|seconden|s)\s*strides?/gi,
+    match=>({
+      kind:"strides",
+      repeats:Number(match[1]),
+      seconds:Number(match[2]),
+      recoverySeconds:40,
+      stridePace:"3:10-3:25/km",
+      display:`${match[1]} × ${match[2]} sec strides`
+    })
+  );
+
+  addMatches(
+    /(\d+(?:\.\d+)?)\s*km\s*(float\s*)?(?:@|op|in)\s*(\d:\d{2})(?:\s*-\s*(\d:\d{2}))?\s*(?:\/?\s*km)?/gi,
+    match=>{
+      const km=Number(match[1]);
+      const isFloat=Boolean(match[2]);
+      const pace=displayPaceRange(match[3],match[4]);
+
+      return{
+        kind:isFloat?"float":"pace",
+        km,
+        paceStart:match[3],
+        paceEnd:match[4]||match[3],
+        pace,
+        display:isFloat
+          ?`${km} km float @ ${pace}`
+          :`${km} km @ ${pace}`
+      };
+    }
+  );
+
+  addMatches(
+    /(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*km\s*(?:uitlopen|cooldown|cool\s*down)/gi,
+    match=>{
+      const minKm=Number(match[1]);
+      const maxKm=Number(match[2]);
+
+      return{
+        kind:"cooldown",
+        minKm,
+        maxKm,
+        deviceKm:minKm,
+        display:`${minKm}-${maxKm} km rustig uitlopen`
+      };
+    }
+  );
+
+  addMatches(
+    /(?:^|\s)(\d+(?:\.\d+)?)\s*km\s*(?:uitlopen|cooldown|cool\s*down)/gi,
+    match=>({
+      kind:"cooldown-single",
+      km:Number(match[1]),
+      display:`${match[1]} km rustig uitlopen`
+    })
+  );
+
+  const hasRangeCooldown=blocks.some(block=>block.kind==="cooldown");
+  let filtered=blocks.filter(block=>
+    !(hasRangeCooldown && block.kind==="cooldown-single")
+  );
+
+  filtered=filtered.map(block=>{
+    if(block.kind==="cooldown-single"){
+      return{
+        ...block,
+        kind:"cooldown",
+        minKm:block.km,
+        maxKm:block.km,
+        deviceKm:block.km
+      };
+    }
+    return block;
+  });
+
+  filtered.sort((a,b)=>a.index-b.index);
+
+  const pacedCount=filtered.filter(block=>
+    block.kind==="pace" || block.kind==="float"
+  ).length;
+  const hasStrides=filtered.some(block=>block.kind==="strides");
+
+  if(filtered.length<3 || (!hasStrides && pacedCount<2)){
+    return null;
+  }
+
+  if(hasStrides){
+    assumptions.push(
+      "Voor de 20 sec strides is 40 sec rustig dribbelen als herstel toegevoegd, omdat geen herstelduur was opgegeven."
+    );
+  }
+
+  const rangeCooldown=filtered.find(block=>
+    block.kind==="cooldown" &&
+    block.maxKm>block.minKm
+  );
+
+  if(rangeCooldown){
+    assumptions.push(
+      `${rangeCooldown.minKm}-${rangeCooldown.maxKm} km uitlopen wordt voor het device als ${rangeCooldown.deviceKm} km vast blok opgeslagen; de extra kilometer blijft optioneel.`
+    );
+  }
+
+  const name=buildExactRunName(filtered);
+  const distanceKm=estimateExactRunDistance(filtered);
+  const durationMinutes=estimateExactRunMinutes(filtered);
+  const notes=[...assumptions];
+
+  return{
+    date:parseDateFromText(raw),
+    name,
+    uploadName:`Jaco - ${name}`,
+    type:"Run",
+    distanceKm,
+    durationMinutes,
+    rpe:"7/10",
+    status:"planned",
+    exactStructured:true,
+    structuredBlocks:filtered.map(({index,...block})=>block),
+    displaySteps:filtered.map(block=>block.display),
+    intervalsDescription:buildExactIntervalsDescription(filtered,notes),
+    editorData:{
+      exactStructured:true,
+      rawInput:raw,
+      structuredBlocks:filtered.map(({index,...block})=>block),
+      durationMinutes,
+      notes:""
+    },
+    assumptions
+  };
+}
+
+function renderExactRunDraft(){
+  const panel=document.getElementById("exactRunPanel");
+  const list=document.getElementById("exactRunSteps");
+  const assumptions=document.getElementById("exactRunAssumptions");
+
+  if(!panel || !list || !assumptions) return;
+
+  if(!exactRunDraft){
+    panel.hidden=true;
+    if(document.getElementById("workoutType")?.value==="Run"){
+      document.getElementById("runFields").hidden=false;
+    }
+    return;
+  }
+
+  panel.hidden=false;
+  document.getElementById("runFields").hidden=true;
+  document.getElementById("exactRunTitle").textContent=exactRunDraft.name;
+
+  list.innerHTML=(exactRunDraft.displaySteps||[]).map((step,index)=>`
+    <div class="exact-run-step">
+      <div class="step-number">${index+1}</div>
+      <div>
+        <strong>${safe(step)}</strong>
+      </div>
+    </div>
+  `).join("");
+
+  assumptions.textContent=(exactRunDraft.assumptions||[]).length
+    ? exactRunDraft.assumptions.join(" ")
+    :"Alle blokken worden exact in deze volgorde opgeslagen.";
+}
+
+function clearExactRunMode(update=true){
+  exactRunDraft=null;
+  const panel=document.getElementById("exactRunPanel");
+  if(panel) panel.hidden=true;
+
+  if(document.getElementById("workoutType")?.value==="Run"){
+    document.getElementById("runFields").hidden=false;
+  }
+
+  if(update) updatePreview();
+}
+
+function applyExactRunDraft(workout){
+  exactRunDraft=clone(workout);
+
+  document.getElementById("workoutType").value="Run";
+  document.getElementById("date").value=workout.date;
+  document.getElementById("name").value=workout.name;
+  document.getElementById("distanceKm").value=workout.distanceKm;
+  document.getElementById("durationMinutes").value=workout.durationMinutes;
+  document.getElementById("rpe").value=workout.rpe;
+  document.getElementById("notes").value="";
+
+  renderExactRunDraft();
+  updatePreview();
+}
+
+
 function parseSmartTraining(){
   const raw=document.getElementById("smartInput").value.trim();
   const status=document.getElementById("smartStatus");
@@ -1822,6 +2223,18 @@ function parseSmartTraining(){
     status.textContent="Beschrijf eerst een training.";
     return;
   }
+
+  const multiBlock=parseMultiBlockRun(raw);
+
+  if(multiBlock){
+    applyExactRunDraft(multiBlock);
+    status.className="status ok";
+    status.textContent=
+      `Volledige multi-block training herkend: ${multiBlock.displaySteps.length} onderdelen. Controleer het exacte blokkenoverzicht en tik daarna op Opslaan.`;
+    return;
+  }
+
+  clearExactRunMode(false);
 
   const text=raw.toLowerCase().replace(/×/g,"x").replace(/,/g,".");
   const date=parseDateFromText(raw);
@@ -1950,6 +2363,52 @@ function buildWorkout(){
     };
   }
 
+
+  if(type==="Run" && exactRunDraft){
+    const currentName=safe(
+      document.getElementById("name").value
+    ).trim() || exactRunDraft.name;
+
+    const currentNotes=safe(
+      document.getElementById("notes").value
+    ).trim();
+
+    const workout=clone(exactRunDraft);
+    workout.name=currentName;
+    workout.uploadName=`Jaco - ${currentName}`;
+    workout.date=document.getElementById("date").value;
+    workout.distanceKm=Number(
+      document.getElementById("distanceKm").value ||
+      exactRunDraft.distanceKm ||
+      0
+    );
+    workout.durationMinutes=Number(
+      document.getElementById("durationMinutes").value ||
+      exactRunDraft.durationMinutes ||
+      0
+    );
+    workout.rpe=document.getElementById("rpe").value;
+    workout.status="planned";
+    workout.exactStructured=true;
+
+    workout.editorData={
+      ...(workout.editorData||{}),
+      exactStructured:true,
+      durationMinutes:workout.durationMinutes,
+      structuredBlocks:clone(workout.structuredBlocks||[]),
+      notes:currentNotes
+    };
+
+    if(currentNotes){
+      workout.intervalsDescription=
+        `${currentNotes}\n\n${exactRunDraft.intervalsDescription}`;
+    }else{
+      workout.intervalsDescription=exactRunDraft.intervalsDescription;
+    }
+
+    return workout;
+  }
+
   const recoveryType=document.getElementById("recoveryType").value;
   const recoveryValue=Number(document.getElementById("recoveryValue").value);
   const warmupKm=Number(document.getElementById("warmupKm").value || 0);
@@ -2018,6 +2477,7 @@ function buildWorkout(){
 }
 
 function fillEditor(workout,originalDate){
+  clearExactRunMode(false);
   const editor=workout.editorData || inferEditorData(workout);
 
   document.getElementById("originalDate").value=originalDate || "";
@@ -2057,6 +2517,7 @@ function parseLocaleNumber(value){
 
 function parseStructuredRunData(workout){
   if(!workout || workout.type!=="Run") return null;
+  if(workout.exactStructured || workout.editorData?.exactStructured) return null;
 
   const steps=Array.isArray(workout.displaySteps)
     ? workout.displaySteps.join("\n")
@@ -2190,6 +2651,7 @@ function synchronizedIntervalTitle(name,repeats,workMeters){
 
 function repairStructuredWorkout(workout){
   if(!workout || workout.type!=="Run") return false;
+  if(workout.exactStructured || workout.editorData?.exactStructured) return false;
 
   const inferred=parseStructuredRunData(workout);
   if(!inferred) return false;
@@ -2297,8 +2759,12 @@ function updatePreview(){
     const workout=buildWorkout();
     const info=trainingTypeInfo(workout.type);
     const steps=(workout.displaySteps||[]).map(step=>`- ${step}`).join("\n");
+    const volume=workout.exactStructured
+      ? `${trainingVolumeLabel(workout)} geschat · RPE ${workout.rpe}`
+      : `${trainingVolumeLabel(workout)} · RPE ${workout.rpe}`;
+
     document.getElementById("preview").textContent=
-      `${info.icon} ${info.label}\n${workout.name || "Naam ontbreekt"}\n${trainingVolumeLabel(workout)} · RPE ${workout.rpe}\n\n${steps || workout.intervalsDescription || "Vul de training in."}`;
+      `${info.icon} ${info.label}\n${workout.name || "Naam ontbreekt"}\n${volume}\n\n${steps || workout.intervalsDescription || "Vul de training in."}`;
   }catch{
     document.getElementById("preview").textContent="Vul de training in.";
   }
