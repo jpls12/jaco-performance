@@ -1481,24 +1481,6 @@ function setDefaultForm(date=ymd(today)){
   document.getElementById("cancelEdit").hidden=true;
   document.getElementById("formStatus").textContent="";
 
-  if(
-    workout.type==="Run" &&
-    (workout.exactStructured || editor.exactStructured) &&
-    (workout.structuredBlocks || editor.structuredBlocks)
-  ){
-    exactRunDraft=clone({
-      ...workout,
-      exactStructured:true,
-      structuredBlocks:clone(
-        workout.structuredBlocks ||
-        editor.structuredBlocks ||
-        []
-      ),
-      assumptions:workout.assumptions || []
-    });
-    renderExactRunDraft();
-  }
-
   updateRecoveryLabel();
   updateWorkoutTypeFields();
   updatePreview();
@@ -2504,6 +2486,25 @@ function fillEditor(workout,originalDate){
   document.getElementById("saveButton").textContent="Wijzigingen opslaan";
   document.getElementById("cancelEdit").hidden=false;
   document.getElementById("formStatus").textContent="";
+
+  if(
+    workout.type==="Run" &&
+    (workout.exactStructured || editor.exactStructured) &&
+    (workout.structuredBlocks || editor.structuredBlocks)
+  ){
+    exactRunDraft=clone({
+      ...workout,
+      exactStructured:true,
+      structuredBlocks:clone(
+        workout.structuredBlocks ||
+        editor.structuredBlocks ||
+        []
+      ),
+      assumptions:workout.assumptions || []
+    });
+    renderExactRunDraft();
+  }
+
   updateRecoveryLabel();
   updateWorkoutTypeFields();
   updatePreview();
