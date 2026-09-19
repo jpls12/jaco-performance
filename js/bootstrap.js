@@ -125,8 +125,16 @@ document.getElementById("planMyWeek").onclick=generatePersonalWeek;
 document.getElementById("saveWeekPlan").onclick=savePersonalWeek;
 document.getElementById("profileForm").onsubmit=saveProfile;
 document.getElementById("planningForm").onsubmit=savePlanning;
+document.getElementById("refreshSeasonPlanner").onclick=()=>{
+  renderSeasonPlanner();
+  renderRaceCalendarOptimizer();
+  renderTodayCoach();
+  renderAiWeekPlanner();
+  renderSmartWeekCoach();
+};
 document.getElementById("refreshRaceCalendarOptimizer").onclick=()=>{
   renderRaceCalendarOptimizer();
+  renderSeasonPlanner();
   renderTodayCoach();
   renderAiWeekPlanner();
   renderSmartWeekCoach();
@@ -163,6 +171,7 @@ async function initializeJacoPerformance(){
   renderRaceOptions();
   renderRaceSimulator();
   renderRaceCalendarOptimizer();
+  renderSeasonPlanner();
   renderVisualWorkout("core");
 
   // Lokale trainingen en wedstrijden eerst tonen.
@@ -187,6 +196,7 @@ async function initializeJacoPerformance(){
   renderSmartWeekCoach();
   renderRaceSimulator();
   renderRaceCalendarOptimizer();
+  renderSeasonPlanner();
   renderLoadMonitor();
   renderCoachDiary(todayDateString());
 }
