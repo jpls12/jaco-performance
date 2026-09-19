@@ -5934,7 +5934,8 @@ function coachContext(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
   const race=getRaceFocus();
-  const phase=classifyRacePhase(race);
+  const currentSeasonBlock=seasonBlockForDate(todayDateString());
+  const phase=seasonPhaseToLegacyPhase(currentSeasonBlock,race);
   const availability=todayAvailabilityInfo();
   const existing=currentTodayWorkout();
 
@@ -7851,7 +7852,8 @@ function generatorContext(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
   const race=getRaceFocus();
-  const phase=classifyRacePhase(race);
+  const seasonBlock=seasonBlockForDate(todayDateString());
+  const phase=seasonPhaseToLegacyPhase(seasonBlock,race);
   const profileData=getProfile();
   const existing=currentTodayWorkout();
 
@@ -7861,6 +7863,7 @@ function generatorContext(){
     readiness,
     race,
     phase,
+    seasonBlock,
     profile:profileData,
     existing
   };
@@ -7878,8 +7881,11 @@ function generatorTargetLabel(context){
 function generatorIntensityLabel(context){
   if(context.readiness.level==="unknown") return "Hersteldata onbekend";
   if(context.readiness.level==="low") return "Herstel";
+  if(context.seasonBlock?.phase==="recovery") return "Herstelblok";
   if(context.readiness.level==="moderate") return "Gecontroleerd";
   if(context.phase.phase==="race-week") return "Kort en scherp";
+  if(context.seasonBlock?.phase==="base") return "Aerobe opbouw";
+  if(context.seasonBlock?.phase==="specific") return "Wedstrijdspecifiek";
   return "Kwaliteit mogelijk";
 }
 
@@ -8082,6 +8088,16 @@ function chooseGeneratorKinds(context){
   if(preference==="rustig") return["easy","recovery","core"];
   if(preference==="drempel") return["threshold","easy","recovery"];
 
+  if(context.seasonBlock?.phase==="recovery"){
+    return["recovery","mobility","easy"];
+  }
+  if(context.seasonBlock?.phase==="base"){
+    return["threshold","easy","long"];
+  }
+  if(context.seasonBlock?.phase==="taper" || context.seasonBlock?.phase==="race"){
+    return["sharpen","easy","mobility"];
+  }
+
   const raceDistance=Number(context.race?.distanceKm||5);
   if(raceDistance<=5) return["vo2","threshold","easy"];
   if(raceDistance<=10) return["threshold","vo2","easy"];
@@ -8140,9 +8156,11 @@ function renderAiTrainingGenerator(context=generatorContext()){
     context.availability.available
       ? `${context.availability.maxMinutes} minuten beschikbaar`
       :"vandaag niet beschikbaar",
-    context.race
-      ? `${phaseLabel(context.phase.phase).toLowerCase()} richting ${context.race.name}`
-      :"algemene trainingsopbouw"
+    context.seasonBlock
+      ? `seizoensblok ${context.seasonBlock.label.toLowerCase()} richting ${context.seasonBlock.targetRace.name}`
+      :context.race
+        ? `${phaseLabel(context.phase.phase).toLowerCase()} richting ${context.race.name}`
+        :"algemene trainingsopbouw"
   ];
 
   document.getElementById("generatorExplanation").textContent=
@@ -8582,6 +8600,46 @@ function createTodayRecommendation(readiness,race,phase,availability,currentWork
 
 
   const loadMonitor=buildLoadMonitor();
+  const seasonBlock=seasonBlockForDate(date);
+
+  if(seasonBlock?.phase==="recovery"){
+    const currentIsEasy=
+      currentWorkout &&
+      !isHardWorkout(currentWorkout) &&
+      !isLongWorkout(currentWorkout) &&
+      Number(String(currentWorkout.rpe||"0").split("/")[0]||0)<=4;
+
+    if(currentIsEasy){
+      return{
+        kind:"keep",
+        workout:currentWorkout,
+        title:currentWorkout.name,
+        text:`Je zit in het herstelblok na ${seasonBlock.targetRace.name}. De geplande training is al rustig en kan zo blijven staan.`,
+        steps:currentWorkout.displaySteps||[]
+      };
+    }
+
+    const minutes=Math.min(availability.maxMinutes||40,40);
+    const km=Math.max(5,Math.min(7,Math.round(minutes/5.6)));
+    const recoveryWorkout=makeWeekWorkout(
+      date,"recovery",km,`Herstelloop ${km} km`,
+      [`${km} km zeer rustig`,"Geen tempo- of intervalwerk","10 min mobiliteit indien prettig"],
+      `Herstelblok na wedstrijd.
+
+Recovery
+- ${km}km 5:15-5:40/km Pace`,
+      "2/10"
+    );
+    recoveryWorkout.planType="recovery";
+
+    return{
+      kind:currentWorkout?"replace":"new",
+      workout:recoveryWorkout,
+      title:recoveryWorkout.name,
+      text:`Seizoensplanner: herstel na ${seasonBlock.targetRace.name} heeft prioriteit. Zware kwaliteit wordt tijdelijk niet toegevoegd.`,
+      steps:recoveryWorkout.displaySteps
+    };
+  }
 
   if(loadMonitor.level==="elevated"){
     const currentIsLowLoad=
@@ -8857,7 +8915,6 @@ function renderTodayCoach(){
       ? `${race.name} · ${daysUntil(race.date)} d`
       : "Geen wedstrijd";
 
-  const currentSeasonBlock=seasonBlockForDate(todayDateString());
   document.getElementById("todayPhase").textContent=
     currentSeasonBlock
       ?currentSeasonBlock.label
@@ -9357,7 +9414,8 @@ function buildAdaptiveWeek(){
   latestWellnessSnapshot=snapshot;
   const readiness=determineReadiness(snapshot);
   const race=getRaceFocus();
-  const phase=classifyRacePhase(race);
+  const seasonBlock=seasonBlockForWeek(nextMonday());
+  const phase=seasonPhaseToLegacyPhase(seasonBlock,race);
   const unscheduled=buildUnscheduledAdaptiveWeek(readiness,race,phase);
 
   pendingAdaptiveWeek=applyRaceCalendarToWeek(
@@ -9382,9 +9440,11 @@ function buildAdaptiveWeek(){
     ?tag
     :`${tag} · ${readiness.score}/100`;
 
-  const raceText=race
-    ? `${race.name} over ${phase.days} dagen (${phase.phase})`
-    : "geen komende wedstrijd gevonden";
+  const raceText=seasonBlock
+    ? `${seasonBlock.label} richting ${seasonBlock.targetRace.name}`
+    :race
+      ? `${race.name} over ${phase.days} dagen (${phase.phase})`
+      : "geen komende wedstrijd gevonden";
 
   reason.textContent=
     `${readiness.level==="unknown"
@@ -9626,8 +9686,12 @@ function makeWeekWorkout(date,arg2,arg3,arg4,arg5,arg6,arg7){
     intervalsDescription:desc
   };
 }
-function generatePersonalWeek(){const p=getProfile(),start=nextMonday(),race=raceForPlanner(),reduced=plannerReduced();const target=Math.min(p.maxKm,Math.round(p.weeklyKm*(reduced?.75:1)));let qName="5 × 1000 m VO₂max",qKm=12,qRpe="8/10",qSteps=["3 km inlopen","5 × 1000 m @ 3:28–3:30/km","2 min dribbel","2 km uitlopen"],qDesc=`5 km-specifieke VO2max-training.\n\nWarmup\n- 3km Z1 Pace\n\nMain set 5x\n- 1km 3:28-3:30/km Pace\n- 2m Z1 Pace\n\nCooldown\n- 2km Z1 Pace`;
+function generatePersonalWeek(){const p=getProfile(),start=nextMonday(),race=raceForPlanner(),reduced=plannerReduced(),seasonBlock=seasonBlockForWeek(start);const seasonFactor=seasonBlock?seasonBlock.volumeFactor:1;const target=Math.min(p.maxKm,Math.round(p.weeklyKm*(reduced?.75:1)*seasonFactor));let qName="5 × 1000 m VO₂max",qKm=12,qRpe="8/10",qSteps=["3 km inlopen","5 × 1000 m @ 3:28–3:30/km","2 min dribbel","2 km uitlopen"],qDesc=`5 km-specifieke VO2max-training.\n\nWarmup\n- 3km Z1 Pace\n\nMain set 5x\n- 1km 3:28-3:30/km Pace\n- 2m Z1 Pace\n\nCooldown\n- 2km Z1 Pace`;
 if(race&&Number(race.distanceKm)>=10){qName="3 × 2 km drempel";qKm=13;qRpe="7/10";qSteps=["3 km inlopen","3 × 2 km rond drempeltempo","2 min dribbel","2 km uitlopen"];qDesc=`Drempeltraining richting ${race.name}.\n\nWarmup\n- 3km Z1 Pace\n\nMain set 3x\n- 2km 3:42-3:48/km Pace\n- 2m Z1 Pace\n\nCooldown\n- 2km Z1 Pace`;}
+if(seasonBlock?.phase==="recovery"){qName="Herstelloop met mobiliteit";qKm=7;qRpe="2/10";qSteps=["7 km zeer rustig","10 minuten mobiliteit"];qDesc=`Herstelblok na wedstrijd.
+
+Recovery
+- 7km 5:15-5:40/km Pace`;}
 if(reduced){qName="Rustige duurloop met strides";qKm=10;qRpe="5/10";qSteps=["9 km rustig in zone 2","6 × 100 m ontspannen strides indien fris"];qDesc=`Gecontroleerde duurloop wegens vermoeidheidssignalen.\n\nEasy\n- 9km 5:00-5:25/km Pace\n\nStrides 6x\n- 100mtr 3:20-3:30/km Pace\n- 100mtr Z1 Pace`;}
 const longKm=Math.max(14,Math.round(target*(race&&Number(race.distanceKm)>=21?.30:.25))),easyCount=Math.max(1,p.days-2),easyKm=Math.max(6,Math.round(Math.max(12,target-qKm-longKm)/easyCount));const offsets=p.days===3?[1,3,5]:p.days===4?[1,3,5,6]:p.days===5?[0,1,3,5,6]:[0,1,2,3,5,6];const types=p.days===3?["quality","easy","long"]:p.days===4?["quality","easy","long","recovery"]:p.days===5?["easy","quality","easy","long","recovery"]:["easy","quality","recovery","easy","long","recovery"];
 pendingWeekPlan=offsets.map((o,i)=>{const date=addDays(start,o),t=types[i];if(t==="quality")return makeWeekWorkout(date,qName,qKm,qRpe,qSteps,qDesc);if(t==="long")return makeWeekWorkout(date,`Lange duurloop ${longKm} km`,longKm,"4/10",[`${longKm} km rustig lopen`,`Hartslag onder circa ${p.z2Hr} bpm houden`],`Lange rustige duurloop.\n\nEasy\n- ${longKm}km 4:55-5:20/km Pace`);if(t==="recovery"){const km=Math.max(6,easyKm-2);return makeWeekWorkout(date,`Herstelloop ${km} km`,km,"2/10",[`${km} km zeer rustig`,`Geen strides als de benen zwaar zijn`],`Hersteltraining.\n\nRecovery\n- ${km}km 5:10-5:35/km Pace`);}return makeWeekWorkout(date,`Rustige duurloop ${easyKm} km`,easyKm,"3/10",[`${easyKm} km zone 2`,`Hartslag bij voorkeur onder ${p.z2Hr} bpm`],`Rustige duurloop.\n\nEasy\n- ${easyKm}km 5:00-5:25/km Pace`);});
@@ -9636,7 +9700,7 @@ pendingWeekPlan=applyRaceCalendarToWeek(
   pendingWeekPlan
 );
 renderWeekPlan(reduced,race,target);}
-function renderWeekPlan(reduced,race,target){weekPlan.innerHTML=pendingWeekPlan.map(w=>`<div class="week-plan-row"><div><strong>${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(w.date+"T12:00:00"))}</strong><small>${w.distanceKm} km</small></div><div><strong>${safe(w.name)}</strong><small>${safe(w.displaySteps[0]||"")}</small></div><span class="readiness-badge">${safe(w.rpe)}</span></div>`).join("");saveWeekPlan.disabled=false;weekPlanStatus.className="status";weekPlanStatus.textContent=`${target} km gepland${race?` richting ${race.name}`:""}${reduced?" · volume verlaagd door herstelsignalen":""}.`;}
+function renderWeekPlan(reduced,race,target){const seasonBlock=seasonBlockForWeek(nextMonday());weekPlan.innerHTML=pendingWeekPlan.map(w=>`<div class="week-plan-row"><div><strong>${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(w.date+"T12:00:00"))}</strong><small>${w.distanceKm} km</small></div><div><strong>${safe(w.name)}</strong><small>${safe(w.displaySteps[0]||"")}</small></div><span class="readiness-badge">${safe(w.rpe)}</span></div>`).join("");saveWeekPlan.disabled=false;weekPlanStatus.className="status";weekPlanStatus.textContent=`${target} km gepland${race?` richting ${race.name}`:""}${seasonBlock?` · blok ${seasonBlock.label}`:""}${reduced?" · volume verlaagd door herstelsignalen":""}.`;}
 function savePersonalWeek(){if(!pendingWeekPlan.length)return;let added=0;for(const w of pendingWeekPlan){if(!customWorkouts[w.date]){customWorkouts[w.date]=w;added++;}}saveObject(STORAGE_KEY,customWorkouts);renderMonth();renderSaved();weekPlanStatus.className="status ok";weekPlanStatus.textContent=`${added} trainingen toegevoegd aan de kalender.`;}
 
 async function loadServer(){
