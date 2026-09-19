@@ -818,3 +818,39 @@
       .diary-input-grid{grid-template-columns:1fr}
       .diary-summary-grid{grid-template-columns:repeat(2,1fr)}
     }
+
+
+    .race-calendar-optimizer-card{
+      background:linear-gradient(155deg,rgba(31,38,61,.98),rgba(16,29,45,.98));
+      border-color:#536d91
+    }
+    .race-calendar-metrics{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px
+    }
+    .race-calendar-metrics small{
+      display:block;color:var(--muted);margin-top:4px;line-height:1.35
+    }
+    .race-timeline-label{margin-top:18px}
+    .race-calendar-timeline{display:grid;gap:9px}
+    .race-timeline-row{
+      display:grid;grid-template-columns:64px 1fr auto;gap:12px;
+      align-items:center;padding:12px;border-radius:14px;
+      background:#0d1928;border:1px solid #29415e
+    }
+    .race-timeline-priority{
+      width:46px;height:46px;border-radius:50%;display:grid;place-items:center;
+      font-weight:950;border:2px solid #536d91
+    }
+    .race-timeline-priority.a{border-color:#ef6262;color:#ffd0d0;background:#401d25}
+    .race-timeline-priority.b{border-color:#e9bb55;color:#ffe7a4;background:#443613}
+    .race-timeline-priority.c{border-color:#5eaad9;color:#d5efff;background:#163248}
+    .race-timeline-row strong{display:block}
+    .race-timeline-row small{display:block;color:var(--muted);margin-top:3px;line-height:1.35}
+    .race-window{
+      text-align:right;color:var(--muted);font-size:.78rem;line-height:1.4
+    }
+    @media(max-width:700px){
+      .race-calendar-metrics{grid-template-columns:repeat(2,1fr)}
+      .race-timeline-row{grid-template-columns:52px 1fr}
+      .race-window{grid-column:2;text-align:left}
+    }
