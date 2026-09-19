@@ -136,6 +136,9 @@ document.getElementById("fullSeasonStart").onchange=()=>{
   pendingFullSeasonSchedule=null;
   renderFullSeasonSchedulePreview();
 };
+document.getElementById("fullSeasonOverwriteManual").onchange=()=>{
+  renderFullSeasonSchedulePreview();
+};
 document.getElementById("refreshSeasonPlanner").onclick=()=>{
   renderSeasonPlanner();
   renderRaceCalendarOptimizer();
