@@ -65,6 +65,10 @@ document.getElementById("showMobilityRecipe").onclick=()=>renderVisualWorkout("m
 document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
+document.getElementById("refreshLoadMonitor").onclick=()=>{
+  renderLoadMonitor();
+  renderTodayCoach();
+};
 document.getElementById("sendCoachChat").onclick=sendCoachChatMessage;
 document.getElementById("clearCoachChat").onclick=clearCoachChat;
 document.getElementById("applyCoachChatAction").onclick=applyCoachChatWorkout;
@@ -169,6 +173,7 @@ async function initializeJacoPerformance(){
   renderPerformanceTrend(7);
   renderSmartWeekCoach();
   renderRaceSimulator();
+  renderLoadMonitor();
 }
 
 window.addEventListener("error",event=>{
