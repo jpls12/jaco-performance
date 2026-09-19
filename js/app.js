@@ -605,7 +605,8 @@ function coachChatContext(){
   const phase=classifyRacePhase(race);
   const profileData=getProfile();
   const existing=currentTodayWorkout();
-  return{availability,snapshot,readiness,race,phase,profile:profileData,existing};
+  const loadMonitor=buildLoadMonitor();
+  return{availability,snapshot,readiness,race,phase,profile:profileData,existing,loadMonitor};
 }
 
 function normalizeCoachMessage(message){
@@ -711,6 +712,12 @@ function coachChatResponse(message){
   }
 
   if(feelGood){
+    if(context.loadMonitor.level==="elevated"){
+      response="Je gevoel is positief, maar de belastbaarheidsmonitor geeft een verhoogd trainingssignaal. Ik zou vandaag geen extra zware prikkel toevoegen en de belasting eerst laten stabiliseren.";
+      workout=createGeneratorWorkout("easy",context);
+      return{response,workout};
+    }
+
     if(!context.availability.available){
       response="Je voelt je goed, maar vandaag staat als niet beschikbaar. Ik zou dat niet automatisch veranderen. Bewaar de frisheid voor de volgende geplande kwaliteitstraining.";
       return{response,workout:null};
@@ -5557,6 +5564,454 @@ function renderPerformanceTrend(days=activeTrendDays){
     conclusion;
 }
 
+
+function workoutWasCompleted(date,workout){
+  return Boolean(doneWorkouts[date]) ||
+    ["done","completed","voltooid"].includes(
+      String(workout?.status||"").toLowerCase()
+    );
+}
+
+function completedWorkoutEntriesBetween(minDaysAgo,maxDaysAgo){
+  const todayValue=new Date();
+  todayValue.setHours(12,0,0,0);
+
+  return Object.entries({...serverWorkouts,...customWorkouts})
+    .map(([date,workout])=>({
+      date,
+      workout,
+      parsed:new Date(date+"T12:00:00")
+    }))
+    .filter(item=>{
+      if(!item.workout) return false;
+      if(["Race","Rest"].includes(item.workout.type)) return false;
+      if(!workoutWasCompleted(item.date,item.workout)) return false;
+
+      const age=Math.floor((todayValue-item.parsed)/86400000);
+      return age>=minDaysAgo && age<=maxDaysAgo;
+    });
+}
+
+function completedWorkoutEntries(days){
+  return completedWorkoutEntriesBetween(0,Math.max(0,days-1));
+}
+
+function runKmFromEntries(entries){
+  return entries
+    .filter(item=>item.workout.type==="Run")
+    .reduce(
+      (sum,item)=>sum+(Number(item.workout.distanceKm)||0),
+      0
+    );
+}
+
+function maxRunStreak(entries){
+  const dates=[...new Set(
+    entries
+      .filter(item=>item.workout.type==="Run")
+      .map(item=>item.date)
+  )].sort();
+
+  if(!dates.length) return null;
+
+  let best=1;
+  let current=1;
+
+  for(let i=1;i<dates.length;i++){
+    const gap=dateGapDays(dates[i-1],dates[i]);
+
+    if(gap===1){
+      current++;
+      best=Math.max(best,current);
+    }else{
+      current=1;
+    }
+  }
+
+  return best;
+}
+
+function minimumHardSessionGap(entries){
+  const hard=entries
+    .filter(item=>
+      item.workout.type==="Run" &&
+      isHardWorkout(item.workout)
+    )
+    .sort((a,b)=>a.date.localeCompare(b.date));
+
+  if(hard.length<2){
+    return{
+      sessions:hard.length,
+      minGapDays:null
+    };
+  }
+
+  let minGap=Infinity;
+
+  for(let i=1;i<hard.length;i++){
+    minGap=Math.min(
+      minGap,
+      dateGapDays(hard[i-1].date,hard[i].date)
+    );
+  }
+
+  return{
+    sessions:hard.length,
+    minGapDays:minGap
+  };
+}
+
+function loadMonitorStatusLabel(level){
+  const labels={
+    stable:"Stabiel",
+    attention:"Aandacht",
+    elevated:"Verhoogd",
+    unknown:"Onvoldoende data"
+  };
+  return labels[level]||level;
+}
+
+function buildLoadMonitor(){
+  const snapshot=getWellnessSnapshot();
+  const readiness=determineReadiness(snapshot);
+
+  const last7=completedWorkoutEntries(7);
+  const last14=completedWorkoutEntries(14);
+  const previous21=completedWorkoutEntriesBetween(7,27);
+
+  const runKm7=runKmFromEntries(last7);
+  const previous21Km=runKmFromEntries(previous21);
+  const baselineWeeklyKm=
+    previous21Km>0
+      ? previous21Km/3
+      : null;
+
+  const volumeRatio=
+    baselineWeeklyKm!==null && baselineWeeklyKm>=10
+      ? runKm7/baselineWeeklyKm
+      : null;
+
+  const volumeDeltaPct=
+    volumeRatio===null
+      ? null
+      : (volumeRatio-1)*100;
+
+  const ctl=snapshot.ctl;
+  const atl=snapshot.atl;
+  const atlCtl=
+    ctl!==null && ctl>0 && atl!==null
+      ? atl/ctl
+      : null;
+
+  const hard=minimumHardSessionGap(last7);
+  const streak=maxRunStreak(last14);
+
+  const runEntries7=last7.filter(item=>item.workout.type==="Run");
+  const longestRunKm=runEntries7.length
+    ?Math.max(...runEntries7.map(item=>Number(item.workout.distanceKm)||0))
+    :null;
+
+  const longRunShare=
+    longestRunKm!==null && runKm7>0
+      ?longestRunKm/runKm7
+      :null;
+
+  const signals=[];
+  const highFlags=[];
+  const attentionFlags=[];
+
+  if(atlCtl!==null){
+    if(atlCtl>1.5){
+      highFlags.push("atlctl");
+      signals.push({
+        state:"bad",
+        icon:"!",
+        text:`ATL/CTL ${atlCtl.toFixed(2)}: acute belasting ligt duidelijk boven de chronische belasting.`
+      });
+    }else if(atlCtl>1.3){
+      attentionFlags.push("atlctl");
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`ATL/CTL ${atlCtl.toFixed(2)}: acute belasting is verhoogd ten opzichte van je chronische belasting.`
+      });
+    }else{
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`ATL/CTL ${atlCtl.toFixed(2)} geeft geen extra belastingssignaal.`
+      });
+    }
+  }else{
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:"Geen actuele combinatie van ATL en CTL beschikbaar."
+    });
+  }
+
+  if(volumeRatio!==null){
+    if(volumeRatio>1.5){
+      highFlags.push("volume");
+      signals.push({
+        state:"bad",
+        icon:"!",
+        text:`Voltooid loopvolume ligt ${Math.round(volumeDeltaPct)}% boven het gemiddelde van de voorgaande drie weken.`
+      });
+    }else if(volumeRatio>1.25){
+      attentionFlags.push("volume");
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`Voltooid loopvolume ligt ${Math.round(volumeDeltaPct)}% boven je recente weekbasis.`
+      });
+    }else{
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`7-daags loopvolume ligt binnen circa 25% van je recente weekbasis.`
+      });
+    }
+  }else{
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:"Onvoldoende lokaal voltooide looptrainingen om een volumeverandering te bepalen."
+    });
+  }
+
+  if(hard.sessions>=2){
+    if(hard.minGapDays!==null && hard.minGapDays<=1){
+      highFlags.push("hard-spacing");
+      signals.push({
+        state:"bad",
+        icon:"!",
+        text:`${hard.sessions} zware loopsessies in 7 dagen; de kleinste tussenruimte is slechts ${hard.minGapDays} dag.`
+      });
+    }else if(hard.sessions>=3 || (hard.minGapDays!==null && hard.minGapDays<2)){
+      attentionFlags.push("hard-spacing");
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`${hard.sessions} zware loopsessies in 7 dagen; bewaak minimaal één rustige dag tussen zware prikkels.`
+      });
+    }else{
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`${hard.sessions} zware loopsessies zijn voldoende uit elkaar geplaatst.`
+      });
+    }
+  }else if(hard.sessions===1){
+    signals.push({
+      state:"good",
+      icon:"✓",
+      text:"Eén zware loopsessie geregistreerd in de laatste 7 dagen."
+    });
+  }
+
+  if(longRunShare!==null && runKm7>=25){
+    if(longRunShare>0.45){
+      attentionFlags.push("long-share");
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`Je langste duurloop vormt ${Math.round(longRunShare*100)}% van het totale 7-daagse loopvolume.`
+      });
+    }
+  }
+
+  if(streak!==null && streak>=4){
+    attentionFlags.push("streak");
+    signals.push({
+      state:"warn",
+      icon:"!",
+      text:`Maximaal ${streak} opeenvolgende loopdagen in de laatste 14 dagen.`
+    });
+  }
+
+  if(readiness.sufficientData){
+    if(readiness.level==="low"){
+      highFlags.push("recovery");
+      signals.push({
+        state:"bad",
+        icon:"!",
+        text:`Actueel herstel is laag (${readiness.score}/100).`
+      });
+    }else if(readiness.level==="moderate"){
+      attentionFlags.push("recovery");
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`Actueel herstel is middelmatig (${readiness.score}/100).`
+      });
+    }else{
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`Actueel herstel is goed (${readiness.score}/100).`
+      });
+    }
+  }else{
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:"Herstel wordt niet meegewogen: onvoldoende actuele herstelsignalen."
+    });
+  }
+
+  const availableSignals=[
+    atlCtl!==null,
+    volumeRatio!==null,
+    hard.sessions>0,
+    longRunShare!==null,
+    readiness.sufficientData
+  ].filter(Boolean).length;
+
+  let level="stable";
+
+  if(availableSignals<2){
+    level="unknown";
+  }else if(highFlags.length){
+    level="elevated";
+  }else if(attentionFlags.length){
+    level="attention";
+  }
+
+  let headline="Belasting oogt stabiel";
+  let summary="De beschikbare signalen geven geen duidelijke reden om je trainingsbelasting extra te beperken.";
+  let adviceTitle="Volg je normale planning";
+  let adviceText="Voeg vandaag geen extra kilometers of extra intensiteit toe buiten het geplande schema.";
+
+  if(level==="attention"){
+    headline="Een of meer belastingssignalen vragen aandacht";
+    summary="Je hoeft niet automatisch rust te nemen, maar extra volume of een extra zware prikkel is nu minder verstandig.";
+    adviceTitle="Train gecontroleerd";
+    adviceText="Houd de geplande training bij het afgesproken volume en herstel goed voordat je een volgende zware prikkel toevoegt.";
+  }
+
+  if(level==="elevated"){
+    headline="Belasting is momenteel verhoogd";
+    summary="Minstens één sterk belastings- of herstelsignaal is actief. De coach kiest daarom tijdelijk voor een conservatievere trainingsprikkel.";
+    adviceTitle="Vandaag geen extra zware prikkel";
+    adviceText="Kies rust, mobiliteit of een rustige duurtraining. Hervat intensiteit pas wanneer de sterke belastingssignalen zijn afgenomen.";
+  }
+
+  if(level==="unknown"){
+    headline="Onvoldoende data voor belastbaarheidsadvies";
+    summary="De app heeft te weinig bruikbare signalen om trainingsbelasting betrouwbaar te beoordelen.";
+    adviceTitle="Geen automatische belastingcorrectie";
+    adviceText="Gebruik je bestaande planning en eigen gevoel; de monitor doet geen aannames over ontbrekende data.";
+  }
+
+  return{
+    level,
+    headline,
+    summary,
+    adviceTitle,
+    adviceText,
+    signals,
+    availableSignals,
+    totalSignalSlots:5,
+    metrics:{
+      atlCtl,
+      runKm7:Math.round(runKm7*10)/10,
+      baselineWeeklyKm:
+        baselineWeeklyKm===null
+          ?null
+          :Math.round(baselineWeeklyKm*10)/10,
+      volumeDeltaPct,
+      hardSessions:hard.sessions,
+      hardGapDays:hard.minGapDays,
+      recoveryScore:
+        readiness.sufficientData
+          ?readiness.score
+          :null,
+      streak,
+      longestRunKm,
+      longRunShare
+    },
+    highFlags,
+    attentionFlags
+  };
+}
+
+function renderLoadMonitor(){
+  const result=buildLoadMonitor();
+
+  const badge=document.getElementById("loadMonitorBadge");
+  if(!badge) return result;
+
+  badge.className=`load-status ${result.level}`;
+  badge.textContent=loadMonitorStatusLabel(result.level);
+
+  document.getElementById("loadMonitorHeadline").textContent=
+    result.headline;
+
+  document.getElementById("loadMonitorSummary").textContent=
+    result.summary;
+
+  document.getElementById("loadMonitorAtlCtl").textContent=
+    result.metrics.atlCtl===null
+      ?"—"
+      :result.metrics.atlCtl.toFixed(2);
+
+  document.getElementById("loadMonitorAtlCtlNote").textContent=
+    result.metrics.atlCtl===null
+      ?"geen actuele CTL/ATL-combinatie"
+      :"acute vs. chronische belasting";
+
+  document.getElementById("loadMonitorVolume").textContent=
+    result.metrics.runKm7>0
+      ?`${result.metrics.runKm7} km`
+      :"—";
+
+  document.getElementById("loadMonitorVolumeNote").textContent=
+    result.metrics.volumeDeltaPct===null
+      ?"geen bruikbare 3-wekenbasis"
+      :`${result.metrics.volumeDeltaPct>=0?"+":""}${Math.round(result.metrics.volumeDeltaPct)}% vs. eerdere 3 weken`;
+
+  document.getElementById("loadMonitorHard").textContent=
+    `${result.metrics.hardSessions}`;
+
+  document.getElementById("loadMonitorHardNote").textContent=
+    result.metrics.hardSessions<2
+      ?"zware sessies in laatste 7 dagen"
+      :`min. ${result.metrics.hardGapDays} dag tussen zwaar`;
+
+  document.getElementById("loadMonitorRecovery").textContent=
+    result.metrics.recoveryScore===null
+      ?"—"
+      :`${result.metrics.recoveryScore}/100`;
+
+  document.getElementById("loadMonitorRecoveryNote").textContent=
+    result.metrics.recoveryScore===null
+      ?"onvoldoende actuele hersteldata"
+      :"actuele coach-readiness";
+
+  document.getElementById("loadMonitorSignals").innerHTML=
+    result.signals.map(signal=>`
+      <div class="reason-item">
+        <div class="reason-icon ${signal.state}">${signal.icon}</div>
+        <div>${safe(signal.text)}</div>
+      </div>
+    `).join("");
+
+  document.getElementById("loadMonitorAdviceTitle").textContent=
+    result.adviceTitle;
+
+  document.getElementById("loadMonitorAdviceText").textContent=
+    result.adviceText;
+
+  document.getElementById("loadMonitorCoverage").textContent=
+    `${result.availableSignals}/${result.totalSignalSlots} signalen`;
+
+  document.getElementById("loadMonitorCoverageText").textContent=
+    "Bronnen: actuele Intervals.icu CTL/ATL en hersteldata plus lokaal als voltooid gemarkeerde trainingen. Ontbrekende data wordt niet geschat.";
+
+  return result;
+}
+
 function historicalWorkoutEntries(days){
   const cutoff=new Date();
   cutoff.setHours(0,0,0,0);
@@ -6881,6 +7336,55 @@ function createTodayRecommendation(readiness,race,phase,availability,currentWork
   }
 
 
+
+  const loadMonitor=buildLoadMonitor();
+
+  if(loadMonitor.level==="elevated"){
+    const currentIsLowLoad=
+      currentWorkout &&
+      !isHardWorkout(currentWorkout) &&
+      !isLongWorkout(currentWorkout) &&
+      Number(String(currentWorkout.rpe||"0").split("/")[0]||0)<=4;
+
+    if(currentIsLowLoad){
+      return{
+        kind:"keep",
+        workout:currentWorkout,
+        title:currentWorkout.name,
+        text:"De belastbaarheidsmonitor staat op verhoogd, maar je geplande training is al rustig. Houd hem bewust gemakkelijk en voeg geen extra volume toe.",
+        steps:currentWorkout.displaySteps||[]
+      };
+    }
+
+    const minutes=Math.min(availability.maxMinutes||40,40);
+    const km=Math.max(5,Math.min(7,Math.round(minutes/5.6)));
+    const workout=makeWeekWorkout(
+      date,
+      "recovery",
+      km,
+      `Herstelloop ${km} km`,
+      [
+        `${km} km zeer rustig`,
+        `Hartslag onder ${getProfile().z2Hr} bpm`,
+        "Geen versnellingen of extra kilometers"
+      ],
+      `Hersteltraining.
+
+Recovery
+- ${km}km 5:15-5:40/km Pace`,
+      "2/10"
+    );
+    workout.planType="recovery";
+
+    return{
+      kind:currentWorkout?"replace":"new",
+      workout,
+      title:`Herstelloop ${km} km`,
+      text:"De belastbaarheidsmonitor geeft een verhoogd signaal. Daarom wordt een zware trainingsprikkel vandaag vervangen door een rustige herstelprikkel.",
+      steps:workout.displaySteps
+    };
+  }
+
   if(readiness.level==="unknown"){
     if(currentWorkout){
       return{
@@ -7198,6 +7702,7 @@ function renderTodayCoach(){
   renderPerformanceEngine();
   renderAiTrainingGenerator();
   renderAiWeekPlanner();
+  renderLoadMonitor();
 }
 
 function applyTodayRecommendation(){
