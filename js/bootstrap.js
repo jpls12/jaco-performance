@@ -69,6 +69,12 @@ document.getElementById("refreshLoadMonitor").onclick=()=>{
   renderLoadMonitor();
   renderTodayCoach();
 };
+document.getElementById("coachDiaryForm").onsubmit=saveCoachDiary;
+document.getElementById("diaryDate").onchange=event=>{
+  renderCoachDiary(event.target.value);
+};
+document.getElementById("deleteDiaryEntry").onclick=deleteCoachDiaryEntry;
+document.getElementById("loadTodayDiary").onclick=()=>renderCoachDiary(todayDateString());
 document.getElementById("sendCoachChat").onclick=sendCoachChatMessage;
 document.getElementById("clearCoachChat").onclick=clearCoachChat;
 document.getElementById("applyCoachChatAction").onclick=applyCoachChatWorkout;
@@ -174,6 +180,7 @@ async function initializeJacoPerformance(){
   renderSmartWeekCoach();
   renderRaceSimulator();
   renderLoadMonitor();
+  renderCoachDiary(todayDateString());
 }
 
 window.addEventListener("error",event=>{
