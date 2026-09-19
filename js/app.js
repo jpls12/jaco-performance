@@ -8079,7 +8079,7 @@ function renderPerformanceEngine(){
   document.getElementById("performanceExplanation").textContent=
     engine.performance===null
       ?"Nog onvoldoende actuele data om de samengestelde performancescore te berekenen."
-      :`Performance ${engine.performance}/100. ${weekRaceText}`;
+      :`Performance ${engine.performance}/100. ${raceText}`;
 
   setPerformanceMetric(
     "fitnessScore","fitnessBar",engine.fitness,
@@ -8956,7 +8956,13 @@ function buildAdaptiveWeek(){
   const phase=classifyRacePhase(race);
   const unscheduled=buildUnscheduledAdaptiveWeek(readiness,race,phase);
 
-  pendingAdaptiveWeek=scheduleByAvailability(unscheduled);
+  pendingAdaptiveWeek=applyRaceCalendarToWeek(
+    {
+      start:nextMonday(),
+      weekRaces:racesInRange(nextMonday(),addDays(nextMonday(),6))
+    },
+    scheduleByAvailability(unscheduled)
+  );
 
   const headline=document.getElementById("adaptiveCoachHeadline");
   const reason=document.getElementById("adaptiveCoachReason");
@@ -8982,7 +8988,7 @@ function buildAdaptiveWeek(){
       :readiness.reasons.length
         ?readiness.reasons.join(", ")
         :"geen duidelijke negatieve herstelsignalen"}. `+
-    `Focus: ${weekRaceText}. De trainingen zijn verdeeld over je beschikbare dagen.`;
+    `Focus: ${raceText}. De trainingen zijn verdeeld over je beschikbare dagen.`;
 
   renderAdaptiveWeek(readiness,race,phase);
 }
@@ -9220,7 +9226,12 @@ function generatePersonalWeek(){const p=getProfile(),start=nextMonday(),race=rac
 if(race&&Number(race.distanceKm)>=10){qName="3 × 2 km drempel";qKm=13;qRpe="7/10";qSteps=["3 km inlopen","3 × 2 km rond drempeltempo","2 min dribbel","2 km uitlopen"];qDesc=`Drempeltraining richting ${race.name}.\n\nWarmup\n- 3km Z1 Pace\n\nMain set 3x\n- 2km 3:42-3:48/km Pace\n- 2m Z1 Pace\n\nCooldown\n- 2km Z1 Pace`;}
 if(reduced){qName="Rustige duurloop met strides";qKm=10;qRpe="5/10";qSteps=["9 km rustig in zone 2","6 × 100 m ontspannen strides indien fris"];qDesc=`Gecontroleerde duurloop wegens vermoeidheidssignalen.\n\nEasy\n- 9km 5:00-5:25/km Pace\n\nStrides 6x\n- 100mtr 3:20-3:30/km Pace\n- 100mtr Z1 Pace`;}
 const longKm=Math.max(14,Math.round(target*(race&&Number(race.distanceKm)>=21?.30:.25))),easyCount=Math.max(1,p.days-2),easyKm=Math.max(6,Math.round(Math.max(12,target-qKm-longKm)/easyCount));const offsets=p.days===3?[1,3,5]:p.days===4?[1,3,5,6]:p.days===5?[0,1,3,5,6]:[0,1,2,3,5,6];const types=p.days===3?["quality","easy","long"]:p.days===4?["quality","easy","long","recovery"]:p.days===5?["easy","quality","easy","long","recovery"]:["easy","quality","recovery","easy","long","recovery"];
-pendingWeekPlan=offsets.map((o,i)=>{const date=addDays(start,o),t=types[i];if(t==="quality")return makeWeekWorkout(date,qName,qKm,qRpe,qSteps,qDesc);if(t==="long")return makeWeekWorkout(date,`Lange duurloop ${longKm} km`,longKm,"4/10",[`${longKm} km rustig lopen`,`Hartslag onder circa ${p.z2Hr} bpm houden`],`Lange rustige duurloop.\n\nEasy\n- ${longKm}km 4:55-5:20/km Pace`);if(t==="recovery"){const km=Math.max(6,easyKm-2);return makeWeekWorkout(date,`Herstelloop ${km} km`,km,"2/10",[`${km} km zeer rustig`,`Geen strides als de benen zwaar zijn`],`Hersteltraining.\n\nRecovery\n- ${km}km 5:10-5:35/km Pace`);}return makeWeekWorkout(date,`Rustige duurloop ${easyKm} km`,easyKm,"3/10",[`${easyKm} km zone 2`,`Hartslag bij voorkeur onder ${p.z2Hr} bpm`],`Rustige duurloop.\n\nEasy\n- ${easyKm}km 5:00-5:25/km Pace`);});renderWeekPlan(reduced,race,target);}
+pendingWeekPlan=offsets.map((o,i)=>{const date=addDays(start,o),t=types[i];if(t==="quality")return makeWeekWorkout(date,qName,qKm,qRpe,qSteps,qDesc);if(t==="long")return makeWeekWorkout(date,`Lange duurloop ${longKm} km`,longKm,"4/10",[`${longKm} km rustig lopen`,`Hartslag onder circa ${p.z2Hr} bpm houden`],`Lange rustige duurloop.\n\nEasy\n- ${longKm}km 4:55-5:20/km Pace`);if(t==="recovery"){const km=Math.max(6,easyKm-2);return makeWeekWorkout(date,`Herstelloop ${km} km`,km,"2/10",[`${km} km zeer rustig`,`Geen strides als de benen zwaar zijn`],`Hersteltraining.\n\nRecovery\n- ${km}km 5:10-5:35/km Pace`);}return makeWeekWorkout(date,`Rustige duurloop ${easyKm} km`,easyKm,"3/10",[`${easyKm} km zone 2`,`Hartslag bij voorkeur onder ${p.z2Hr} bpm`],`Rustige duurloop.\n\nEasy\n- ${easyKm}km 5:00-5:25/km Pace`);});
+pendingWeekPlan=applyRaceCalendarToWeek(
+  {start,weekRaces:racesInRange(start,addDays(start,6))},
+  pendingWeekPlan
+);
+renderWeekPlan(reduced,race,target);}
 function renderWeekPlan(reduced,race,target){weekPlan.innerHTML=pendingWeekPlan.map(w=>`<div class="week-plan-row"><div><strong>${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(w.date+"T12:00:00"))}</strong><small>${w.distanceKm} km</small></div><div><strong>${safe(w.name)}</strong><small>${safe(w.displaySteps[0]||"")}</small></div><span class="readiness-badge">${safe(w.rpe)}</span></div>`).join("");saveWeekPlan.disabled=false;weekPlanStatus.className="status";weekPlanStatus.textContent=`${target} km gepland${race?` richting ${race.name}`:""}${reduced?" · volume verlaagd door herstelsignalen":""}.`;}
 function savePersonalWeek(){if(!pendingWeekPlan.length)return;let added=0;for(const w of pendingWeekPlan){if(!customWorkouts[w.date]){customWorkouts[w.date]=w;added++;}}saveObject(STORAGE_KEY,customWorkouts);renderMonth();renderSaved();weekPlanStatus.className="status ok";weekPlanStatus.textContent=`${added} trainingen toegevoegd aan de kalender.`;}
 
