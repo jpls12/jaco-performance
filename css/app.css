@@ -896,3 +896,64 @@
       .season-block-row{grid-template-columns:94px 1fr}
       .season-block-meta{grid-column:2;text-align:left}
     }
+
+
+    .full-season-schedule-card{
+      background:linear-gradient(155deg,rgba(35,43,66,.98),rgba(15,31,45,.98));
+      border-color:#627a9b
+    }
+    .full-season-metrics{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px
+    }
+    .full-season-metrics small{
+      display:block;color:var(--muted);margin-top:4px;line-height:1.35
+    }
+    .full-season-preview{
+      display:grid;gap:10px;margin-top:16px;max-height:720px;overflow:auto;
+      padding-right:2px
+    }
+    .full-season-week{
+      border:1px solid #29415e;border-radius:14px;background:#0d1928;
+      overflow:hidden
+    }
+    .full-season-week summary{
+      cursor:pointer;list-style:none;padding:12px 13px;
+      display:flex;justify-content:space-between;gap:12px;align-items:center
+    }
+    .full-season-week summary::-webkit-details-marker{display:none}
+    .full-season-week summary strong{display:block}
+    .full-season-week summary small{
+      display:block;color:var(--muted);margin-top:3px;line-height:1.35
+    }
+    .full-season-week-total{
+      text-align:right;font-weight:900;white-space:nowrap
+    }
+    .full-season-week-body{
+      border-top:1px solid #29415e;padding:10px 12px;display:grid;gap:8px
+    }
+    .full-season-workout-row{
+      display:grid;grid-template-columns:86px 1fr auto;gap:10px;
+      align-items:center;padding:9px 10px;border-radius:11px;background:#101f31
+    }
+    .full-season-workout-row.existing{
+      opacity:.68;border:1px dashed #66758a
+    }
+    .full-season-workout-row .date{
+      font-size:.78rem;color:var(--muted)
+    }
+    .full-season-workout-row strong{display:block}
+    .full-season-workout-row small{
+      display:block;color:var(--muted);margin-top:2px;line-height:1.35
+    }
+    .full-season-pill{
+      padding:5px 8px;border-radius:999px;border:1px solid #405674;
+      font-size:.72rem;font-weight:850;white-space:nowrap
+    }
+    .full-season-races{
+      display:flex;flex-wrap:wrap;gap:6px;margin-top:6px
+    }
+    @media(max-width:700px){
+      .full-season-metrics{grid-template-columns:repeat(2,1fr)}
+      .full-season-workout-row{grid-template-columns:72px 1fr}
+      .full-season-pill{grid-column:2;justify-self:start}
+    }

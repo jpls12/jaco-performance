@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=810">
+  <link rel="stylesheet" href="/css/app.css?v=820">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 8.1 · Seizoensplanner</span>
+      <span class="v2-badge">Jaco Performance 8.2 · Volledig Seizoensschema</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -1184,6 +1184,89 @@
       </div>
     </article>
 
+
+    <article class="card full-season-schedule-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 8.2 · Volledig Seizoensschema</p>
+          <h2>Bouw alle trainingsweken vooruit</h2>
+          <p class="help">
+            Genereer een concrete planning van de eerstvolgende trainingsweek tot en
+            met je gekozen A-race en het herstel erna. B- en C-races worden als
+            wedstrijdprikkel in het schema verwerkt.
+          </p>
+        </div>
+        <button id="buildFullSeasonSchedule" type="button" style="width:auto">
+          Bouw preview
+        </button>
+      </div>
+
+      <div class="grid2">
+        <label>Schema tot en met
+          <select id="fullSeasonTarget"></select>
+        </label>
+        <label>Start vanaf
+          <input id="fullSeasonStart" type="date">
+        </label>
+      </div>
+
+      <label class="switchrow">
+        <span>Elke 4e normale trainingsweek als ontlastingsweek</span>
+        <input id="fullSeasonCutback" type="checkbox" checked>
+      </label>
+
+      <label class="switchrow">
+        <span>Bestaande handmatige trainingen overschrijven</span>
+        <input id="fullSeasonOverwriteManual" type="checkbox">
+      </label>
+
+      <div class="full-season-metrics">
+        <div class="today-metric">
+          <span>Weken</span>
+          <strong id="fullSeasonWeeks">—</strong>
+          <small>in preview</small>
+        </div>
+        <div class="today-metric">
+          <span>Trainingen</span>
+          <strong id="fullSeasonWorkouts">—</strong>
+          <small>exclusief racedagen</small>
+        </div>
+        <div class="today-metric">
+          <span>Trainingskm</span>
+          <strong id="fullSeasonKm">—</strong>
+          <small>preview totaal</small>
+        </div>
+        <div class="today-metric">
+          <span>Bestaand</span>
+          <strong id="fullSeasonConflicts">—</strong>
+          <small id="fullSeasonConflictsNote">bestaande plandagen</small>
+        </div>
+      </div>
+
+      <div class="coach-box">
+        <p class="label">Planlogica</p>
+        <h3 id="fullSeasonHeadline">Nog geen preview</h3>
+        <p class="help" id="fullSeasonExplanation">
+          Het schema gebruikt je Profiel, Planning, Seizoensplanner en wedstrijdkalender.
+          Toekomstige hersteldata wordt niet voorspeld.
+        </p>
+      </div>
+
+      <div id="fullSeasonPreview" class="full-season-preview">
+        <p class="help">Tik op Bouw preview om alle trainingsweken te bekijken.</p>
+      </div>
+
+      <div class="today-actions">
+        <button id="applyFullSeasonSchedule" type="button" disabled>
+          Pas volledig schema toe
+        </button>
+        <button id="removeFullSeasonSchedule" class="secondary" type="button">
+          Verwijder 8.2-schema
+        </button>
+      </div>
+      <p id="fullSeasonStatus" class="status"></p>
+    </article>
+
     <article class="card race-calendar-optimizer-card">
       <div class="ai-generator-head">
         <div>
@@ -1594,8 +1677,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=810" defer></script>
-<script src="/js/bootstrap.js?v=810" defer></script>
+<script src="/js/app.js?v=820" defer></script>
+<script src="/js/bootstrap.js?v=820" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

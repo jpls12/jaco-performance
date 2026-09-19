@@ -125,6 +125,20 @@ document.getElementById("planMyWeek").onclick=generatePersonalWeek;
 document.getElementById("saveWeekPlan").onclick=savePersonalWeek;
 document.getElementById("profileForm").onsubmit=saveProfile;
 document.getElementById("planningForm").onsubmit=savePlanning;
+document.getElementById("buildFullSeasonSchedule").onclick=buildFullSeasonSchedulePreview;
+document.getElementById("applyFullSeasonSchedule").onclick=applyFullSeasonSchedule;
+document.getElementById("removeFullSeasonSchedule").onclick=removeFullSeasonSchedule;
+document.getElementById("fullSeasonTarget").onchange=()=>{
+  pendingFullSeasonSchedule=null;
+  renderFullSeasonSchedulePreview();
+};
+document.getElementById("fullSeasonStart").onchange=()=>{
+  pendingFullSeasonSchedule=null;
+  renderFullSeasonSchedulePreview();
+};
+document.getElementById("fullSeasonOverwriteManual").onchange=()=>{
+  renderFullSeasonSchedulePreview();
+};
 document.getElementById("refreshSeasonPlanner").onclick=()=>{
   renderSeasonPlanner();
   renderRaceCalendarOptimizer();
@@ -150,6 +164,7 @@ document.getElementById("raceDistance").onchange=()=>{
 };
 document.getElementById("generatePlan").onclick=generateRacePlan;
 document.getElementById("planStartDate").value=ymd(today);
+document.getElementById("fullSeasonStart").value=nextMonday();
 
 async function initializeJacoPerformance(){
   repairStoredWorkoutMismatches();
@@ -172,6 +187,8 @@ async function initializeJacoPerformance(){
   renderRaceSimulator();
   renderRaceCalendarOptimizer();
   renderSeasonPlanner();
+  renderFullSeasonTargetOptions();
+  renderFullSeasonSchedulePreview();
   renderVisualWorkout("core");
 
   // Lokale trainingen en wedstrijden eerst tonen.
@@ -197,6 +214,8 @@ async function initializeJacoPerformance(){
   renderRaceSimulator();
   renderRaceCalendarOptimizer();
   renderSeasonPlanner();
+  renderFullSeasonTargetOptions();
+  renderFullSeasonSchedulePreview();
   renderLoadMonitor();
   renderCoachDiary(todayDateString());
 }
