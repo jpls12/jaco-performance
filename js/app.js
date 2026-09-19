@@ -8885,7 +8885,8 @@ function renderTodayCoach(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
   const race=getRaceFocus();
-  const phase=classifyRacePhase(race);
+  const currentSeasonBlock=seasonBlockForDate(todayDateString());
+  const phase=seasonPhaseToLegacyPhase(currentSeasonBlock,race);
   const availability=todayAvailabilityInfo();
   const existing=currentTodayWorkout();
 
