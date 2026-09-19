@@ -4055,6 +4055,30 @@ function buildSeasonPlan(){
   const blocks=[];
   let cursor=todayString;
 
+  // Houd ook rekening met herstel van een wedstrijd die net geweest is.
+  const recentPast=Object.values(races)
+    .filter(race=>race.date<todayString)
+    .map(race=>({
+      race,
+      age:Math.abs(signedDateGapDays(todayString,race.date)),
+      recoveryDays:raceRecoveryDays(race)
+    }))
+    .filter(item=>item.age<=item.recoveryDays)
+    .sort((a,b)=>b.race.date.localeCompare(a.race.date))[0]||null;
+
+  if(recentPast){
+    const recoveryEnd=addDays(recentPast.race.date,recentPast.recoveryDays);
+    pushSeasonBlock(
+      blocks,
+      "recovery",
+      todayString,
+      recoveryEnd,
+      recentPast.race,
+      false
+    );
+    cursor=addDays(recoveryEnd,1);
+  }
+
   targets.forEach((target,index)=>{
     if(target.date<cursor) return;
 
