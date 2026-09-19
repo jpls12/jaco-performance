@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=752">
+  <link rel="stylesheet" href="/css/app.css?v=760">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 7.5.2 · Nieuwe Training Fix</span>
+      <span class="v2-badge">Jaco Performance 7.6 · Belastbaarheidsmonitor</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -105,6 +105,76 @@
     
     
     
+
+    <article class="card load-monitor-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 7.6 · Belastbaarheidsmonitor</p>
+          <h2>Hoe staat je belasting ervoor?</h2>
+          <p class="help">
+            Controle op acute belasting, volumeverandering, spreiding van zware
+            trainingen en herstel. Dit is trainingssturing, geen medische diagnose.
+          </p>
+        </div>
+        <button id="refreshLoadMonitor" class="secondary" type="button" style="width:auto">
+          Herbereken
+        </button>
+      </div>
+
+      <div class="load-monitor-hero">
+        <div id="loadMonitorBadge" class="load-status unknown">Onvoldoende data</div>
+        <div>
+          <strong id="loadMonitorHeadline">Belasting wordt gecontroleerd…</strong>
+          <p id="loadMonitorSummary" class="help">
+            De monitor wacht op beschikbare trainings- en wellnessdata.
+          </p>
+        </div>
+      </div>
+
+      <div class="load-monitor-grid">
+        <div class="today-metric">
+          <span>ATL / CTL</span>
+          <strong id="loadMonitorAtlCtl">—</strong>
+          <small id="loadMonitorAtlCtlNote">acute vs. chronische belasting</small>
+        </div>
+        <div class="today-metric">
+          <span>Loopvolume 7 d</span>
+          <strong id="loadMonitorVolume">—</strong>
+          <small id="loadMonitorVolumeNote">vs. eerdere 3 weken</small>
+        </div>
+        <div class="today-metric">
+          <span>Zware sessies</span>
+          <strong id="loadMonitorHard">—</strong>
+          <small id="loadMonitorHardNote">spreiding laatste 7 dagen</small>
+        </div>
+        <div class="today-metric">
+          <span>Herstel</span>
+          <strong id="loadMonitorRecovery">—</strong>
+          <small id="loadMonitorRecoveryNote">alleen bij actuele data</small>
+        </div>
+      </div>
+
+      <div id="loadMonitorSignals" class="reason-list"></div>
+
+      <div class="coach-box">
+        <p class="label">Belastbaarheidsadvies</p>
+        <h3 id="loadMonitorAdviceTitle">Nog geen advies</h3>
+        <p class="help" id="loadMonitorAdviceText">
+          De app berekent alleen een advies als er voldoende bruikbare signalen zijn.
+        </p>
+      </div>
+
+      <div class="data-integrity-box">
+        <div class="data-integrity-head">
+          <span>Datadekking belastbaarheid</span>
+          <strong id="loadMonitorCoverage">—</strong>
+        </div>
+        <div id="loadMonitorCoverageText" class="help">
+          Lokale voltooide trainingen en Intervals.icu-wellnessdata worden gecombineerd.
+        </div>
+      </div>
+    </article>
+
     <article class="card coach-chat-card">
       <div class="ai-generator-head">
         <div>
@@ -1248,8 +1318,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=752" defer></script>
-<script src="/js/bootstrap.js?v=752" defer></script>
+<script src="/js/app.js?v=760" defer></script>
+<script src="/js/bootstrap.js?v=760" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
