@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=770">
+  <link rel="stylesheet" href="/css/app.css?v=800">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 7.7 · Coach Dagboek</span>
+      <span class="v2-badge">Jaco Performance 8.0 · Race Calendar Optimizer</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -1116,6 +1116,73 @@
 
   <section id="races" class="view">
 
+
+    <article class="card race-calendar-optimizer-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 8.0 · Race Calendar Optimizer</p>
+          <h2>Optimaliseer mijn wedstrijdseizoen</h2>
+          <p class="help">
+            De optimizer bekijkt alle A-, B- en C-wedstrijden als één seizoen.
+            Hij bewaakt taper, herstel, onderlinge afstand en de invloed op je
+            volledige trainingsplanning.
+          </p>
+        </div>
+        <button id="refreshRaceCalendarOptimizer" class="secondary" type="button" style="width:auto">
+          Herbereken
+        </button>
+      </div>
+
+      <div class="race-calendar-metrics">
+        <div class="today-metric">
+          <span>Kalenderstatus</span>
+          <strong id="raceCalendarStatus">—</strong>
+          <small id="raceCalendarStatusNote">nog niet geanalyseerd</small>
+        </div>
+        <div class="today-metric">
+          <span>Volgende wedstrijd</span>
+          <strong id="raceCalendarNext">—</strong>
+          <small id="raceCalendarNextNote">—</small>
+        </div>
+        <div class="today-metric">
+          <span>Primaire A-race</span>
+          <strong id="raceCalendarPrimary">—</strong>
+          <small id="raceCalendarPrimaryNote">—</small>
+        </div>
+        <div class="today-metric">
+          <span>Komende races</span>
+          <strong id="raceCalendarCount">0</strong>
+          <small id="raceCalendarPriorityCount">—</small>
+        </div>
+      </div>
+
+      <div id="raceCalendarSignals" class="reason-list"></div>
+
+      <div class="coach-box">
+        <p class="label">Seizoensstrategie</p>
+        <h3 id="raceCalendarHeadline">Nog geen analyse</h3>
+        <p class="help" id="raceCalendarConclusion">
+          Voeg wedstrijden toe of tik op Herbereken.
+        </p>
+      </div>
+
+      <p class="label race-timeline-label">Wedstrijdlijn</p>
+      <div id="raceCalendarTimeline" class="race-calendar-timeline">
+        <p class="help">Nog geen komende wedstrijden.</p>
+      </div>
+
+      <div class="data-integrity-box">
+        <div class="data-integrity-head">
+          <span>Invloed op trainingsschema</span>
+          <strong>Automatisch actief</strong>
+        </div>
+        <div class="help">
+          AI Week Planner en Slimme Weekcoach vermijden zware sessies in beschermde
+          taper- en herstelvensters. Wedstrijddagen worden niet als gewone trainingsdag gebruikt.
+        </div>
+      </div>
+    </article>
+
     <article class="card race-simulator-card">
       <div class="ai-generator-head">
         <div>
@@ -1460,8 +1527,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=770" defer></script>
-<script src="/js/bootstrap.js?v=770" defer></script>
+<script src="/js/app.js?v=800" defer></script>
+<script src="/js/bootstrap.js?v=800" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
