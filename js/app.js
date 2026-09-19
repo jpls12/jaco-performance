@@ -1636,6 +1636,7 @@ function switchView(id){
     renderRaceOptions();
     renderRaceCalendarOptimizer();
     renderSeasonPlanner();
+    renderFullSeasonTargetOptions();
   }
   if(id==="dashboard"){loadWellnessDashboard();renderProfileSummary();}
   if(id==="profile"){fillProfileForm();}
@@ -4637,8 +4638,13 @@ Easy
 }
 
 function applyRaceCalendarToWeek(context,workouts){
-  const weekRaces=context.weekRaces || racesInRange(context.start,addDays(context.start,6));
-  if(!weekRaces.length) return workouts;
+  const weekEnd=addDays(context.start,6);
+  const protectedRaces=futureRacesSorted().filter(race=>
+    race.date>=addDays(context.start,-10) &&
+    race.date<=weekEnd
+  );
+
+  if(!protectedRaces.length) return workouts;
 
   const adjusted=[];
 
@@ -4646,7 +4652,7 @@ function applyRaceCalendarToWeek(context,workouts){
     let workout=JSON.parse(JSON.stringify(source));
     let skip=false;
 
-    for(const race of weekRaces){
+    for(const race of protectedRaces){
       const delta=signedDateGapDays(workout.date,race.date);
       const priority=String(race.priority||"C").toUpperCase();
 
@@ -4790,6 +4796,9 @@ function saveRace(event){
   renderRaceSimulator();
   renderRaceCalendarOptimizer();
   renderSeasonPlanner();
+  renderFullSeasonTargetOptions();
+  pendingFullSeasonSchedule=null;
+  renderFullSeasonSchedulePreview();
   renderMonth();
   renderSelected();
 }
@@ -4832,6 +4841,9 @@ function deleteRace(id){
   renderRaceSimulator();
   renderRaceCalendarOptimizer();
   renderSeasonPlanner();
+  renderFullSeasonTargetOptions();
+  pendingFullSeasonSchedule=null;
+  renderFullSeasonSchedulePreview();
   renderMonth();
   renderSelected();
 }
@@ -5781,11 +5793,11 @@ function makeCoreWorkout(date,minutes=15,priority="could"){
   };
 }
 
-function scheduleByAvailability(workouts){
-  const days=availableDaysForPlanner();
+function scheduleByAvailability(workouts,startDate=nextMonday(),daysOverride=null){
+  const days=daysOverride || availableDaysForPlanner();
   if(!days.length) return [];
 
-  const start=nextMonday();
+  const start=startDate;
   const used=new Set();
   const scheduled=[];
 
@@ -7341,8 +7353,466 @@ function renderCoachIntelligence(){
   document.getElementById("coachIntelligenceConclusion").textContent=result.conclusion;
 }
 
+let pendingFullSeasonSchedule=null;
 let aiWeekOptions=[];
 let selectedAiWeekIndex=0;
+
+
+function mondayOnOrAfter(dateString){
+  const d=new Date(dateString+"T12:00:00");
+  const mondayIndex=(d.getDay()+6)%7;
+  if(mondayIndex===0) return ymd(d);
+  d.setDate(d.getDate()+(7-mondayIndex));
+  return ymd(d);
+}
+
+function fullSeasonTargetRaces(){
+  const future=futureRacesSorted();
+  const aRaces=future.filter(
+    race=>String(race.priority||"C").toUpperCase()==="A"
+  );
+  return aRaces.length?aRaces:future.slice(0,1);
+}
+
+function countGeneratedSeasonWorkouts(){
+  return Object.values(customWorkouts).filter(
+    workout=>workout?.seasonGenerated && workout?.seasonPlanVersion==="8.2"
+  ).length;
+}
+
+function renderFullSeasonTargetOptions(){
+  const select=document.getElementById("fullSeasonTarget");
+  if(!select) return;
+
+  const targets=fullSeasonTargetRaces();
+  const previous=select.value;
+
+  select.innerHTML=targets.length
+    ?targets.map(race=>
+      `<option value="${race.id}">${safe(race.name)} — ${race.date}</option>`
+    ).join("")
+    :'<option value="">Voeg eerst een toekomstige wedstrijd toe</option>';
+
+  if(previous && targets.some(race=>race.id===previous)){
+    select.value=previous;
+  }else if(targets.length){
+    select.value=targets[targets.length-1].id;
+  }
+
+  const remove=document.getElementById("removeFullSeasonSchedule");
+  if(remove){
+    remove.disabled=countGeneratedSeasonWorkouts()===0;
+  }
+}
+
+function fullSeasonRelevantRace(weekStart,weekEnd,seasonBlock,targetRace){
+  const weekRaces=racesInRange(weekStart,weekEnd)
+    .sort((a,b)=>{
+      const priority=racePriorityRank(a.priority)-racePriorityRank(b.priority);
+      return priority!==0?priority:a.date.localeCompare(b.date);
+    });
+
+  return weekRaces[0] || seasonBlock?.targetRace || targetRace;
+}
+
+function fullSeasonReadiness(weekIndex){
+  if(weekIndex===0){
+    return determineReadiness(getWellnessSnapshot());
+  }
+
+  return{
+    level:"unknown",
+    sufficientData:false,
+    score:null,
+    reasons:[],
+    currentSignalCount:0,
+    requiredSignals:2
+  };
+}
+
+function fullSeasonDiary(weekIndex){
+  return weekIndex===0
+    ?buildDiaryContext()
+    :{level:"unknown",entries:0,reasons:[]};
+}
+
+function fullSeasonWeekContext(weekStart,targetRace,weekIndex,cutbackEnabled){
+  const weekEnd=addDays(weekStart,6);
+  const seasonBlock=seasonBlockForWeek(weekStart);
+  const race=fullSeasonRelevantRace(
+    weekStart,
+    weekEnd,
+    seasonBlock,
+    targetRace
+  );
+  const weekRaces=racesInRange(weekStart,weekEnd);
+
+  const normalLoadPhase=
+    seasonBlock &&
+    ["base","build","specific"].includes(seasonBlock.phase);
+
+  const cutback=
+    Boolean(cutbackEnabled) &&
+    normalLoadPhase &&
+    weekIndex>0 &&
+    (weekIndex+1)%4===0;
+
+  return{
+    profile:getProfile(),
+    availability:availableDaysForPlanner(),
+    readiness:fullSeasonReadiness(weekIndex),
+    race,
+    phase:seasonPhaseToLegacyPhase(seasonBlock,race),
+    diary:fullSeasonDiary(weekIndex),
+    start:weekStart,
+    end:weekEnd,
+    weekRaces,
+    seasonBlock,
+    forecast:weekIndex>0,
+    seasonLoadFactor:cutback?.82:1,
+    cutback
+  };
+}
+
+function replaceRaceWeekQualityWhenNeeded(context,workouts){
+  if(!context.weekRaces?.length) return workouts;
+
+  const race=[...context.weekRaces].sort((a,b)=>{
+    const priority=racePriorityRank(a.priority)-racePriorityRank(b.priority);
+    return priority!==0?priority:a.date.localeCompare(b.date);
+  })[0];
+
+  const priority=String(race.priority||"C").toUpperCase();
+
+  // Een B- of C-race telt als de zware trainingsprikkel van die week.
+  // Een korte taper/sharpening (RPE <= 5) mag wel blijven staan.
+  if(!["B","C"].includes(priority)) return workouts;
+
+  const index=workouts.findIndex(workout=>{
+    if(!isHardWorkout(workout)) return false;
+    const rpe=Number(String(workout.rpe||"0").split("/")[0])||0;
+    return rpe>5;
+  });
+
+  if(index<0) return workouts;
+
+  const source=workouts[index];
+  const km=Math.max(6,Math.min(9,Number(source.distanceKm)||8));
+  workouts[index]=makeWeekEasySession(source.date,km,false);
+  workouts[index].displaySteps.push(
+    `${priority}-wedstrijd ${race.name} is deze week de kwaliteitsprikkel`
+  );
+
+  return workouts;
+}
+
+function existingNonSeasonWorkout(date){
+  const custom=customWorkouts[date];
+  if(custom && !custom.seasonGenerated) return custom;
+  if(!custom && serverWorkouts[date]) return serverWorkouts[date];
+  return null;
+}
+
+function buildFullSeasonSchedulePreview(){
+  const status=document.getElementById("fullSeasonStatus");
+  const targetId=document.getElementById("fullSeasonTarget").value;
+  const target=races[targetId];
+  const startInput=document.getElementById("fullSeasonStart").value ||
+    nextMonday();
+  const firstMonday=mondayOnOrAfter(startInput);
+  const cutback=document.getElementById("fullSeasonCutback").checked;
+
+  if(!target){
+    status.className="status error";
+    status.textContent="Voeg eerst een toekomstige A-wedstrijd toe.";
+    return;
+  }
+
+  if(firstMonday>target.date){
+    status.className="status error";
+    status.textContent="De gekozen startdatum ligt na de doelwedstrijd.";
+    return;
+  }
+
+  const endDate=addDays(target.date,raceRecoveryDays(target));
+  const weeks=[];
+  let weekStart=firstMonday;
+  let weekIndex=0;
+
+  while(weekStart<=endDate && weekIndex<60){
+    const context=fullSeasonWeekContext(
+      weekStart,
+      target,
+      weekIndex,
+      cutback
+    );
+
+    const variant=weekIndex%2;
+    const unscheduled=createUnscheduledAiWeek(context,variant);
+    let assigned=assignAiWeekToAvailability(
+      context,
+      unscheduled,
+      variant
+    ).workouts;
+
+    assigned=replaceRaceWeekQualityWhenNeeded(context,assigned);
+    assigned=applyRaceCalendarToWeek(context,assigned);
+
+    const annotated=assigned.map(workout=>({
+      ...JSON.parse(JSON.stringify(workout)),
+      seasonGenerated:true,
+      seasonPlanVersion:"8.2",
+      seasonTargetRaceId:target.id,
+      seasonTargetRaceName:target.name,
+      seasonWeekStart:weekStart,
+      seasonBlock:context.seasonBlock?.phase||"general",
+      seasonBlockLabel:context.seasonBlock?.label||"Algemeen",
+      seasonCutback:Boolean(context.cutback)
+    }));
+
+    const conflictCount=annotated.filter(
+      workout=>Boolean(existingNonSeasonWorkout(workout.date))
+    ).length;
+
+    const totalKm=annotated.reduce(
+      (sum,workout)=>sum+(Number(workout.distanceKm)||0),
+      0
+    );
+
+    weeks.push({
+      weekStart,
+      weekEnd:addDays(weekStart,6),
+      block:context.seasonBlock,
+      race:context.race,
+      weekRaces:context.weekRaces,
+      targetKm:weeklyTargetKm(context,variant),
+      totalKm:Math.round(totalKm*10)/10,
+      cutback:context.cutback,
+      workouts:annotated,
+      conflictCount
+    });
+
+    weekStart=addDays(weekStart,7);
+    weekIndex++;
+  }
+
+  if(weekIndex>=60 && weekStart<=endDate){
+    status.className="status error";
+    status.textContent="Schema is langer dan 60 weken; kies een dichterbij gelegen doel.";
+    return;
+  }
+
+  const workouts=weeks.flatMap(week=>week.workouts);
+  const totalKm=workouts.reduce(
+    (sum,workout)=>sum+(Number(workout.distanceKm)||0),
+    0
+  );
+  const conflicts=workouts.filter(
+    workout=>Boolean(existingNonSeasonWorkout(workout.date))
+  ).length;
+
+  pendingFullSeasonSchedule={
+    targetRaceId:target.id,
+    targetRaceName:target.name,
+    start:firstMonday,
+    end:endDate,
+    cutback,
+    weeks,
+    workouts,
+    totalKm:Math.round(totalKm*10)/10,
+    conflicts,
+    builtAt:new Date().toISOString()
+  };
+
+  renderFullSeasonSchedulePreview();
+
+  status.className="status ok";
+  status.textContent=
+    `Preview gemaakt: ${weeks.length} weken en ${workouts.length} trainingen richting ${target.name}.`;
+}
+
+function renderFullSeasonSchedulePreview(){
+  const plan=pendingFullSeasonSchedule;
+  const preview=document.getElementById("fullSeasonPreview");
+  if(!preview) return;
+
+  const apply=document.getElementById("applyFullSeasonSchedule");
+
+  if(!plan){
+    document.getElementById("fullSeasonWeeks").textContent="—";
+    document.getElementById("fullSeasonWorkouts").textContent="—";
+    document.getElementById("fullSeasonKm").textContent="—";
+    document.getElementById("fullSeasonConflicts").textContent="—";
+    document.getElementById("fullSeasonHeadline").textContent="Nog geen preview";
+    document.getElementById("fullSeasonExplanation").textContent=
+      "Het schema gebruikt je Profiel, Planning, Seizoensplanner en wedstrijdkalender. Toekomstige hersteldata wordt niet voorspeld.";
+    preview.innerHTML=
+      '<p class="help">Tik op Bouw preview om alle trainingsweken te bekijken.</p>';
+    apply.disabled=true;
+    renderFullSeasonTargetOptions();
+    return;
+  }
+
+  document.getElementById("fullSeasonWeeks").textContent=
+    String(plan.weeks.length);
+  document.getElementById("fullSeasonWorkouts").textContent=
+    String(plan.workouts.length);
+  document.getElementById("fullSeasonKm").textContent=
+    `${Math.round(plan.totalKm)} km`;
+  document.getElementById("fullSeasonConflicts").textContent=
+    String(plan.conflicts);
+
+  document.getElementById("fullSeasonHeadline").textContent=
+    `${plan.weeks.length} weken richting ${plan.targetRaceName}`;
+
+  document.getElementById("fullSeasonExplanation").textContent=
+    plan.conflicts
+      ?`${plan.conflicts} geplande dagen hebben al een bestaande training. Die blijven behouden tenzij je overschrijven inschakelt.`
+      :"Geen botsingen met bestaande trainingen gevonden. De preview kan direct worden toegepast.";
+
+  preview.innerHTML=plan.weeks.map((week,index)=>{
+    const blockLabel=week.block?.label||"Algemeen";
+    const racesText=week.weekRaces?.length
+      ?week.weekRaces.map(race=>
+        `<span class="pill">${safe(race.priority)} · ${safe(race.name)}</span>`
+      ).join("")
+      :"";
+
+    return`
+      <details class="full-season-week" ${index<2?"open":""}>
+        <summary>
+          <div>
+            <strong>Week ${index+1} · ${safe(blockLabel)}${week.cutback?" · ontlasting":""}</strong>
+            <small>
+              ${week.weekStart} t/m ${week.weekEnd}
+              · doel circa ${week.targetKm} km
+              ${week.conflictCount?` · ${week.conflictCount} bestaande dag(en)`:""}
+            </small>
+            ${racesText?`<div class="full-season-races">${racesText}</div>`:""}
+          </div>
+          <div class="full-season-week-total">
+            ${Math.round(week.totalKm)} km<br>
+            <span class="help">${week.workouts.length} sessies</span>
+          </div>
+        </summary>
+        <div class="full-season-week-body">
+          ${week.workouts.map(workout=>{
+            const existing=existingNonSeasonWorkout(workout.date);
+            return`
+              <div class="full-season-workout-row ${existing?"existing":""}">
+                <div class="date">${safe(workout.date)}</div>
+                <div>
+                  <strong>${safe(workout.name)}</strong>
+                  <small>
+                    ${safe(trainingVolumeLabel(workout))} · RPE ${safe(workout.rpe||"—")}
+                    ${existing?` · bestaand blijft: ${safe(existing.name)}`:""}
+                  </small>
+                </div>
+                <span class="full-season-pill">
+                  ${safe(workout.planType||workout.type)}
+                </span>
+              </div>`;
+          }).join("")}
+        </div>
+      </details>`;
+  }).join("");
+
+  apply.disabled=false;
+  renderFullSeasonTargetOptions();
+}
+
+function applyFullSeasonSchedule(){
+  const plan=pendingFullSeasonSchedule;
+  const status=document.getElementById("fullSeasonStatus");
+  if(!plan?.workouts?.length) return;
+
+  const overwrite=document.getElementById("fullSeasonOverwriteManual").checked;
+
+  const confirmed=confirm(
+    `Volledig schema toepassen: ${plan.workouts.length} trainingen van ${plan.start} t/m ${plan.end}?`
+  );
+  if(!confirmed) return;
+
+  // Eerdere 8.2-versies binnen deze periode worden vervangen.
+  Object.entries(customWorkouts).forEach(([date,workout])=>{
+    if(
+      workout?.seasonGenerated &&
+      workout?.seasonPlanVersion==="8.2" &&
+      date>=plan.start &&
+      date<=plan.end
+    ){
+      delete customWorkouts[date];
+    }
+  });
+
+  let added=0;
+  let replaced=0;
+  let skipped=0;
+
+  for(const workout of plan.workouts){
+    const customExisting=customWorkouts[workout.date];
+    const serverExisting=!customExisting?serverWorkouts[workout.date]:null;
+    const manualExisting=
+      (customExisting && !customExisting.seasonGenerated)
+        ?customExisting
+        :serverExisting;
+
+    if(manualExisting && !overwrite){
+      skipped++;
+      continue;
+    }
+
+    if(manualExisting && overwrite){
+      replaced++;
+    }
+
+    customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
+    added++;
+  }
+
+  saveObject(STORAGE_KEY,customWorkouts);
+  renderMonth();
+  renderSelected();
+  renderSaved();
+  renderTodayCoach();
+  renderFullSeasonTargetOptions();
+
+  status.className="status ok";
+  status.textContent=
+    `${added} trainingen ingepland${replaced?` · ${replaced} bestaande vervangen`:""}${skipped?` · ${skipped} bestaande behouden`:""}.`;
+}
+
+function removeFullSeasonSchedule(){
+  const generated=Object.entries(customWorkouts).filter(
+    ([,workout])=>
+      workout?.seasonGenerated &&
+      workout?.seasonPlanVersion==="8.2"
+  );
+
+  if(!generated.length) return;
+
+  const confirmed=confirm(
+    `${generated.length} door 8.2 gegenereerde trainingen verwijderen? Handmatige trainingen en wedstrijden blijven staan.`
+  );
+  if(!confirmed) return;
+
+  generated.forEach(([date])=>{
+    delete customWorkouts[date];
+  });
+
+  saveObject(STORAGE_KEY,customWorkouts);
+  pendingFullSeasonSchedule=null;
+  renderMonth();
+  renderSelected();
+  renderSaved();
+  renderFullSeasonSchedulePreview();
+
+  const status=document.getElementById("fullSeasonStatus");
+  status.className="status ok";
+  status.textContent=
+    `${generated.length} gegenereerde 8.2-trainingen verwijderd.`;
+}
+
 
 function weekPlanningContext(){
   const profileData=getProfile();
@@ -7383,6 +7853,10 @@ function weeklyTargetKm(context,variant=0){
 
   if(context.diary?.level==="elevated") factor*=.80;
   else if(context.diary?.level==="attention") factor*=.92;
+
+  if(Number(context.seasonLoadFactor)>0){
+    factor*=Number(context.seasonLoadFactor);
+  }
 
   if(context.seasonBlock){
     factor*=Number(context.seasonBlock.volumeFactor||1);
@@ -7680,7 +8154,8 @@ function createUnscheduledAiWeek(context,variant=0){
 
   while(sessions.length<count){
     const isFinal=sessions.length===count-1;
-    const recovery=isFinal || context.readiness.level!=="good";
+    const recovery=isFinal ||
+      (context.readiness.level!=="good" && !context.forecast);
     sessions.push(
       makeWeekEasySession(
         context.start,
@@ -7694,7 +8169,11 @@ function createUnscheduledAiWeek(context,variant=0){
 }
 
 function assignAiWeekToAvailability(context,unscheduled,variant=0){
-  let scheduled=scheduleByAvailability(unscheduled.workouts);
+  let scheduled=scheduleByAvailability(
+    unscheduled.workouts,
+    context.start,
+    context.availability
+  );
   scheduled=applyRaceCalendarToWeek(context,scheduled);
 
   // Add core or mobility only if a free available day remains.
@@ -7733,6 +8212,7 @@ function assignAiWeekToAvailability(context,unscheduled,variant=0){
     scheduled.push(extra);
   }
 
+  scheduled=applyRaceCalendarToWeek(context,scheduled);
   scheduled.sort((a,b)=>a.date.localeCompare(b.date));
 
   return{
