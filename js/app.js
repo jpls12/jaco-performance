@@ -409,9 +409,9 @@ function saveCompletedVisualWorkout(){
   };
 
   customWorkouts[date]=workout;
-  completed[date]=true;
+  doneWorkouts[date]=true;
   saveObject(STORAGE_KEY,customWorkouts);
-  saveObject(COMPLETED_KEY,completed);
+  saveObject(DONE_KEY,doneWorkouts);
 
   renderMonth();
   renderSelected();
@@ -419,9 +419,8 @@ function saveCompletedVisualWorkout(){
   renderTodayCoach();
 
   closeVisualWorkoutPlayer();
-  switchView("calendar");
   selectedDate=date;
-  renderSelected();
+  openDiaryForDate(date);
 }
 
 document.addEventListener("visibilitychange",()=>{
@@ -582,6 +581,7 @@ const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
 const RACES_KEY = "jp_races_v1";
 const PROFILE_KEY = "jp_profile_v1";
+const DIARY_KEY = "jp_coach_diary_v1";
 
 let serverWorkouts = {};
 let customWorkouts = loadObject(STORAGE_KEY);
@@ -589,11 +589,313 @@ let doneWorkouts = loadObject(DONE_KEY);
 let uploadedWorkouts = loadObject(UPLOAD_KEY);
 let races = loadObject(RACES_KEY);
 let profile = loadObject(PROFILE_KEY);
+let coachDiary = loadObject(DIARY_KEY);
 let pendingWeekPlan = [];
 let pendingAdaptiveWeek = [];
 let latestWellnessSnapshot = null;
 let exactRunDraft = null;
 
+
+function diaryNumber(value){
+  const number=Number(value);
+  return Number.isFinite(number)?number:null;
+}
+
+function coachDiaryEntries(days=28){
+  const todayValue=new Date(todayDateString()+"T12:00:00");
+  return Object.entries(coachDiary)
+    .map(([date,entry])=>({
+      date,
+      entry,
+      parsed:new Date(date+"T12:00:00")
+    }))
+    .filter(item=>{
+      if(Number.isNaN(item.parsed.getTime())) return false;
+      const age=Math.floor((todayValue-item.parsed)/86400000);
+      return age>=0 && age<days;
+    })
+    .sort((a,b)=>b.date.localeCompare(a.date));
+}
+
+function diaryAverage(items,key){
+  const values=items
+    .map(item=>diaryNumber(item.entry?.[key]))
+    .filter(value=>value!==null);
+  if(!values.length) return null;
+  return values.reduce((sum,value)=>sum+value,0)/values.length;
+}
+
+function buildDiaryContext(){
+  const recent4=coachDiaryEntries(4);
+  const latest=recent4[0]?.entry||null;
+  const heavyCount=recent4.filter(item=>diaryNumber(item.entry.legs)>=4).length;
+  const lowEnergyCount=recent4.filter(item=>diaryNumber(item.entry.energy)<=2).length;
+  const complaintCount=recent4.filter(item=>diaryNumber(item.entry.complaintSeverity)>=2).length;
+  const severeComplaint=recent4.some(item=>diaryNumber(item.entry.complaintSeverity)>=3);
+  const latestLegs=diaryNumber(latest?.legs);
+  const latestEnergy=diaryNumber(latest?.energy);
+  const latestRpe=diaryNumber(latest?.sessionRpe);
+
+  if(!recent4.length){
+    return{
+      level:"unknown",
+      entries:0,
+      reasons:["geen recente dagboekcheck-in"],
+      latest:null
+    };
+  }
+
+  const reasons=[];
+  let level="stable";
+
+  if(severeComplaint){
+    level="elevated";
+    reasons.push("sterke klacht gemeld");
+  }
+
+  if(latestLegs===5 && latestEnergy!==null && latestEnergy<=2){
+    level="elevated";
+    reasons.push("zeer zware benen én lage energie");
+  }
+
+  if(level!=="elevated"){
+    if(complaintCount>=1){
+      level="attention";
+      reasons.push("duidelijke klacht gemeld");
+    }
+    if(heavyCount>=2){
+      level="attention";
+      reasons.push(`${heavyCount} recente check-ins met zware benen`);
+    }
+    if(lowEnergyCount>=2){
+      level="attention";
+      reasons.push(`${lowEnergyCount} recente check-ins met lage energie`);
+    }
+    if(latestRpe!==null && latestRpe>=9 && latestLegs!==null && latestLegs>=4){
+      level="attention";
+      reasons.push("zeer zware sessie gecombineerd met zware benen");
+    }
+  }
+
+  if(level==="stable"){
+    reasons.push("geen terugkerend subjectief belastingssignaal");
+  }
+
+  return{
+    level,
+    entries:recent4.length,
+    reasons,
+    latest,
+    heavyCount,
+    lowEnergyCount,
+    complaintCount
+  };
+}
+
+function diaryStatusLabel(level){
+  const labels={
+    stable:"Stabiel",
+    attention:"Aandacht",
+    elevated:"Verhoogd",
+    unknown:"Geen recente data"
+  };
+  return labels[level]||level;
+}
+
+function diaryWorkoutForDate(date){
+  return allWorkouts()[date]||null;
+}
+
+function diaryPlanComparison(entry){
+  if(!entry) return "";
+  const actualDistance=diaryNumber(entry.actualDistanceKm);
+  const plannedDistance=diaryNumber(entry.plannedDistanceKm);
+  if(actualDistance!==null && plannedDistance!==null && plannedDistance>0){
+    const diff=Math.round((actualDistance-plannedDistance)*10)/10;
+    if(Math.abs(diff)<0.1) return "afstand volgens plan";
+    return `${diff>0?"+":""}${diff} km t.o.v. plan`;
+  }
+
+  const actualDuration=diaryNumber(entry.actualDurationMinutes);
+  const plannedDuration=diaryNumber(entry.plannedDurationMinutes);
+  if(actualDuration!==null && plannedDuration!==null && plannedDuration>0){
+    const diff=Math.round(actualDuration-plannedDuration);
+    if(Math.abs(diff)<1) return "duur volgens plan";
+    return `${diff>0?"+":""}${diff} min t.o.v. plan`;
+  }
+
+  return "";
+}
+
+function fillCoachDiaryForm(date){
+  const entry=coachDiary[date]||null;
+  const workout=diaryWorkoutForDate(date);
+
+  document.getElementById("diaryDate").value=date;
+  document.getElementById("diaryRpe").value=String(entry?.sessionRpe??5);
+  document.getElementById("diaryLegs").value=String(entry?.legs??3);
+  document.getElementById("diaryEnergy").value=String(entry?.energy??3);
+  document.getElementById("diaryEnjoyment").value=String(entry?.enjoyment??4);
+  document.getElementById("diaryComplaint").value=String(entry?.complaintSeverity??0);
+  document.getElementById("diaryActualDistance").value=
+    entry?.actualDistanceKm??"";
+  document.getElementById("diaryActualDuration").value=
+    entry?.actualDurationMinutes??"";
+  document.getElementById("diaryComplaintText").value=
+    entry?.complaintText||"";
+  document.getElementById("diaryNote").value=entry?.note||"";
+
+  const context=document.getElementById("diaryWorkoutContext");
+  if(workout){
+    const planned=trainingVolumeLabel(workout);
+    const done=workoutState(date,workout)==="done";
+    context.innerHTML=
+      `<strong>${safe(workout.name)}</strong><br>${safe(planned)} · RPE ${safe(workout.rpe||"—")} · ${done?"voltooid":"nog gepland"}`;
+  }else{
+    context.textContent="Geen training voor deze datum gevonden. Je kunt de check-in alsnog handmatig bewaren.";
+  }
+
+  document.getElementById("deleteDiaryEntry").disabled=!entry;
+  document.getElementById("diaryStatus").textContent="";
+}
+
+function renderDiaryRecent(entries){
+  const box=document.getElementById("diaryRecent");
+  if(!box) return;
+
+  if(!entries.length){
+    box.innerHTML='<p class="help">Nog geen dagboekgegevens.</p>';
+    return;
+  }
+
+  box.innerHTML=entries.slice(0,7).map(({date,entry})=>{
+    const comparison=diaryPlanComparison(entry);
+    const complaint=diaryNumber(entry.complaintSeverity)||0;
+    const note=entry.note||entry.complaintText||"";
+    return `
+      <button type="button" class="diary-entry-row" onclick="openDiaryForDate('${date}')">
+        <div class="diary-entry-top">
+          <div>
+            <strong>${safe(entry.workoutName||date)}</strong>
+            <small>${safe(date)}${comparison?` · ${safe(comparison)}`:""}</small>
+          </div>
+          <span class="pill">RPE ${safe(entry.sessionRpe??"—")}</span>
+        </div>
+        <div class="diary-entry-tags">
+          <span class="pill">benen ${safe(entry.legs??"—")}/5</span>
+          <span class="pill">energie ${safe(entry.energy??"—")}/5</span>
+          <span class="pill">plezier ${safe(entry.enjoyment??"—")}/5</span>
+          ${complaint?`<span class="pill">klacht ${complaint}/3</span>`:""}
+        </div>
+        ${note?`<div class="diary-entry-note">${safe(note)}</div>`:""}
+      </button>`;
+  }).join("");
+}
+
+function renderCoachDiary(date=todayDateString()){
+  const seven=coachDiaryEntries(7);
+  const twentyEight=coachDiaryEntries(28);
+  const context=buildDiaryContext();
+
+  fillCoachDiaryForm(date);
+
+  document.getElementById("diary7Count").textContent=String(seven.length);
+
+  const avgRpe=diaryAverage(seven,"sessionRpe");
+  document.getElementById("diary7Rpe").textContent=
+    avgRpe===null?"—":avgRpe.toFixed(1);
+
+  const heavy=seven.filter(item=>diaryNumber(item.entry.legs)>=4).length;
+  document.getElementById("diary7Heavy").textContent=String(heavy);
+
+  const avgEnjoyment=diaryAverage(twentyEight,"enjoyment");
+  document.getElementById("diary28Enjoyment").textContent=
+    avgEnjoyment===null?"—":`${avgEnjoyment.toFixed(1)}/5`;
+
+  const headline=document.getElementById("diaryCoachHeadline");
+  const conclusion=document.getElementById("diaryCoachConclusion");
+
+  if(context.level==="unknown"){
+    headline.textContent="Nog geen recente check-in";
+    conclusion.textContent=
+      "Vul na een training je korte check-in in. Ontbrekende feedback wordt niet als neutraal of positief geïnterpreteerd.";
+  }else{
+    headline.innerHTML=
+      `<span class="diary-status-dot ${context.level}"></span>${diaryStatusLabel(context.level)}`;
+    conclusion.textContent=
+      context.reasons.join(". ")+". De coach gebruikt dit als subjectieve trainingsinput naast je objectieve hersteldata.";
+  }
+
+  renderDiaryRecent(twentyEight);
+}
+
+function saveCoachDiary(event){
+  event.preventDefault();
+  const date=document.getElementById("diaryDate").value;
+  if(!date) return;
+
+  const workout=diaryWorkoutForDate(date);
+  const actualDistanceRaw=document.getElementById("diaryActualDistance").value;
+  const actualDurationRaw=document.getElementById("diaryActualDuration").value;
+
+  coachDiary[date]={
+    date,
+    workoutName:workout?.name||"",
+    workoutType:workout?.type||"",
+    plannedDistanceKm:
+      Number(workout?.distanceKm)>0?Number(workout.distanceKm):null,
+    plannedDurationMinutes:
+      Number(workout?.durationMinutes)>0?Number(workout.durationMinutes):null,
+    actualDistanceKm:
+      actualDistanceRaw===""?null:Number(actualDistanceRaw),
+    actualDurationMinutes:
+      actualDurationRaw===""?null:Number(actualDurationRaw),
+    sessionRpe:Number(document.getElementById("diaryRpe").value),
+    legs:Number(document.getElementById("diaryLegs").value),
+    energy:Number(document.getElementById("diaryEnergy").value),
+    enjoyment:Number(document.getElementById("diaryEnjoyment").value),
+    complaintSeverity:Number(document.getElementById("diaryComplaint").value),
+    complaintText:safe(document.getElementById("diaryComplaintText").value).trim(),
+    note:safe(document.getElementById("diaryNote").value).trim(),
+    savedAt:new Date().toISOString()
+  };
+
+  saveObject(DIARY_KEY,coachDiary);
+  renderCoachDiary(date);
+  renderTodayCoach();
+  renderCoachIntelligence();
+
+  const status=document.getElementById("diaryStatus");
+  status.className="status ok";
+  status.textContent="Check-in opgeslagen en meegenomen in je coachadvies.";
+}
+
+function deleteCoachDiaryEntry(){
+  const date=document.getElementById("diaryDate").value;
+  if(!date || !coachDiary[date]) return;
+  if(!confirm(`Check-in van ${date} verwijderen?`)) return;
+
+  delete coachDiary[date];
+  saveObject(DIARY_KEY,coachDiary);
+  renderCoachDiary(date);
+  renderTodayCoach();
+  renderCoachIntelligence();
+
+  const status=document.getElementById("diaryStatus");
+  status.className="status ok";
+  status.textContent="Check-in verwijderd.";
+}
+
+function openDiaryForDate(date=todayDateString()){
+  switchView("today");
+  renderCoachDiary(date);
+  setTimeout(()=>{
+    document.getElementById("coachDiaryCard")?.scrollIntoView({
+      behavior:"smooth",
+      block:"start"
+    });
+  },50);
+}
 
 let pendingCoachChatWorkout=null;
 
@@ -606,7 +908,8 @@ function coachChatContext(){
   const profileData=getProfile();
   const existing=currentTodayWorkout();
   const loadMonitor=buildLoadMonitor();
-  return{availability,snapshot,readiness,race,phase,profile:profileData,existing,loadMonitor};
+  const diary=buildDiaryContext();
+  return{availability,snapshot,readiness,race,phase,profile:profileData,existing,loadMonitor,diary};
 }
 
 function normalizeCoachMessage(message){
@@ -712,6 +1015,12 @@ function coachChatResponse(message){
   }
 
   if(feelGood){
+    if(context.diary.level==="elevated"){
+      response="Je voelt je vandaag goed, maar je recente dagboekfeedback bevat een verhoogd subjectief belastingssignaal. Ik zou daarom niet automatisch extra intensiteit toevoegen.";
+      workout=createGeneratorWorkout("easy",context);
+      return{response,workout};
+    }
+
     if(context.loadMonitor.level==="elevated"){
       response="Je gevoel is positief, maar de belastbaarheidsmonitor geeft een verhoogd trainingssignaal. Ik zou vandaag geen extra zware prikkel toevoegen en de belasting eerst laten stabiliseren.";
       workout=createGeneratorWorkout("easy",context);
@@ -732,7 +1041,11 @@ function coachChatResponse(message){
     ? `een coachscore van ${context.readiness.score}/100`
     :"onvoldoende actuele hersteldata voor een coachscore";
 
-  response=`Ik combineer je bericht met ${recoveryText}${context.race?`, ${context.race.name} over ${context.phase.days} dagen`:""} en je huidige beschikbaarheid. Voor een concrete wijziging kun je aangeven hoeveel tijd je hebt, hoe je benen voelen of welke training je wilt verplaatsen.`;
+  const diaryText=context.diary.level==="unknown"
+    ?"geen recente dagboekfeedback"
+    :`dagboekstatus ${diaryStatusLabel(context.diary.level)}`;
+
+  response=`Ik combineer je bericht met ${recoveryText}, ${diaryText}${context.race?`, ${context.race.name} over ${context.phase.days} dagen`:""} en je huidige beschikbaarheid. Voor een concrete wijziging kun je aangeven hoeveel tijd je hebt, hoe je benen voelen of welke training je wilt verplaatsen.`;
   return{response,workout:null};
 }
 
@@ -1360,6 +1673,12 @@ function renderSelected(){
         ${done?"Markeer als gepland":"Markeer als voltooid"}
       </button>
 
+      ${done?`
+        <button class="secondary" type="button" onclick="openDiaryForDate('${selectedDate}')">
+          ${coachDiary[selectedDate]?"Bekijk coachdagboek":"Vul coachdagboek in"}
+        </button>
+      `:""}
+
       <button class="secondary" type="button" onclick="uploadSelected()"
         ${trainingTypeInfo(workout.type).uploadable ? "" : "disabled"}>
         ${trainingTypeInfo(workout.type).uploadable
@@ -1388,10 +1707,16 @@ function selectDate(date){
 }
 
 function toggleDone(){
-  doneWorkouts[selectedDate]=!doneWorkouts[selectedDate];
+  const isNowDone=!doneWorkouts[selectedDate];
+  doneWorkouts[selectedDate]=isNowDone;
   saveObject(DONE_KEY,doneWorkouts);
   renderMonth();
   renderSelected();
+  renderTodayCoach();
+
+  if(isNowDone){
+    openDiaryForDate(selectedDate);
+  }
 }
 
 async function uploadSelected(){
@@ -5681,6 +6006,7 @@ function loadMonitorStatusLabel(level){
 function buildLoadMonitor(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
+  const diary=buildDiaryContext();
 
   const last7=completedWorkoutEntries(7);
   const last14=completedWorkoutEntries(14);
@@ -5867,12 +6193,42 @@ function buildLoadMonitor(){
     });
   }
 
+
+  if(diary.level==="elevated"){
+    highFlags.push("diary");
+    signals.push({
+      state:"bad",
+      icon:"!",
+      text:`Coachdagboek: ${diary.reasons.join(", ")}.`
+    });
+  }else if(diary.level==="attention"){
+    attentionFlags.push("diary");
+    signals.push({
+      state:"warn",
+      icon:"!",
+      text:`Coachdagboek vraagt aandacht: ${diary.reasons.join(", ")}.`
+    });
+  }else if(diary.level==="stable"){
+    signals.push({
+      state:"good",
+      icon:"✓",
+      text:"Coachdagboek geeft geen terugkerend subjectief belastingssignaal."
+    });
+  }else{
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:"Coachdagboek niet meegewogen: geen recente check-in."
+    });
+  }
+
   const availableSignals=[
     atlCtl!==null,
     volumeRatio!==null,
     hard.sessions>0,
     longRunShare!==null,
-    readiness.sufficientData
+    readiness.sufficientData,
+    diary.level!=="unknown"
   ].filter(Boolean).length;
 
   let level="stable";
@@ -5919,7 +6275,7 @@ function buildLoadMonitor(){
     adviceText,
     signals,
     availableSignals,
-    totalSignalSlots:5,
+    totalSignalSlots:6,
     metrics:{
       atlCtl,
       runKm7:Math.round(runKm7*10)/10,
@@ -5936,7 +6292,8 @@ function buildLoadMonitor(){
           :null,
       streak,
       longestRunKm,
-      longRunShare
+      longRunShare,
+      diaryLevel:diary.level
     },
     highFlags,
     attentionFlags
@@ -6116,6 +6473,28 @@ function buildCoachIntelligence(){
     signals.push({state:"warn",icon:"!",text:`${twentyEight.support} ondersteunende sessies in 28 dagen; regelmaat kan beter.`});
   }
 
+
+  const diary=buildDiaryContext();
+  if(diary.level==="elevated"){
+    signals.push({
+      state:"bad",
+      icon:"!",
+      text:`Recente dagboekfeedback is verhoogd: ${diary.reasons.join(", ")}.`
+    });
+  }else if(diary.level==="attention"){
+    signals.push({
+      state:"warn",
+      icon:"!",
+      text:`Recente dagboekfeedback vraagt aandacht: ${diary.reasons.join(", ")}.`
+    });
+  }else if(diary.level==="stable"){
+    signals.push({
+      state:"good",
+      icon:"✓",
+      text:"Recente dagboekfeedback is stabiel."
+    });
+  }
+
   let headline="Trainingsbalans is bruikbaar";
   let conclusion="Behoud de huidige verhouding en laat zware sessies volgen door rustige belasting.";
 
@@ -6176,6 +6555,7 @@ function weekPlanningContext(){
   const readiness=determineReadiness(getWellnessSnapshot());
   const race=getRaceFocus();
   const phase=classifyRacePhase(race);
+  const diary=buildDiaryContext();
   const start=nextMonday();
 
   return{
@@ -6184,6 +6564,7 @@ function weekPlanningContext(){
     readiness,
     race,
     phase,
+    diary,
     start
   };
 }
@@ -6197,6 +6578,9 @@ function weeklyTargetKm(context,variant=0){
   let factor=1;
   if(context.readiness.level==="low") factor=.70;
   else if(context.readiness.level==="moderate") factor=.88;
+
+  if(context.diary?.level==="elevated") factor*=.80;
+  else if(context.diary?.level==="attention") factor*=.92;
 
   if(context.phase.phase==="taper") factor*=.78;
   if(context.phase.phase==="race-week") factor*=.52;
@@ -7652,6 +8036,16 @@ function renderTodayCoach(){
       cls:"warn",
       icon:"?",
       text:`Hersteldata onvoldoende: ${readiness.currentSignalCount}/${readiness.requiredSignals} actuele signalen. Geen herstel-score berekend.`
+    });
+  }
+
+
+  const diary=buildDiaryContext();
+  if(diary.level!=="unknown"){
+    reasonRows.push({
+      cls:diary.level==="stable"?"good":diary.level==="attention"?"warn":"bad",
+      icon:diary.level==="stable"?"✓":diary.level==="attention"?"!":"×",
+      text:`Coachdagboek: ${diaryStatusLabel(diary.level)} · ${diary.reasons.join(", ")}.`
     });
   }
 
