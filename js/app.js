@@ -4430,16 +4430,23 @@ function renderWellnessDashboard(data){
       }).join("")
     : '<p class="help">Nog geen historie beschikbaar.</p>';
 
-  document.getElementById("wellnessStatus").className="status ok";
-  document.getElementById("wellnessStatus").textContent=
-    dataSufficient
-      ? "Actuele hersteldata geladen."
-      : "Data geladen, maar onvoldoende actuele herstelmetingen voor een coachscore.";
+  const wellnessStatus=document.getElementById("wellnessStatus");
+  if(wellnessStatus){
+    wellnessStatus.className="status ok";
+    wellnessStatus.textContent=
+      dataSufficient
+        ? "Actuele hersteldata geladen."
+        : "Data geladen, maar onvoldoende actuele herstelmetingen voor een coachscore.";
+  }
 }
 
 async function loadWellnessDashboard(){
   const error=document.getElementById("dashboardError");
-  error.textContent="";
+  const success=document.getElementById("wellnessStatus");
+
+  if(error) error.textContent="";
+  if(success) success.textContent="";
+
   document.getElementById("dashboardUpdated").textContent="Intervals.icu-data wordt geladen…";
 
   try{
@@ -4448,7 +4455,7 @@ async function loadWellnessDashboard(){
     if(!response.ok) throw new Error(data.error || "Dashboarddata kon niet worden geladen.");
     renderWellnessDashboard(data);
   }catch(err){
-    error.textContent=err.message;
+    if(error) error.textContent=err.message;
     document.getElementById("dashboardUpdated").textContent="Data niet beschikbaar.";
   }
 }
