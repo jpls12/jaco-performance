@@ -4639,9 +4639,9 @@ Easy
 
 function applyRaceCalendarToWeek(context,workouts){
   const weekEnd=addDays(context.start,6);
-  const protectedRaces=futureRacesSorted().filter(race=>
+  const protectedRaces=Object.values(races).filter(race=>
     race.date>=addDays(context.start,-10) &&
-    race.date<=weekEnd
+    race.date<=addDays(weekEnd,2)
   );
 
   if(!protectedRaces.length) return workouts;
@@ -7659,15 +7659,23 @@ function renderFullSeasonSchedulePreview(){
     String(plan.workouts.length);
   document.getElementById("fullSeasonKm").textContent=
     `${Math.round(plan.totalKm)} km`;
+  const overwrite=document.getElementById("fullSeasonOverwriteManual").checked;
+
   document.getElementById("fullSeasonConflicts").textContent=
     String(plan.conflicts);
+  document.getElementById("fullSeasonConflictsNote").textContent=
+    overwrite
+      ?"bestaande plandagen worden vervangen"
+      :"bestaande plandagen blijven staan";
 
   document.getElementById("fullSeasonHeadline").textContent=
     `${plan.weeks.length} weken richting ${plan.targetRaceName}`;
 
   document.getElementById("fullSeasonExplanation").textContent=
     plan.conflicts
-      ?`${plan.conflicts} geplande dagen hebben al een bestaande training. Die blijven behouden tenzij je overschrijven inschakelt.`
+      ?overwrite
+        ?`${plan.conflicts} geplande dagen hebben al een bestaande training. Deze worden vervangen wanneer je het schema toepast.`
+        :`${plan.conflicts} geplande dagen hebben al een bestaande training. Die blijven behouden.`
       :"Geen botsingen met bestaande trainingen gevonden. De preview kan direct worden toegepast.";
 
   preview.innerHTML=plan.weeks.map((week,index)=>{
@@ -7705,7 +7713,7 @@ function renderFullSeasonSchedulePreview(){
                   <strong>${safe(workout.name)}</strong>
                   <small>
                     ${safe(trainingVolumeLabel(workout))} · RPE ${safe(workout.rpe||"—")}
-                    ${existing?` · bestaand blijft: ${safe(existing.name)}`:""}
+                    ${existing?` · ${overwrite?"wordt vervangen":"blijft staan"}: ${safe(existing.name)}`:""}
                   </small>
                 </div>
                 <span class="full-season-pill">
