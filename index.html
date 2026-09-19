@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=761">
+  <link rel="stylesheet" href="/css/app.css?v=770">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 7.6.1 · Dashboard Status Fix</span>
+      <span class="v2-badge">Jaco Performance 7.7 · Coach Dagboek</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -172,6 +172,147 @@
         <div id="loadMonitorCoverageText" class="help">
           Lokale voltooide trainingen en Intervals.icu-wellnessdata worden gecombineerd.
         </div>
+      </div>
+    </article>
+
+
+    <article class="card coach-diary-card" id="coachDiaryCard">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 7.7 · Coach Dagboek</p>
+          <h2>Hoe voelde je training?</h2>
+          <p class="help">
+            Leg je eigen ervaring naast de cijfers uit Intervals.icu. Alleen ingevulde
+            dagboekdata wordt meegewogen; ontbrekende feedback wordt niet geschat.
+          </p>
+        </div>
+        <button id="loadTodayDiary" class="secondary" type="button" style="width:auto">
+          Vandaag
+        </button>
+      </div>
+
+      <form id="coachDiaryForm">
+        <label>Datum
+          <input id="diaryDate" type="date" required>
+        </label>
+
+        <div id="diaryWorkoutContext" class="diary-workout-context">
+          Geen training voor deze datum gevonden.
+        </div>
+
+        <div class="diary-input-grid">
+          <label>Sessie-RPE
+            <select id="diaryRpe">
+              <option value="1">1 · zeer licht</option>
+              <option value="2">2</option>
+              <option value="3">3 · licht</option>
+              <option value="4">4</option>
+              <option value="5" selected>5 · gemiddeld</option>
+              <option value="6">6</option>
+              <option value="7">7 · stevig</option>
+              <option value="8">8 · zwaar</option>
+              <option value="9">9 · zeer zwaar</option>
+              <option value="10">10 · maximaal</option>
+            </select>
+          </label>
+
+          <label>Benen
+            <select id="diaryLegs">
+              <option value="1">1 · zeer fris</option>
+              <option value="2">2 · goed</option>
+              <option value="3" selected>3 · neutraal</option>
+              <option value="4">4 · zwaar</option>
+              <option value="5">5 · zeer zwaar</option>
+            </select>
+          </label>
+
+          <label>Energie
+            <select id="diaryEnergy">
+              <option value="1">1 · zeer laag</option>
+              <option value="2">2 · laag</option>
+              <option value="3" selected>3 · normaal</option>
+              <option value="4">4 · goed</option>
+              <option value="5">5 · zeer goed</option>
+            </select>
+          </label>
+
+          <label>Trainingsplezier
+            <select id="diaryEnjoyment">
+              <option value="1">1 · slecht</option>
+              <option value="2">2</option>
+              <option value="3">3 · neutraal</option>
+              <option value="4" selected>4 · goed</option>
+              <option value="5">5 · uitstekend</option>
+            </select>
+          </label>
+
+          <label>Klachten tijdens/na training
+            <select id="diaryComplaint">
+              <option value="0" selected>Geen</option>
+              <option value="1">Licht</option>
+              <option value="2">Duidelijk</option>
+              <option value="3">Sterk</option>
+            </select>
+          </label>
+
+          <label>Werkelijke afstand (km)
+            <input id="diaryActualDistance" type="number" min="0" step="0.1" placeholder="optioneel">
+          </label>
+
+          <label>Werkelijke duur (min)
+            <input id="diaryActualDuration" type="number" min="0" step="1" placeholder="optioneel">
+          </label>
+        </div>
+
+        <label>Waar voelde je klachten? <span class="help">(optioneel)</span>
+          <input id="diaryComplaintText" type="text" maxlength="160" placeholder="Bijv. rechterkuit, lichte stijfheid">
+        </label>
+
+        <label>Notitie <span class="help">(optioneel)</span>
+          <textarea id="diaryNote" rows="3" maxlength="500" placeholder="Bijv. eerste blok zwaar, daarna kwam ik goed in het ritme."></textarea>
+        </label>
+
+        <div class="today-actions">
+          <button id="saveDiaryEntry" type="submit">Sla check-in op</button>
+          <button id="deleteDiaryEntry" class="secondary" type="button" disabled>Verwijder check-in</button>
+        </div>
+        <p id="diaryStatus" class="status"></p>
+      </form>
+
+      <div class="diary-summary-grid">
+        <div class="today-metric">
+          <span>Check-ins 7 d</span>
+          <strong id="diary7Count">—</strong>
+          <small>ingevulde trainingen</small>
+        </div>
+        <div class="today-metric">
+          <span>Gem. RPE 7 d</span>
+          <strong id="diary7Rpe">—</strong>
+          <small>ervaren zwaarte</small>
+        </div>
+        <div class="today-metric">
+          <span>Zware benen 7 d</span>
+          <strong id="diary7Heavy">—</strong>
+          <small>score 4–5</small>
+        </div>
+        <div class="today-metric">
+          <span>Plezier 28 d</span>
+          <strong id="diary28Enjoyment">—</strong>
+          <small>gemiddelde /5</small>
+        </div>
+      </div>
+
+      <div class="coach-box">
+        <p class="label">Subjectieve coachinput</p>
+        <h3 id="diaryCoachHeadline">Nog geen recente check-in</h3>
+        <p class="help" id="diaryCoachConclusion">
+          Vul na een training je korte check-in in. De coach gebruikt dit naast, niet in plaats van, je hersteldata.
+        </p>
+      </div>
+
+      <p class="label diary-recent-label">Recente check-ins</p>
+      <div id="diaryRecent" class="diary-recent">
+        <p class="help">Nog geen dagboekgegevens.</p>
       </div>
     </article>
 
@@ -1319,8 +1460,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=761" defer></script>
-<script src="/js/bootstrap.js?v=761" defer></script>
+<script src="/js/app.js?v=770" defer></script>
+<script src="/js/bootstrap.js?v=770" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
