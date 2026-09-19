@@ -1159,12 +1159,13 @@ function smartWeekContext(){
   const phase=classifyRacePhase(race);
   const start=nextMonday();
   const end=addDays(start,6);
+  const weekRaces=racesInRange(start,end);
 
   const existing=Object.entries(customWorkouts)
     .filter(([date])=>date>=start && date<=end)
     .map(([date,workout])=>({...JSON.parse(JSON.stringify(workout)),date}));
 
-  return{profile:profileData,availability,readiness,race,phase,start,end,existing};
+  return{profile:profileData,availability,readiness,race,phase,start,end,existing,weekRaces};
 }
 
 function availableDayInfo(context,dateString){
@@ -1246,6 +1247,43 @@ function smartWeekWarningsFor(workouts,context){
       text:"Er staan meerdere lange duurlopen in dezelfde week."
     });
   }
+
+
+  (context.weekRaces||[]).forEach(race=>{
+    sorted.forEach(workout=>{
+      const delta=signedDateGapDays(workout.date,race.date);
+      const priority=String(race.priority||"C").toUpperCase();
+
+      if(delta===0){
+        warnings.push({
+          state:"warn",icon:"!",
+          text:`${workout.name} staat op dezelfde datum als ${race.name}; de wedstrijddag moet vrij blijven van een gewone training.`
+        });
+      }
+
+      if(
+        delta<0 &&
+        Math.abs(delta)<=(priority==="A"?2:priority==="B"?1:0) &&
+        (isHardWorkout(workout)||isLongWorkout(workout))
+      ){
+        warnings.push({
+          state:"warn",icon:"!",
+          text:`${workout.name} staat te dicht voor ${priority}-wedstrijd ${race.name}.`
+        });
+      }
+
+      if(
+        delta>0 &&
+        delta<=raceRecoveryDays(race) &&
+        (isHardWorkout(workout)||isLongWorkout(workout))
+      ){
+        warnings.push({
+          state:"warn",icon:"!",
+          text:`${workout.name} valt binnen het herstelvenster na ${race.name}.`
+        });
+      }
+    });
+  });
 
   sorted.forEach(workout=>{
     const dayInfo=availableDayInfo(context,workout.date);
@@ -1365,7 +1403,10 @@ function optimizeWeekWorkouts(sourceWorkouts,context,variant=0){
     usedDates.add(date);
   }
 
-  return scheduled.sort((a,b)=>a.date.localeCompare(b.date));
+  return applyRaceCalendarToWeek(
+    context,
+    scheduled.sort((a,b)=>a.date.localeCompare(b.date))
+  );
 }
 
 function generateSmartWeekOptions(){
@@ -1581,6 +1622,7 @@ function switchView(id){
   if(id==="races"){
     renderRaces();
     renderRaceOptions();
+    renderRaceCalendarOptimizer();
   }
   if(id==="dashboard"){loadWellnessDashboard();renderProfileSummary();}
   if(id==="profile"){fillProfileForm();}
@@ -3915,6 +3957,407 @@ function editCurrentSimulatedRace(){
   editRace(activeRaceSimulation.race.id);
 }
 
+
+function racePriorityRank(priority){
+  return({A:0,B:1,C:2})[String(priority||"C").toUpperCase()] ?? 3;
+}
+
+function futureRacesSorted(){
+  return Object.values(races)
+    .filter(race=>daysUntil(race.date)>=0)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function getPrimaryARace(){
+  return futureRacesSorted().find(race=>String(race.priority).toUpperCase()==="A") || null;
+}
+
+function racesInRange(start,end){
+  return futureRacesSorted().filter(race=>race.date>=start && race.date<=end);
+}
+
+function signedDateGapDays(dateA,dateB){
+  return Math.round(
+    (new Date(dateA+"T12:00:00")-new Date(dateB+"T12:00:00"))/86400000
+  );
+}
+
+function raceRecoveryDays(race){
+  const distance=Number(race?.distanceKm||0);
+  let days=1;
+  if(distance>5) days=2;
+  if(distance>=15) days=3;
+  if(distance>=30) days=5;
+  if(distance>=42) days=7;
+
+  if(String(race?.priority).toUpperCase()==="A" && distance>=15){
+    days+=1;
+  }
+  return days;
+}
+
+function raceTaperDays(race){
+  const priority=String(race?.priority||"C").toUpperCase();
+  const distance=Number(race?.distanceKm||0);
+
+  if(priority==="C") return 0;
+
+  let days=4;
+  if(distance>=10) days=5;
+  if(distance>=15) days=8;
+  if(distance>=30) days=12;
+
+  if(priority==="B"){
+    return Math.max(1,Math.round(days*.45));
+  }
+
+  return days;
+}
+
+function raceMinimumSpacingDays(a,b){
+  const maxDistance=Math.max(Number(a?.distanceKm||0),Number(b?.distanceKm||0));
+  const bothA=String(a?.priority).toUpperCase()==="A" &&
+    String(b?.priority).toUpperCase()==="A";
+
+  let spacing=maxDistance>=30?35:maxDistance>=15?21:maxDistance>=10?12:8;
+  if(bothA) spacing+=maxDistance>=15?7:3;
+  return spacing;
+}
+
+function raceCalendarAnalysis(){
+  const upcoming=futureRacesSorted();
+  const nextRace=upcoming[0]||null;
+  const primaryA=getPrimaryARace();
+  const signals=[];
+  const conflicts=[];
+  const priorityCounts={A:0,B:0,C:0};
+
+  upcoming.forEach(race=>{
+    const p=String(race.priority||"C").toUpperCase();
+    if(priorityCounts[p]!==undefined) priorityCounts[p]++;
+  });
+
+  for(let i=0;i<upcoming.length-1;i++){
+    const first=upcoming[i];
+    const second=upcoming[i+1];
+    const gap=signedDateGapDays(second.date,first.date);
+    const minSpacing=raceMinimumSpacingDays(first,second);
+    const recovery=raceRecoveryDays(first);
+    const taper=raceTaperDays(second);
+    const overlap=recovery+taper-gap;
+
+    if(gap<Math.max(recovery,taper)){
+      conflicts.push({
+        severity:"bad",
+        text:`${first.name} en ${second.name} liggen slechts ${gap} dagen uit elkaar; herstel/taper overlappen.`
+      });
+    }else if(overlap>0){
+      conflicts.push({
+        severity:"warn",
+        text:`Tussen ${first.name} en ${second.name} blijft weinig normale trainingsruimte over (${gap} dagen).`
+      });
+    }
+
+    if(
+      String(first.priority).toUpperCase()==="A" &&
+      String(second.priority).toUpperCase()==="A" &&
+      gap<minSpacing
+    ){
+      conflicts.push({
+        severity:"bad",
+        text:`Twee A-wedstrijden staan ${gap} dagen uit elkaar; voor deze afstanden is circa ${minSpacing} dagen scheiding een conservatievere planning.`
+      });
+    }
+  }
+
+  if(primaryA){
+    upcoming.forEach(race=>{
+      if(race.id===primaryA.id) return;
+      const gap=signedDateGapDays(primaryA.date,race.date);
+
+      if(gap>0 && gap<=raceTaperDays(primaryA) &&
+        String(race.priority).toUpperCase()!=="C"){
+        conflicts.push({
+          severity:"warn",
+          text:`${race.name} valt binnen de taper richting A-race ${primaryA.name}. Overweeg deze wedstrijd als C-race te behandelen.`
+        });
+      }
+    });
+  }
+
+  if(!upcoming.length){
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:"Nog geen toekomstige wedstrijden toegevoegd."
+    });
+  }else{
+    if(primaryA){
+      signals.push({
+        state:"good",
+        icon:"A",
+        text:`Primaire piek: ${primaryA.name} op ${primaryA.date}.`
+      });
+    }else{
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:"Er staat geen toekomstige A-wedstrijd in de kalender; de eerstvolgende race wordt tijdelijk trainingsfocus."
+      });
+    }
+
+    if(conflicts.length){
+      conflicts.forEach(item=>signals.push({
+        state:item.severity==="bad"?"bad":"warn",
+        icon:item.severity==="bad"?"×":"!",
+        text:item.text
+      }));
+    }else{
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:"Geen duidelijke overlap tussen taper- en herstelvensters gevonden."
+      });
+    }
+  }
+
+  let level="good";
+  if(!upcoming.length) level="empty";
+  else if(conflicts.some(item=>item.severity==="bad")) level="conflict";
+  else if(conflicts.length) level="attention";
+
+  const timeline=upcoming.map((race,index)=>{
+    const previous=index>0?upcoming[index-1]:null;
+    return{
+      race,
+      days:daysUntil(race.date),
+      taperDays:raceTaperDays(race),
+      recoveryDays:raceRecoveryDays(race),
+      gapFromPrevious:previous?signedDateGapDays(race.date,previous.date):null
+    };
+  });
+
+  return{
+    upcoming,
+    nextRace,
+    primaryA,
+    priorityCounts,
+    conflicts,
+    signals,
+    level,
+    timeline
+  };
+}
+
+function raceCalendarStatusText(level){
+  return({
+    good:"Goed",
+    attention:"Aandacht",
+    conflict:"Conflict",
+    empty:"Geen races"
+  })[level]||"—";
+}
+
+function renderRaceCalendarOptimizer(){
+  const status=document.getElementById("raceCalendarStatus");
+  if(!status) return;
+
+  const analysis=raceCalendarAnalysis();
+
+  status.textContent=raceCalendarStatusText(analysis.level);
+  document.getElementById("raceCalendarStatusNote").textContent=
+    analysis.level==="good"
+      ?"taper en herstel passen"
+      :analysis.level==="attention"
+        ?"controleer gemarkeerde overlap"
+        :analysis.level==="conflict"
+          ?"minstens één sterke kalenderbotsing"
+          :"voeg wedstrijden toe";
+
+  document.getElementById("raceCalendarNext").textContent=
+    analysis.nextRace?analysis.nextRace.name:"—";
+  document.getElementById("raceCalendarNextNote").textContent=
+    analysis.nextRace
+      ?`${analysis.nextRace.priority}-race · over ${daysUntil(analysis.nextRace.date)} d`
+      :"—";
+
+  document.getElementById("raceCalendarPrimary").textContent=
+    analysis.primaryA?analysis.primaryA.name:"—";
+  document.getElementById("raceCalendarPrimaryNote").textContent=
+    analysis.primaryA
+      ?`over ${daysUntil(analysis.primaryA.date)} d · ${formatRaceDistance(analysis.primaryA.distanceKm)}`
+      :"geen A-race ingesteld";
+
+  document.getElementById("raceCalendarCount").textContent=
+    String(analysis.upcoming.length);
+  document.getElementById("raceCalendarPriorityCount").textContent=
+    `A ${analysis.priorityCounts.A} · B ${analysis.priorityCounts.B} · C ${analysis.priorityCounts.C}`;
+
+  document.getElementById("raceCalendarSignals").innerHTML=
+    analysis.signals.map(signal=>`
+      <div class="reason-item">
+        <div class="reason-icon ${signal.state}">${signal.icon}</div>
+        <div>${safe(signal.text)}</div>
+      </div>
+    `).join("");
+
+  let headline="Wedstrijdkalender is logisch opgebouwd";
+  let conclusion=
+    "A-races sturen de hoofdpiek. B-races krijgen beperkte taper en C-races worden zoveel mogelijk als trainingsprikkel verwerkt.";
+
+  if(analysis.level==="attention"){
+    headline="Kalender is bruikbaar, maar vraagt afstemming";
+    conclusion=
+      "Minstens één wedstrijd ligt dicht tegen een taper- of herstelvenster. De weekplanners beperken daar automatisch zware trainingsprikkels.";
+  }
+  if(analysis.level==="conflict"){
+    headline="Wedstrijdkalender bevat een sterke botsing";
+    conclusion=
+      "De app beschermt de trainingsweken rond deze races, maar bekijk vooral de prioriteit van de gemarkeerde wedstrijden voordat je een volledig schema genereert.";
+  }
+  if(analysis.level==="empty"){
+    headline="Nog geen seizoen om te optimaliseren";
+    conclusion="Voeg eerst je komende wedstrijden toe en geef iedere race A-, B- of C-prioriteit.";
+  }
+
+  document.getElementById("raceCalendarHeadline").textContent=headline;
+  document.getElementById("raceCalendarConclusion").textContent=conclusion;
+
+  document.getElementById("raceCalendarTimeline").innerHTML=
+    analysis.timeline.length
+      ?analysis.timeline.map(item=>`
+        <div class="race-timeline-row">
+          <div class="race-timeline-priority ${String(item.race.priority).toLowerCase()}">
+            ${safe(item.race.priority)}
+          </div>
+          <div>
+            <strong>${safe(item.race.name)}</strong>
+            <small>
+              ${safe(item.race.date)} · ${formatRaceDistance(item.race.distanceKm)}
+              · over ${item.days} dagen
+              ${item.gapFromPrevious!==null?` · ${item.gapFromPrevious} d na vorige race`:""}
+            </small>
+          </div>
+          <div class="race-window">
+            taper ${item.taperDays} d<br>
+            herstel ${item.recoveryDays} d
+          </div>
+        </div>
+      `).join("")
+      :'<p class="help">Nog geen komende wedstrijden.</p>';
+}
+
+function raceMarkerWorkout(race){
+  return{
+    date:race.date,
+    type:"Race",
+    distanceKm:Number(race.distanceKm)||0,
+    durationMinutes:0,
+    name:race.name,
+    uploadName:race.name,
+    rpe:"10/10",
+    status:"planned",
+    priority:race.priority,
+    planType:"race",
+    raceMarker:true,
+    displaySteps:[
+      `${race.priority}-wedstrijd · ${formatRaceDistance(race.distanceKm)}`,
+      race.targetTime?`Streeftijd: ${race.targetTime}`:"Geen streeftijd ingevuld"
+    ],
+    intervalsDescription:""
+  };
+}
+
+function protectedEasyWorkout(workout,race,recovery=false){
+  const originalKm=Number(workout?.distanceKm)||8;
+  const km=Math.max(5,Math.min(recovery?7:9,originalKm));
+  const copy={
+    ...JSON.parse(JSON.stringify(workout)),
+    type:"Run",
+    distanceKm:km,
+    durationMinutes:0,
+    name:recovery?`Herstel na ${race.name}`:`Rustig richting ${race.name}`,
+    uploadName:recovery?`Jaco - Herstel na ${race.name}`:`Jaco - Rustig richting ${race.name}`,
+    rpe:recovery?"2/10":"3/10",
+    planType:recovery?"recovery":"easy",
+    displaySteps:[
+      `${km} km ${recovery?"zeer rustig":"rustig in zone 2"}`,
+      "Geen extra versnellingen of intensiteit"
+    ],
+    intervalsDescription:`${recovery?"Hersteltraining":"Rustige duurloop"} rond wedstrijdkalender.
+
+Easy
+- ${km}km ${recovery?"5:15-5:40/km":"5:00-5:25/km"} Pace`
+  };
+  return copy;
+}
+
+function applyRaceCalendarToWeek(context,workouts){
+  const weekRaces=context.weekRaces || racesInRange(context.start,addDays(context.start,6));
+  if(!weekRaces.length) return workouts;
+
+  const adjusted=[];
+
+  for(const source of workouts){
+    let workout=JSON.parse(JSON.stringify(source));
+    let skip=false;
+
+    for(const race of weekRaces){
+      const delta=signedDateGapDays(workout.date,race.date);
+      const priority=String(race.priority||"C").toUpperCase();
+
+      if(delta===0){
+        skip=true;
+        break;
+      }
+
+      const preProtect=priority==="A"?2:priority==="B"?1:0;
+      const recoveryDays=raceRecoveryDays(race);
+
+      if(delta<0 && Math.abs(delta)<=preProtect &&
+        (isHardWorkout(workout)||isLongWorkout(workout))){
+        workout=protectedEasyWorkout(workout,race,false);
+      }
+
+      if(delta>0 && delta<=recoveryDays &&
+        (isHardWorkout(workout)||isLongWorkout(workout))){
+        workout=protectedEasyWorkout(workout,race,true);
+      }
+    }
+
+    if(!skip) adjusted.push(workout);
+  }
+
+  return adjusted.sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+function adjustWorkoutForRaceCalendar(workout,date,excludeRaceId=null){
+  let adjusted=workout;
+
+  for(const race of futureRacesSorted()){
+    if(race.id===excludeRaceId) continue;
+
+    const delta=signedDateGapDays(date,race.date);
+    if(delta===0) return null;
+
+    const priority=String(race.priority||"C").toUpperCase();
+    const preProtect=priority==="A"?2:priority==="B"?1:0;
+
+    if(delta<0 && Math.abs(delta)<=preProtect &&
+      (isHardWorkout(adjusted)||isLongWorkout(adjusted))){
+      adjusted=protectedEasyWorkout(adjusted,race,false);
+    }
+
+    if(delta>0 && delta<=raceRecoveryDays(race) &&
+      (isHardWorkout(adjusted)||isLongWorkout(adjusted))){
+      adjusted=protectedEasyWorkout(adjusted,race,true);
+    }
+  }
+
+  return adjusted;
+}
+
+
 function raceId(){
   return `race-${Date.now()}-${Math.random().toString(36).slice(2,8)}`;
 }
@@ -4001,6 +4444,7 @@ function saveRace(event){
   renderRaces();
   renderRaceOptions();
   renderRaceSimulator();
+  renderRaceCalendarOptimizer();
   renderMonth();
   renderSelected();
 }
@@ -4041,6 +4485,7 @@ function deleteRace(id){
   renderRaces();
   renderRaceOptions();
   renderRaceSimulator();
+  renderRaceCalendarOptimizer();
   renderMonth();
   renderSelected();
 }
@@ -4351,6 +4796,9 @@ function generateRacePlan(){
       if(type==="easy") workout=createEasyWorkout(date,easyKm,false);
       if(type==="recovery") workout=createEasyWorkout(date,Math.max(6,easyKm-2),true);
       if(type==="long") workout=createLongRun(date,longKm,race);
+
+      workout=adjustWorkoutForRaceCalendar(workout,date,race.id);
+      if(!workout) continue;
 
       customWorkouts[date]=workout;
       created++;
@@ -6557,6 +7005,8 @@ function weekPlanningContext(){
   const phase=classifyRacePhase(race);
   const diary=buildDiaryContext();
   const start=nextMonday();
+  const end=addDays(start,6);
+  const weekRaces=racesInRange(start,end);
 
   return{
     profile:profileData,
@@ -6565,7 +7015,9 @@ function weekPlanningContext(){
     race,
     phase,
     diary,
-    start
+    start,
+    end,
+    weekRaces
   };
 }
 
@@ -6581,6 +7033,11 @@ function weeklyTargetKm(context,variant=0){
 
   if(context.diary?.level==="elevated") factor*=.80;
   else if(context.diary?.level==="attention") factor*=.92;
+
+  const weekPriorities=(context.weekRaces||[]).map(race=>String(race.priority||"C").toUpperCase());
+  if(weekPriorities.includes("A")) factor*=.62;
+  else if(weekPriorities.includes("B")) factor*=.78;
+  else if(weekPriorities.includes("C")) factor*=.90;
 
   if(context.phase.phase==="taper") factor*=.78;
   if(context.phase.phase==="race-week") factor*=.52;
@@ -6824,7 +7281,8 @@ function createUnscheduledAiWeek(context,variant=0){
 }
 
 function assignAiWeekToAvailability(context,unscheduled,variant=0){
-  const scheduled=scheduleByAvailability(unscheduled.workouts);
+  let scheduled=scheduleByAvailability(unscheduled.workouts);
+  scheduled=applyRaceCalendarToWeek(context,scheduled);
 
   // Add core or mobility only if a free available day remains.
   const usedDates=new Set(scheduled.map(workout=>workout.date));
@@ -6918,14 +7376,16 @@ function renderAiWeekPlanner(context=weekPlanningContext()){
   document.getElementById("aiWeekHeadline").textContent=
     `${option.workouts.length} trainingen · circa ${Math.round(totalKm)} km`;
 
-  const raceText=context.race
-    ? `${context.race.name} over ${context.phase.days} dagen`
-    :"algemene opbouw";
+  const weekRaceText=(context.weekRaces||[]).length
+    ? `deze week: ${context.weekRaces.map(r=>`${r.priority} ${r.name}`).join(", ")}`
+    :context.race
+      ? `${context.race.name} over ${context.phase.days} dagen`
+      :"algemene opbouw";
 
   document.getElementById("aiWeekReason").textContent=
     context.readiness.level==="unknown"
-      ?`Gebaseerd op ${context.availability.length} beschikbare dagen en ${raceText}; hersteldata is onvoldoende en daarom niet meegewogen.`
-      :`Gebaseerd op herstelstatus ${context.readiness.level}, ${context.availability.length} beschikbare dagen en ${raceText}.`;
+      ?`Gebaseerd op ${context.availability.length} beschikbare dagen en ${weekRaceText}; hersteldata is onvoldoende en daarom niet meegewogen.`
+      :`Gebaseerd op herstelstatus ${context.readiness.level}, ${context.availability.length} beschikbare dagen en ${weekRaceText}.`;
 
   document.getElementById("aiWeekPlan").innerHTML=
     option.workouts.map(workout=>{
@@ -7619,7 +8079,7 @@ function renderPerformanceEngine(){
   document.getElementById("performanceExplanation").textContent=
     engine.performance===null
       ?"Nog onvoldoende actuele data om de samengestelde performancescore te berekenen."
-      :`Performance ${engine.performance}/100. ${raceText}`;
+      :`Performance ${engine.performance}/100. ${weekRaceText}`;
 
   setPerformanceMetric(
     "fitnessScore","fitnessBar",engine.fitness,
@@ -8269,17 +8729,19 @@ function determineReadiness(snapshot){
 }
 
 function getRaceFocus(){
-  const future=Object.values(races)
-    .filter(r=>daysUntil(r.date)>=0)
-    .sort((a,b)=>{
-      const priorityOrder={A:0,B:1,C:2};
-      const pa=priorityOrder[a.priority] ?? 3;
-      const pb=priorityOrder[b.priority] ?? 3;
-      if(pa!==pb) return pa-pb;
-      return a.date.localeCompare(b.date);
-    });
+  const future=futureRacesSorted();
+  if(!future.length) return null;
 
-  return future[0] || null;
+  const nextRace=future[0];
+  const primaryA=getPrimaryARace();
+
+  // Een race binnen 14 dagen beïnvloedt de actuele trainingsweek altijd,
+  // ook wanneer een A-race verder in de toekomst de hoofdpiek blijft.
+  if(daysUntil(nextRace.date)<=14){
+    return nextRace;
+  }
+
+  return primaryA || nextRace;
 }
 
 function classifyRacePhase(race){
@@ -8520,7 +8982,7 @@ function buildAdaptiveWeek(){
       :readiness.reasons.length
         ?readiness.reasons.join(", ")
         :"geen duidelijke negatieve herstelsignalen"}. `+
-    `Focus: ${raceText}. De trainingen zijn verdeeld over je beschikbare dagen.`;
+    `Focus: ${weekRaceText}. De trainingen zijn verdeeld over je beschikbare dagen.`;
 
   renderAdaptiveWeek(readiness,race,phase);
 }
@@ -8710,9 +9172,50 @@ function saveProfile(e){
 }
 function renderProfileSummary(){const p=getProfile();summaryDays.textContent=p.days;summaryKm.textContent=`${p.weeklyKm} km`;summaryFiveK.textContent=p.fiveKGoal||"—";summaryHalf.textContent=p.halfGoal||"—";}
 function nextMonday(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day+7);return ymd(d);}
-function raceForPlanner(){return Object.values(races).filter(r=>daysUntil(r.date)>=0).sort((a,b)=>a.date.localeCompare(b.date))[0]||null;}
+function raceForPlanner(){return getRaceFocus();}
 function plannerReduced(){const form=Number(metricForm.textContent);return Number.isFinite(form)&&form<-15;}
-function makeWeekWorkout(date,name,km,rpe,steps,desc){return{date,name,uploadName:`Jaco - ${name}`,type:"Run",distanceKm:Math.round(km*10)/10,rpe,status:"planned",displaySteps:steps,intervalsDescription:desc};}
+function makeWeekWorkout(date,arg2,arg3,arg4,arg5,arg6,arg7){
+  // Ondersteunt zowel de oude 6-argument vorm als de nieuwere
+  // (date, planType, km, name, steps, description, rpe) vorm.
+  if(arg7!==undefined){
+    const planType=arg2;
+    const km=arg3;
+    const name=arg4;
+    const steps=arg5;
+    const desc=arg6;
+    const rpe=arg7;
+    return{
+      date,
+      name,
+      uploadName:`Jaco - ${name}`,
+      type:"Run",
+      distanceKm:Math.round(Number(km||0)*10)/10,
+      rpe,
+      status:"planned",
+      planType,
+      displaySteps:steps,
+      intervalsDescription:desc
+    };
+  }
+
+  const name=arg2;
+  const km=arg3;
+  const rpe=arg4;
+  const steps=arg5;
+  const desc=arg6;
+
+  return{
+    date,
+    name,
+    uploadName:`Jaco - ${name}`,
+    type:"Run",
+    distanceKm:Math.round(Number(km||0)*10)/10,
+    rpe,
+    status:"planned",
+    displaySteps:steps,
+    intervalsDescription:desc
+  };
+}
 function generatePersonalWeek(){const p=getProfile(),start=nextMonday(),race=raceForPlanner(),reduced=plannerReduced();const target=Math.min(p.maxKm,Math.round(p.weeklyKm*(reduced?.75:1)));let qName="5 × 1000 m VO₂max",qKm=12,qRpe="8/10",qSteps=["3 km inlopen","5 × 1000 m @ 3:28–3:30/km","2 min dribbel","2 km uitlopen"],qDesc=`5 km-specifieke VO2max-training.\n\nWarmup\n- 3km Z1 Pace\n\nMain set 5x\n- 1km 3:28-3:30/km Pace\n- 2m Z1 Pace\n\nCooldown\n- 2km Z1 Pace`;
 if(race&&Number(race.distanceKm)>=10){qName="3 × 2 km drempel";qKm=13;qRpe="7/10";qSteps=["3 km inlopen","3 × 2 km rond drempeltempo","2 min dribbel","2 km uitlopen"];qDesc=`Drempeltraining richting ${race.name}.\n\nWarmup\n- 3km Z1 Pace\n\nMain set 3x\n- 2km 3:42-3:48/km Pace\n- 2m Z1 Pace\n\nCooldown\n- 2km Z1 Pace`;}
 if(reduced){qName="Rustige duurloop met strides";qKm=10;qRpe="5/10";qSteps=["9 km rustig in zone 2","6 × 100 m ontspannen strides indien fris"];qDesc=`Gecontroleerde duurloop wegens vermoeidheidssignalen.\n\nEasy\n- 9km 5:00-5:25/km Pace\n\nStrides 6x\n- 100mtr 3:20-3:30/km Pace\n- 100mtr Z1 Pace`;}
