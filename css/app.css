@@ -771,3 +771,50 @@
       .load-monitor-hero{grid-template-columns:1fr}
       .load-status{justify-self:start}
     }
+
+
+    .coach-diary-card{
+      background:linear-gradient(155deg,rgba(30,42,61,.98),rgba(13,29,44,.98));
+      border-color:#46647d
+    }
+    .diary-workout-context{
+      margin:12px 0;padding:11px 12px;border-radius:13px;
+      background:#0d1928;border:1px solid #29415e;color:var(--muted);
+      line-height:1.45
+    }
+    .diary-workout-context strong{color:var(--text)}
+    .diary-input-grid{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px
+    }
+    .diary-summary-grid{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px
+    }
+    .diary-summary-grid small{
+      display:block;color:var(--muted);margin-top:4px
+    }
+    .diary-recent-label{margin-top:18px}
+    .diary-recent{display:grid;gap:9px}
+    .diary-entry-row{
+      padding:12px;border-radius:13px;background:#0d1928;
+      border:1px solid #29415e
+    }
+    .diary-entry-top{
+      display:flex;justify-content:space-between;gap:12px;align-items:flex-start
+    }
+    .diary-entry-top strong{display:block}
+    .diary-entry-top small{display:block;color:var(--muted);margin-top:3px}
+    .diary-entry-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+    .diary-entry-note{
+      color:var(--muted);font-size:.86rem;line-height:1.4;margin-top:8px
+    }
+    .diary-status-dot{
+      width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px
+    }
+    .diary-status-dot.stable{background:#3bc77b}
+    .diary-status-dot.attention{background:#e8bd50}
+    .diary-status-dot.elevated{background:#e56868}
+    .diary-status-dot.unknown{background:#60748c}
+    @media(max-width:700px){
+      .diary-input-grid{grid-template-columns:1fr}
+      .diary-summary-grid{grid-template-columns:repeat(2,1fr)}
+    }
