@@ -540,6 +540,7 @@ function trainingTypeInfo(type){
 
 function trainingVolumeLabel(workout){
   const info=trainingTypeInfo(workout?.type);
+  if(workout?.distanceLabel) return workout.distanceLabel;
   if(workout?.type==="Swim" && Number(workout?.distanceMeters)>0){
     return `${workout.distanceMeters} m`;
   }
@@ -582,6 +583,8 @@ const UPLOAD_KEY = "jp_uploaded_workouts_v1";
 const RACES_KEY = "jp_races_v1";
 const PROFILE_KEY = "jp_profile_v1";
 const DIARY_KEY = "jp_coach_diary_v1";
+const HM_AMSTERDAM_BLOCK_KEY = "jp_hm_amsterdam_2026_v1_installed";
+const HM_AMSTERDAM_BACKUP_KEY = "jp_hm_amsterdam_2026_v1_backup";
 
 let serverWorkouts = {};
 let customWorkouts = loadObject(STORAGE_KEY);
@@ -594,6 +597,523 @@ let pendingWeekPlan = [];
 let pendingAdaptiveWeek = [];
 let latestWellnessSnapshot = null;
 let exactRunDraft = null;
+
+
+
+const HM_AMSTERDAM_BLOCK_2026={
+  "2026-09-21":{
+    date:"2026-09-21",
+    name:"Rust / wandelen + mobiliteit",
+    uploadName:"Jaco - Rust wandelen mobiliteit",
+    type:"Rest",
+    distanceKm:0,
+    distanceLabel:"Rust",
+    rpe:"—",
+    status:"planned",
+    planType:"rest",
+    displaySteps:[
+      "Rust",
+      "Wandelen",
+      "Mobiliteit"
+    ],
+    intervalsDescription:"",
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-09-22":{
+    date:"2026-09-22",
+    name:"6–8 km zeer rustig",
+    uploadName:"Jaco - 6-8 km zeer rustig",
+    type:"Run",
+    distanceKm:7,
+    distanceLabel:"6–8 km",
+    rpe:"—",
+    status:"planned",
+    planType:"recovery",
+    displaySteps:[
+      "6–8 km zeer rustig @ 4:50–5:15/km"
+    ],
+    intervalsDescription:`Zeer rustige loop.
+
+Easy
+- 7km 4:50-5:15/km Pace
+
+Bronplanning: 6-8 km; 7 km is alleen de interne middenwaarde voor volumeberekening.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-09-23":{
+    date:"2026-09-23",
+    name:"10 km Z2",
+    uploadName:"Jaco - 10 km Z2",
+    type:"Run",
+    distanceKm:10,
+    distanceLabel:"10 km",
+    rpe:"—",
+    status:"planned",
+    planType:"easy",
+    displaySteps:[
+      "10 km Z2 @ ±4:35–4:55/km"
+    ],
+    intervalsDescription:`Zone 2 duurloop.
+
+Easy
+- 10km 4:35-4:55/km Pace`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-09-24":{
+    date:"2026-09-24",
+    name:"Rust",
+    uploadName:"Jaco - Rust",
+    type:"Rest",
+    distanceKm:0,
+    distanceLabel:"Rust",
+    rpe:"—",
+    status:"planned",
+    planType:"rest",
+    displaySteps:["Rust"],
+    intervalsDescription:"",
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-09-25":{
+    date:"2026-09-25",
+    name:"3 × 2 km @ 3:48–3:52/km",
+    uploadName:"Jaco - 3 x 2 km 3:48-3:52",
+    type:"Run",
+    distanceKm:10,
+    distanceLabel:"3 × 2 km + in/uit",
+    rpe:"—",
+    status:"planned",
+    planType:"quality",
+    displaySteps:[
+      "2 km inlopen",
+      "3 × 2 km @ 3:48–3:52/km",
+      "2 min rustig dribbelen",
+      "2 km uitlopen"
+    ],
+    intervalsDescription:`Drempeltraining.
+
+Warmup
+- 2km Z1 Pace
+
+Main set 3x
+- 2km 3:48-3:52/km Pace
+- 2m Z1 Pace
+
+Cooldown
+- 2km Z1 Pace`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-09-26":{
+    date:"2026-09-26",
+    name:"7–8 km easy",
+    uploadName:"Jaco - 7-8 km easy",
+    type:"Run",
+    distanceKm:7.5,
+    distanceLabel:"7–8 km",
+    rpe:"—",
+    status:"planned",
+    planType:"easy",
+    displaySteps:[
+      "7–8 km easy @ 4:45–5:05/km"
+    ],
+    intervalsDescription:`Easy run.
+
+Easy
+- 7.5km 4:45-5:05/km Pace
+
+Bronplanning: 7-8 km; 7,5 km is alleen de interne middenwaarde voor volumeberekening.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-09-27":{
+    date:"2026-09-27",
+    name:"18 km duurloop met snelle finish",
+    uploadName:"Jaco - 18 km duurloop snelle finish",
+    type:"Run",
+    distanceKm:18,
+    distanceLabel:"18 km",
+    rpe:"—",
+    status:"planned",
+    planType:"long",
+    displaySteps:[
+      "12 km easy",
+      "Laatste 6 km @ 4:05–4:10/km"
+    ],
+    intervalsDescription:`Duurloop met gecontroleerde snelle finish.
+
+Easy
+- 12km Z2 Pace
+
+Progression
+- 6km 4:05-4:10/km Pace`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+
+  "2026-09-28":{
+    date:"2026-09-28",
+    name:"Rust",
+    uploadName:"Jaco - Rust",
+    type:"Rest",
+    distanceKm:0,
+    distanceLabel:"Rust",
+    rpe:"—",
+    status:"planned",
+    planType:"rest",
+    displaySteps:["Rust"],
+    intervalsDescription:"",
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-09-29":{
+    date:"2026-09-29",
+    name:"5 × 1 km @ 3:35–3:40/km",
+    uploadName:"Jaco - 5 x 1 km 3:35-3:40",
+    type:"Run",
+    distanceKm:10,
+    distanceLabel:"5 × 1 km + in/uit",
+    rpe:"—",
+    status:"planned",
+    planType:"quality",
+    displaySteps:[
+      "Inlopen",
+      "5 × 1 km @ 3:35–3:40/km",
+      "90 sec jogpauze",
+      "Uitlopen"
+    ],
+    intervalsDescription:`Intervaltraining.
+
+Warmup
+- Z1 Pace
+
+Main set 5x
+- 1km 3:35-3:40/km Pace
+- 90s Z1 Pace
+
+Cooldown
+- Z1 Pace
+
+De bronplanning noemt in- en uitlopen zonder exacte afstand; 10 km is alleen de interne volumewaarde.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-09-30":{
+    date:"2026-09-30",
+    name:"10–12 km Z2",
+    uploadName:"Jaco - 10-12 km Z2",
+    type:"Run",
+    distanceKm:11,
+    distanceLabel:"10–12 km",
+    rpe:"—",
+    status:"planned",
+    planType:"easy",
+    displaySteps:[
+      "10–12 km Z2 @ 4:35–4:55/km"
+    ],
+    intervalsDescription:`Zone 2 duurloop.
+
+Easy
+- 11km 4:35-4:55/km Pace
+
+Bronplanning: 10-12 km; 11 km is alleen de interne middenwaarde voor volumeberekening.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-01":{
+    date:"2026-10-01",
+    name:"8 km easy + strides",
+    uploadName:"Jaco - 8 km easy + 6 x 20 sec strides",
+    type:"Run",
+    distanceKm:8,
+    distanceLabel:"8 km + strides",
+    rpe:"—",
+    status:"planned",
+    planType:"easy",
+    displaySteps:[
+      "8 km easy",
+      "6 × 20 sec strides"
+    ],
+    intervalsDescription:`Easy run met strides.
+
+Easy
+- 8km Z2 Pace
+
+Strides 6x
+- 20s Fast Pace
+- 60s Z1 Pace`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-02":{
+    date:"2026-10-02",
+    name:"Rust",
+    uploadName:"Jaco - Rust",
+    type:"Rest",
+    distanceKm:0,
+    distanceLabel:"Rust",
+    rpe:"—",
+    status:"planned",
+    planType:"rest",
+    displaySteps:["Rust"],
+    intervalsDescription:"",
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-03":{
+    date:"2026-10-03",
+    name:"HM-specifiek · 3 × 3 km",
+    uploadName:"Jaco - HM specifiek 3 x 3 km",
+    type:"Run",
+    distanceKm:11,
+    distanceLabel:"3 × 3 km + 2 × 1 km float",
+    rpe:"—",
+    status:"planned",
+    planType:"quality",
+    displaySteps:[
+      "3 × 3 km @ 3:52–3:54/km",
+      "1 km float @ 4:25–4:35/km tussen de blokken",
+      "Belangrijkste sessie van het blok",
+      "Niet versnellen naar 3:45; beoogd wedstrijdtempo gecontroleerd automatiseren"
+    ],
+    intervalsDescription:`HM-specifieke kerntraining.
+
+Main set
+- 3km 3:52-3:54/km Pace
+- 1km 4:25-4:35/km Pace
+- 3km 3:52-3:54/km Pace
+- 1km 4:25-4:35/km Pace
+- 3km 3:52-3:54/km Pace
+
+Doel: gecontroleerd wedstrijdtempo automatiseren; niet sneller lopen omdat het kan.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-04":{
+    date:"2026-10-04",
+    name:"16–18 km easy",
+    uploadName:"Jaco - 16-18 km easy",
+    type:"Run",
+    distanceKm:17,
+    distanceLabel:"16–18 km",
+    rpe:"—",
+    status:"planned",
+    planType:"long",
+    displaySteps:[
+      "16–18 km easy @ 4:35–4:55/km"
+    ],
+    intervalsDescription:`Rustige duurloop.
+
+Easy
+- 17km 4:35-4:55/km Pace
+
+Bronplanning: 16-18 km; 17 km is alleen de interne middenwaarde voor volumeberekening.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+
+  "2026-10-05":{
+    date:"2026-10-05",
+    name:"Rust",
+    uploadName:"Jaco - Rust",
+    type:"Rest",
+    distanceKm:0,
+    distanceLabel:"Rust",
+    rpe:"—",
+    status:"planned",
+    planType:"rest",
+    displaySteps:["Rust"],
+    intervalsDescription:"",
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-06":{
+    date:"2026-10-06",
+    name:"10 km easy",
+    uploadName:"Jaco - 10 km easy",
+    type:"Run",
+    distanceKm:10,
+    distanceLabel:"10 km",
+    rpe:"—",
+    status:"planned",
+    planType:"easy",
+    displaySteps:["10 km easy"],
+    intervalsDescription:`Easy run.
+
+Easy
+- 10km Z2 Pace`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-07":{
+    date:"2026-10-07",
+    name:"4 × 2 km @ 3:47–3:50/km",
+    uploadName:"Jaco - 4 x 2 km 3:47-3:50",
+    type:"Run",
+    distanceKm:8,
+    distanceLabel:"4 × 2 km",
+    rpe:"—",
+    status:"planned",
+    planType:"quality",
+    displaySteps:[
+      "4 × 2 km @ 3:47–3:50/km",
+      "2 min jog"
+    ],
+    intervalsDescription:`Kwaliteitstraining.
+
+Main set 4x
+- 2km 3:47-3:50/km Pace
+- 2m Z1 Pace
+
+De bronplanning vermeldt geen exacte in- of uitloopafstand.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-08":{
+    date:"2026-10-08",
+    name:"8–10 km herstel",
+    uploadName:"Jaco - 8-10 km herstel",
+    type:"Run",
+    distanceKm:9,
+    distanceLabel:"8–10 km",
+    rpe:"—",
+    status:"planned",
+    planType:"recovery",
+    displaySteps:[
+      "8–10 km herstel @ 4:50–5:10/km"
+    ],
+    intervalsDescription:`Herstelloop.
+
+Recovery
+- 9km 4:50-5:10/km Pace
+
+Bronplanning: 8-10 km; 9 km is alleen de interne middenwaarde voor volumeberekening.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-09":{
+    date:"2026-10-09",
+    name:"Rust óf 6 km zeer rustig",
+    uploadName:"Jaco - Rust of 6 km zeer rustig",
+    type:"Rest",
+    distanceKm:0,
+    distanceLabel:"Rust óf 6 km",
+    rpe:"—",
+    status:"planned",
+    planType:"rest",
+    displaySteps:[
+      "Rust",
+      "Alternatief: 6 km zeer rustig"
+    ],
+    intervalsDescription:"",
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-10":{
+    date:"2026-10-10",
+    name:"HM-test · 2 × 5 km",
+    uploadName:"Jaco - HM test 2 x 5 km",
+    type:"Run",
+    distanceKm:16,
+    distanceLabel:"±16 km",
+    rpe:"—",
+    status:"planned",
+    planType:"quality",
+    displaySteps:[
+      "Inlopen",
+      "5 km @ 3:52–3:54/km",
+      "1 km @ ±4:25/km",
+      "5 km @ 3:52–3:54/km",
+      "Uitlopen tot totaal ±16 km",
+      "Generale repetitie: niet sneller dan 3:52/km",
+      "Doel: tweede blok gecontroleerd zonder duidelijke terugval"
+    ],
+    intervalsDescription:`HM-test / generale repetitie.
+
+Warmup
+- Z1 Pace
+
+Main set
+- 5km 3:52-3:54/km Pace
+- 1km 4:25/km Pace
+- 5km 3:52-3:54/km Pace
+
+Cooldown
+- Z1 Pace
+
+Totaal volgens bronplanning circa 16 km. Niet sneller dan 3:52/km.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-11":{
+    date:"2026-10-11",
+    name:"12–14 km zeer rustig",
+    uploadName:"Jaco - 12-14 km zeer rustig",
+    type:"Run",
+    distanceKm:13,
+    distanceLabel:"12–14 km",
+    rpe:"—",
+    status:"planned",
+    planType:"recovery",
+    displaySteps:[
+      "12–14 km zeer rustig"
+    ],
+    intervalsDescription:`Zeer rustige duurloop.
+
+Recovery
+- 13km Z1-Z2 Pace
+
+Bronplanning: 12-14 km; 13 km is alleen de interne middenwaarde voor volumeberekening.`,
+    sourcePlan:"HM Amsterdam 2026",
+    sourcePlanVersion:"hm-amsterdam-2026-v1",
+    importedPlan:true
+  }
+};
+
+function installHmAmsterdamBlock2026(){
+  if(localStorage.getItem(HM_AMSTERDAM_BLOCK_KEY)==="1"){
+    return;
+  }
+
+  const backup={};
+
+  Object.entries(HM_AMSTERDAM_BLOCK_2026).forEach(([date,workout])=>{
+    if(customWorkouts[date]){
+      backup[date]=clone(customWorkouts[date]);
+    }
+    customWorkouts[date]=clone(workout);
+  });
+
+  if(Object.keys(backup).length){
+    saveObject(HM_AMSTERDAM_BACKUP_KEY,backup);
+  }
+
+  saveObject(STORAGE_KEY,customWorkouts);
+  localStorage.setItem(HM_AMSTERDAM_BLOCK_KEY,"1");
+}
 
 
 function diaryNumber(value){
