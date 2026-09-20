@@ -169,6 +169,7 @@ document.getElementById("fullSeasonStart").value=nextMonday();
 async function initializeJacoPerformance(){
   repairStoredWorkoutMismatches();
   installHmAmsterdamBlock2026();
+  installHmAmsterdamRaceweek2026();
   const greeting=document.getElementById("greeting");
   if(greeting){
     greeting.textContent=
