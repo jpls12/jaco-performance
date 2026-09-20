@@ -585,6 +585,8 @@ const PROFILE_KEY = "jp_profile_v1";
 const DIARY_KEY = "jp_coach_diary_v1";
 const HM_AMSTERDAM_BLOCK_KEY = "jp_hm_amsterdam_2026_v1_installed";
 const HM_AMSTERDAM_BACKUP_KEY = "jp_hm_amsterdam_2026_v1_backup";
+const HM_AMSTERDAM_RACEWEEK_KEY = "jp_hm_amsterdam_2026_raceweek_v1_installed";
+const HM_AMSTERDAM_RACEWEEK_BACKUP_KEY = "jp_hm_amsterdam_2026_raceweek_v1_backup";
 
 let serverWorkouts = {};
 let customWorkouts = loadObject(STORAGE_KEY);
@@ -1113,6 +1115,191 @@ function installHmAmsterdamBlock2026(){
 
   saveObject(STORAGE_KEY,customWorkouts);
   localStorage.setItem(HM_AMSTERDAM_BLOCK_KEY,"1");
+}
+
+
+const HM_AMSTERDAM_RACEWEEK_2026={
+  "2026-10-12":{
+    date:"2026-10-12",
+    name:"Rust",
+    uploadName:"Jaco - Rust",
+    type:"Rest",
+    distanceKm:0,
+    distanceLabel:"Rust",
+    rpe:"—",
+    status:"planned",
+    planType:"rest",
+    displaySteps:["Rust"],
+    intervalsDescription:"",
+    sourcePlan:"HM Amsterdam 2026 · raceweek",
+    sourcePlanVersion:"hm-amsterdam-raceweek-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-13":{
+    date:"2026-10-13",
+    name:"8 km easy + strides",
+    uploadName:"Jaco - 8 km easy + 4 x 20 sec strides",
+    type:"Run",
+    distanceKm:8,
+    distanceLabel:"8 km + strides",
+    rpe:"—",
+    status:"planned",
+    planType:"easy",
+    displaySteps:[
+      "8 km easy",
+      "4 × 20 sec strides"
+    ],
+    intervalsDescription:`Raceweek easy run met strides.
+
+Easy
+- 8km Z2 Pace
+
+Strides 4x
+- 20s Fast Pace
+- 60s Z1 Pace`,
+    sourcePlan:"HM Amsterdam 2026 · raceweek",
+    sourcePlanVersion:"hm-amsterdam-raceweek-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-14":{
+    date:"2026-10-14",
+    name:"3 × 1,5 km @ 3:50–3:53/km",
+    uploadName:"Jaco - 3 x 1.5 km 3:50-3:53",
+    type:"Run",
+    distanceKm:8,
+    distanceLabel:"3 × 1,5 km + jog",
+    rpe:"—",
+    status:"planned",
+    planType:"quality",
+    displaySteps:[
+      "3 × 1,5 km @ 3:50–3:53/km",
+      "2 min jog tussen de blokken"
+    ],
+    intervalsDescription:`Raceweek kwaliteitstraining.
+
+Warmup
+- Z1 Pace
+
+Main set 3x
+- 1.5km 3:50-3:53/km Pace
+- 2m Z1 Pace
+
+Cooldown
+- Z1 Pace
+
+De bronplanning noemt geen exacte in- en uitloopafstand; 8 km is alleen de interne volumewaarde.`,
+    sourcePlan:"HM Amsterdam 2026 · raceweek",
+    sourcePlanVersion:"hm-amsterdam-raceweek-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-15":{
+    date:"2026-10-15",
+    name:"6–8 km zeer rustig",
+    uploadName:"Jaco - 6-8 km zeer rustig",
+    type:"Run",
+    distanceKm:7,
+    distanceLabel:"6–8 km",
+    rpe:"—",
+    status:"planned",
+    planType:"recovery",
+    displaySteps:[
+      "6–8 km zeer rustig"
+    ],
+    intervalsDescription:`Zeer rustige raceweekloop.
+
+Recovery
+- 7km Z1-Z2 Pace
+
+Bronplanning: 6-8 km; 7 km is alleen de interne middenwaarde voor volumeberekening.`,
+    sourcePlan:"HM Amsterdam 2026 · raceweek",
+    sourcePlanVersion:"hm-amsterdam-raceweek-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-16":{
+    date:"2026-10-16",
+    name:"Rust",
+    uploadName:"Jaco - Rust",
+    type:"Rest",
+    distanceKm:0,
+    distanceLabel:"Rust",
+    rpe:"—",
+    status:"planned",
+    planType:"rest",
+    displaySteps:["Rust"],
+    intervalsDescription:"",
+    sourcePlan:"HM Amsterdam 2026 · raceweek",
+    sourcePlanVersion:"hm-amsterdam-raceweek-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-17":{
+    date:"2026-10-17",
+    name:"4–5 km loslopen + strides",
+    uploadName:"Jaco - 4-5 km loslopen + 4 x 15 sec strides",
+    type:"Run",
+    distanceKm:4.5,
+    distanceLabel:"4–5 km + strides",
+    rpe:"—",
+    status:"planned",
+    planType:"easy",
+    displaySteps:[
+      "4–5 km loslopen",
+      "4 × 15 sec strides"
+    ],
+    intervalsDescription:`Loslopen voor de halve marathon.
+
+Easy
+- 4.5km Z1-Z2 Pace
+
+Strides 4x
+- 15s Fast Pace
+- 60s Z1 Pace
+
+Bronplanning: 4-5 km; 4,5 km is alleen de interne middenwaarde voor volumeberekening.`,
+    sourcePlan:"HM Amsterdam 2026 · raceweek",
+    sourcePlanVersion:"hm-amsterdam-raceweek-2026-v1",
+    importedPlan:true
+  },
+  "2026-10-18":{
+    date:"2026-10-18",
+    name:"Halve Marathon Amsterdam",
+    uploadName:"Halve Marathon Amsterdam",
+    type:"Race",
+    distanceKm:21.0975,
+    distanceLabel:"Halve marathon",
+    rpe:"10/10",
+    status:"planned",
+    planType:"race",
+    displaySteps:[
+      "Halve Marathon Amsterdam",
+      "Raceweek-doel uit bronplanning: 1:22"
+    ],
+    intervalsDescription:"",
+    sourcePlan:"HM Amsterdam 2026 · raceweek",
+    sourcePlanVersion:"hm-amsterdam-raceweek-2026-v1",
+    importedPlan:true
+  }
+};
+
+function installHmAmsterdamRaceweek2026(){
+  if(localStorage.getItem(HM_AMSTERDAM_RACEWEEK_KEY)==="1"){
+    return;
+  }
+
+  const backup={};
+
+  Object.entries(HM_AMSTERDAM_RACEWEEK_2026).forEach(([date,workout])=>{
+    if(customWorkouts[date]){
+      backup[date]=clone(customWorkouts[date]);
+    }
+    customWorkouts[date]=clone(workout);
+  });
+
+  if(Object.keys(backup).length){
+    saveObject(HM_AMSTERDAM_RACEWEEK_BACKUP_KEY,backup);
+  }
+
+  saveObject(STORAGE_KEY,customWorkouts);
+  localStorage.setItem(HM_AMSTERDAM_RACEWEEK_KEY,"1");
 }
 
 
