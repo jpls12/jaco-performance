@@ -45,10 +45,18 @@ export default async function handler(req, res) {
   }
 
   const apiKey = process.env.INTERVALS_API_KEY;
+  const appPin = process.env.JACO_APP_PIN;
 
-  if (!apiKey) {
+  if (!apiKey || !appPin) {
     return sendJson(res, 500, {
-      error: "INTERVALS_API_KEY ontbreekt in Vercel."
+      error: "INTERVALS_API_KEY of JACO_APP_PIN ontbreekt in Vercel."
+    });
+  }
+
+  const providedPin = req.headers["x-jaco-pin"];
+  if (String(providedPin ?? "") !== String(appPin)) {
+    return sendJson(res, 401, {
+      error: "App-pincode is nodig voor persoonlijke wellnessdata."
     });
   }
 
