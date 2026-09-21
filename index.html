@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=820">
+  <link rel="stylesheet" href="/css/app.css?v=830">
 </head>
 <body>
 <main>
@@ -29,7 +29,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 8.2.2 · HM Amsterdam raceweek</span>
+      <span class="v2-badge">Jaco Performance 8.3 · Backup & Herstel</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -922,6 +922,108 @@
     <article class="card">
       <div id="workoutCard"><p class="subtitle">Trainingen laden…</p></div>
     </article>
+
+
+    <article class="card data-sync-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 8.3 · Backup & Herstel</p>
+          <h2>Neem je appdata veilig mee</h2>
+          <p class="help">
+            Maak op je iPhone een backupbestand en importeer dat later op een ander
+            toestel. Voor iedere import maakt de app automatisch eerst een lokaal
+            herstelpunt van de huidige gegevens.
+          </p>
+        </div>
+        <span class="pill">Lokaal · handmatig</span>
+      </div>
+
+      <div class="backup-metrics">
+        <div class="today-metric">
+          <span>Eigen trainingen</span>
+          <strong id="backupCurrentWorkouts">—</strong>
+          <small>lokale kalenderitems</small>
+        </div>
+        <div class="today-metric">
+          <span>Wedstrijden</span>
+          <strong id="backupCurrentRaces">—</strong>
+          <small>lokale racekalender</small>
+        </div>
+        <div class="today-metric">
+          <span>Dagboek</span>
+          <strong id="backupCurrentDiary">—</strong>
+          <small>coach check-ins</small>
+        </div>
+        <div class="today-metric">
+          <span>Herstelpunt</span>
+          <strong id="backupSafetyState">—</strong>
+          <small id="backupSafetyDate">nog niet gemaakt</small>
+        </div>
+      </div>
+
+      <div class="backup-actions">
+        <button id="exportLocalBackup" type="button">Maak backupbestand</button>
+        <button id="chooseBackupFile" class="secondary" type="button">Kies backup om te importeren</button>
+        <input id="backupFileInput" type="file" accept=".json,application/json" hidden>
+      </div>
+
+      <div class="data-integrity-box">
+        <div class="data-integrity-head">
+          <span>Wat zit erin?</span>
+          <strong>Alle Jaco Performance-data op dit toestel</strong>
+        </div>
+        <div class="help">
+          Trainingen, voltooid-status, races, profiel, coachdagboek, uploadstatus en
+          app-importgegevens. Je Intervals.icu API-key en app-pincode staan server-side
+          en worden niet in dit backupbestand opgenomen.
+        </div>
+      </div>
+
+      <div id="backupImportPanel" class="backup-import-panel" hidden>
+        <p class="label">Importpreview</p>
+        <h3 id="backupImportName">Backupbestand</h3>
+        <p id="backupImportMeta" class="help"></p>
+
+        <div class="backup-preview-grid">
+          <div><span>Trainingen</span><strong id="backupImportWorkouts">0</strong></div>
+          <div><span>Wedstrijden</span><strong id="backupImportRaces">0</strong></div>
+          <div><span>Dagboek</span><strong id="backupImportDiary">0</strong></div>
+          <div><span>Voltooid</span><strong id="backupImportDone">0</strong></div>
+          <div><span>Uploads</span><strong id="backupImportUploaded">0</strong></div>
+          <div><span>Profiel</span><strong id="backupImportProfile">—</strong></div>
+        </div>
+
+        <label>Importmethode
+          <select id="backupImportMode">
+            <option value="merge" selected>Veilig samenvoegen</option>
+            <option value="replace">Volledig vervangen</option>
+          </select>
+        </label>
+        <p id="backupImportModeHelp" class="help">
+          Bestaande en geïmporteerde gegevens worden gecombineerd. Bij dezelfde sleutel wint het backupbestand.
+        </p>
+
+        <div class="today-actions">
+          <button id="applyBackupImport" type="button">Importeer deze backup</button>
+          <button id="cancelBackupImport" class="secondary" type="button">Annuleer</button>
+        </div>
+      </div>
+
+      <div class="backup-restore-row">
+        <div>
+          <strong>Laatste automatische veiligheidskopie</strong>
+          <p class="help">
+            Hiermee kun je de toestand van vóór je laatste import terugzetten.
+          </p>
+        </div>
+        <button id="restoreSafetyBackup" class="secondary" type="button" disabled>
+          Herstel veiligheidskopie
+        </button>
+      </div>
+
+      <p id="backupStatus" class="status"></p>
+    </article>
+
   </section>
 
   <section id="editor" class="view">
@@ -1677,8 +1779,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=822" defer></script>
-<script src="/js/bootstrap.js?v=822" defer></script>
+<script src="/js/app.js?v=830" defer></script>
+<script src="/js/bootstrap.js?v=830" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
