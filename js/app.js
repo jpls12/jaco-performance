@@ -432,7 +432,7 @@ function saveCompletedVisualWorkout(){
   };
 
   customWorkouts[date]=workout;
-  doneWorkouts[date]=true;
+  markWorkoutCompleted(date,workout);
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
 
@@ -613,6 +613,7 @@ const HM_AMSTERDAM_RACEWEEK_BACKUP_KEY = "jp_hm_amsterdam_2026_raceweek_v1_backu
 const PREIMPORT_BACKUP_KEY = "jp_last_preimport_backup_v1";
 const BACKUP_FORMAT = "jaco-performance-backup";
 const BACKUP_SCHEMA_VERSION = 1;
+const SESSION_PIN_KEY = "jaco_performance_session_pin_v1";
 
 let serverWorkouts = {};
 let customWorkouts = loadObject(STORAGE_KEY);
@@ -1907,6 +1908,10 @@ function weekdayIndexFromDate(dateString){
   return day===0?6:day-1;
 }
 
+function isRunLikeWorkout(workout){
+  return ["Run","Race"].includes(String(workout?.type||""));
+}
+
 function isHardWorkout(workout){
   const type=String(workout?.planType||"").toLowerCase();
   const rpe=Number(String(workout?.rpe||"0").split("/")[0])||0;
@@ -2371,6 +2376,83 @@ function saveObject(key,value){
   localStorage.setItem(key,JSON.stringify(value));
 }
 
+
+function readSessionAppPin(){
+  try{
+    return sessionStorage.getItem(SESSION_PIN_KEY) || "";
+  }catch{
+    return "";
+  }
+}
+
+function rememberSessionAppPin(pin){
+  try{
+    if(pin) sessionStorage.setItem(SESSION_PIN_KEY,String(pin));
+  }catch{
+    // De app blijft bruikbaar als sessionStorage niet beschikbaar is.
+  }
+}
+
+function clearSessionAppPin(){
+  try{
+    sessionStorage.removeItem(SESSION_PIN_KEY);
+  }catch{
+    // Geen actie nodig.
+  }
+}
+
+function promptForAppPin(message="Voer je Jaco Performance app-pincode in:"){
+  const pin=prompt(message);
+  if(pin===null) return null;
+  const value=String(pin).trim();
+  return value || null;
+}
+
+async function fetchWithAppPin(url,options={}){
+  let pin=readSessionAppPin();
+
+  if(!pin){
+    pin=promptForAppPin();
+    if(!pin){
+      throw new Error("App-pincode is nodig om Intervals.icu-data te openen.");
+    }
+  }
+
+  const send=currentPin=>fetch(url,{
+    ...options,
+    headers:{
+      ...(options.headers||{}),
+      "X-Jaco-Pin":currentPin
+    }
+  });
+
+  let response=await send(pin);
+
+  if(response.status===401){
+    clearSessionAppPin();
+
+    const retryPin=promptForAppPin("Onjuiste pincode. Probeer opnieuw:");
+    if(!retryPin) return response;
+
+    response=await send(retryPin);
+
+    if(response.ok){
+      rememberSessionAppPin(retryPin);
+    }else if(response.status===401){
+      clearSessionAppPin();
+    }
+
+    return response;
+  }
+
+  if(response.ok){
+    rememberSessionAppPin(pin);
+  }
+
+  return response;
+}
+
+
 function isPlainBackupObject(value){
   return Boolean(
     value &&
@@ -2407,7 +2489,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"8.3.2",
+    appVersion:"8.3.3",
     createdAt:new Date().toISOString(),
     data
   };
@@ -2904,6 +2986,99 @@ function restoreLastSafetyBackup(){
 }
 
 
+
+function workoutCompletionIdentity(workout){
+  if(!workout) return "";
+  return JSON.stringify([
+    String(workout.type||""),
+    String(workout.name||""),
+    finiteNumberOrNull(workout.distanceKm),
+    finiteNumberOrNull(workout.durationMinutes),
+    String(workout.sourcePlanVersion||"")
+  ]);
+}
+
+function completionMarkerMatches(marker,workout){
+  if(!marker || !workout) return false;
+
+  // Legacy booleans worden bij startup gemigreerd naar een workoutgebonden marker.
+  if(marker===true) return true;
+  if(marker===false) return false;
+
+  if(!isPlainBackupObject(marker) || marker.done===false) return false;
+
+  if(marker.identity){
+    return marker.identity===workoutCompletionIdentity(workout);
+  }
+
+  return String(marker.name||"")===String(workout.name||"") &&
+    String(marker.type||"")===String(workout.type||"");
+}
+
+function markWorkoutCompleted(date,workout){
+  doneWorkouts[date]={
+    done:true,
+    identity:workoutCompletionIdentity(workout),
+    name:String(workout?.name||""),
+    type:String(workout?.type||""),
+    markedAt:new Date().toISOString()
+  };
+}
+
+function workoutUploadFingerprint(workout){
+  if(!workout) return "";
+  return JSON.stringify([
+    String(workout.name||""),
+    String(workout.type||""),
+    finiteNumberOrNull(workout.distanceKm),
+    finiteNumberOrNull(workout.durationMinutes),
+    String(workout.rpe||""),
+    Array.isArray(workout.displaySteps)?workout.displaySteps:[],
+    String(workout.intervalsDescription||"")
+  ]);
+}
+
+function workoutUploadIsCurrent(date,workout){
+  const record=uploadedWorkouts[date];
+  if(!record || !workout) return false;
+
+  if(record.fingerprint){
+    return record.fingerprint===workoutUploadFingerprint(workout);
+  }
+
+  // Backwards compatibility voor uploadrecords van vóór 8.3.3.
+  return String(record.name||"")===String(workout.name||"");
+}
+
+function upgradeCompletionMarkers(){
+  let changed=false;
+
+  Object.entries(doneWorkouts).forEach(([date,marker])=>{
+    if(marker===false || marker===null){
+      delete doneWorkouts[date];
+      changed=true;
+      return;
+    }
+
+    if(marker===true){
+      const workout=allWorkouts()[date];
+      if(workout){
+        markWorkoutCompleted(date,workout);
+      }else{
+        delete doneWorkouts[date];
+      }
+      changed=true;
+    }
+  });
+
+  if(changed){
+    saveObject(DONE_KEY,doneWorkouts);
+    renderMonth();
+    renderSelected();
+  }
+}
+
+
 function allWorkouts(){
   const raceWorkouts = Object.fromEntries(
     Object.values(races).map(race => [
@@ -2986,7 +3161,7 @@ function switchView(id){
 }
 
 function workoutState(date,workout){
-  if(doneWorkouts[date] || workout?.status==="done") return "done";
+  if(workoutWasCompleted(date,workout)) return "done";
   if(workout?.type==="Race" || /wedstrijd|race/i.test(workout?.name || "")) return "race";
   if(customWorkouts[date]) return "custom";
   return "planned";
@@ -3015,7 +3190,7 @@ function renderMonth(){
     const isToday=date===ymd(today);
     const isSelected=date===selectedDate;
     const state=workout ? workoutState(date,workout) : "";
-    const uploaded=uploadedWorkouts[date] ? "uploaded" : "";
+    const uploaded=workoutUploadIsCurrent(date,workout) ? "uploaded" : "";
 
     html+=`
       <button class="day ${isToday?"today":""} ${isSelected?"selected":""}"
@@ -3050,7 +3225,7 @@ function renderSelected(){
   const isCustom=!isCalendarRace && Boolean(customWorkouts[selectedDate]);
   const isServer=!isCalendarRace && !isCustom && Boolean(serverWorkouts[selectedDate]);
   const done=workoutState(selectedDate,workout)==="done";
-  const uploaded=Boolean(uploadedWorkouts[selectedDate]);
+  const uploaded=workoutUploadIsCurrent(selectedDate,workout);
 
   card.innerHTML=`
     <p class="label">${fullDate.format(new Date(selectedDate+"T12:00:00"))}</p>
@@ -3115,8 +3290,18 @@ function selectDate(date){
 }
 
 function toggleDone(){
-  const isNowDone=!doneWorkouts[selectedDate];
-  doneWorkouts[selectedDate]=isNowDone;
+  const workout=allWorkouts()[selectedDate];
+  if(!workout) return;
+
+  const isCurrentlyDone=workoutWasCompleted(selectedDate,workout);
+  const isNowDone=!isCurrentlyDone;
+
+  if(isNowDone){
+    markWorkoutCompleted(selectedDate,workout);
+  }else{
+    delete doneWorkouts[selectedDate];
+  }
+
   saveObject(DONE_KEY,doneWorkouts);
   renderMonth();
   renderSelected();
@@ -3140,20 +3325,20 @@ async function uploadSelected(){
     return;
   }
 
-  const pin=prompt("Voer je Jaco Performance app-pincode in:");
-  if(pin===null) return;
+  const pin=readSessionAppPin() || promptForAppPin();
+  if(!pin) return;
 
   const status=document.getElementById("uploadStatus");
   if(!status) return;
 
-  const wasUploaded=Boolean(uploadedWorkouts[selectedDate]);
+  const wasUploaded=workoutUploadIsCurrent(selectedDate,workout);
   status.className="status";
   status.textContent=wasUploaded
     ?"Workout wordt bijgewerkt in Intervals.icu…"
     :"Workout wordt verstuurd naar Intervals.icu…";
 
   try{
-    const payload={workoutDate:selectedDate,pin};
+    const payload={workoutDate:selectedDate};
     if(customWorkouts[selectedDate]){
       const customWorkout=JSON.parse(JSON.stringify(workout));
 
@@ -3175,7 +3360,7 @@ async function uploadSelected(){
       payload.customWorkout=customWorkout;
     }
 
-    const response=await fetch("/api/upload-workout",{
+    const response=await fetchWithAppPin("/api/upload-workout",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify(payload)
@@ -3190,7 +3375,8 @@ async function uploadSelected(){
       uploadedAt:new Date().toISOString(),
       name:workout.name,
       externalId:data.externalId||`jaco-performance-${selectedDate}`,
-      eventId:data.eventId??null
+      eventId:data.eventId??null,
+      fingerprint:workoutUploadFingerprint(workout)
     };
     saveObject(UPLOAD_KEY,uploadedWorkouts);
 
@@ -4701,7 +4887,7 @@ function renderSaved(){
             · ${trainingVolumeLabel(workout)}
             · ${trainingTypeInfo(workout.type).label}
             · RPE ${safe(workout.rpe)}
-            ${uploadedWorkouts[date] ? " · In Intervals ✓" : ""}
+            ${workoutUploadIsCurrent(date,workout) ? " · In Intervals ✓" : ""}
           </small>
         </div>
       </div>
@@ -6181,8 +6367,32 @@ function deleteRace(id){
   if(!race) return;
   if(!confirm(`Wedstrijd "${race.name}" verwijderen?`)) return;
 
+  const date=race.date;
+  const visibleWorkout=allWorkouts()[date]||null;
+  const hiddenCustom=customWorkouts[date]||null;
+
   delete races[id];
+
+  // Een door een schema-import aangemaakte racefallback hoort bij dezelfde
+  // racedag en mag na expliciet verwijderen niet opnieuw zichtbaar worden.
+  if(
+    hiddenCustom?.type==="Race" &&
+    hiddenCustom?.importedPlan
+  ){
+    delete customWorkouts[date];
+  }
+
+  if(
+    visibleWorkout?.type==="Race" &&
+    completionMarkerMatches(doneWorkouts[date],visibleWorkout)
+  ){
+    delete doneWorkouts[date];
+  }
+
   saveObject(RACES_KEY,races);
+  saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+
   renderRaces();
   renderRaceOptions();
   renderRaceSimulator();
@@ -6910,7 +7120,7 @@ async function loadWellnessDashboard(){
     "Intervals.icu-data wordt geladen…";
 
   try{
-    const response=await fetch("/api/intervals-status");
+    const response=await fetchWithAppPin("/api/intervals-status");
     const data=await response.json();
 
     if(!response.ok){
@@ -7199,17 +7409,43 @@ function scheduleByAvailability(workouts,startDate=nextMonday(),daysOverride=nul
 
   const p=getProfile();
   if(p.autoCore){
-    const coreDay=days.find(d=>
-      !used.has(d.index) && ["core","mobiliteit","rustig"].includes(d.preference)
+    const supportDay=days.find(d=>
+      !used.has(d.index) &&
+      ["core","mobiliteit","rustig"].includes(d.preference)
     );
 
-    if(coreDay){
-      const minutes=Math.min(20,Math.max(10,coreDay.maxMinutes||15));
-      scheduled.push(makeCoreWorkout(
-        addDays(start,coreDay.index),
-        minutes,
-        coreDay.priority
-      ));
+    if(supportDay){
+      const date=addDays(start,supportDay.index);
+      const minutes=Math.min(20,Math.max(10,supportDay.maxMinutes||15));
+
+      const supportWorkout=
+        supportDay.preference==="mobiliteit"
+          ?{
+              date,
+              type:"Mobility",
+              distanceKm:0,
+              durationMinutes:minutes,
+              name:"Mobiliteit en herstel",
+              uploadName:"Jaco - Mobiliteit en herstel",
+              rpe:"2/10",
+              status:"planned",
+              priority:supportDay.priority||"could",
+              planType:"mobility",
+              displaySteps:[
+                "Heupmobiliteit",
+                "Enkelmobiliteit",
+                "Hamstrings en bilspieren",
+                "Borstrotaties"
+              ],
+              intervalsDescription:"Mobiliteit en herstel."
+            }
+          :makeCoreWorkout(
+              date,
+              minutes,
+              supportDay.priority||"could"
+            );
+
+      scheduled.push(supportWorkout);
     }
   }
 
@@ -8152,18 +8388,18 @@ function renderPerformanceTrend(days=activeTrendDays){
 
 
 function workoutWasCompleted(date,workout){
-  return Boolean(doneWorkouts[date]) ||
+  return completionMarkerMatches(doneWorkouts[date],workout) ||
     ["done","completed","voltooid"].includes(
       String(workout?.status||"").toLowerCase()
     );
 }
 
 function completedWorkoutEntriesBetween(minDaysAgo,maxDaysAgo){
-  return Object.entries({...serverWorkouts,...customWorkouts})
+  return Object.entries(allWorkouts())
     .map(([date,workout])=>({date,workout}))
     .filter(item=>{
       if(!item.workout) return false;
-      if(["Race","Rest"].includes(item.workout.type)) return false;
+      if(item.workout.type==="Rest") return false;
       if(!workoutWasCompleted(item.date,item.workout)) return false;
 
       const age=calendarDayDifference(todayDateString(),item.date);
@@ -8177,7 +8413,7 @@ function completedWorkoutEntries(days){
 
 function runKmFromEntries(entries){
   return entries
-    .filter(item=>item.workout.type==="Run")
+    .filter(item=>isRunLikeWorkout(item.workout))
     .reduce(
       (sum,item)=>sum+(Number(item.workout.distanceKm)||0),
       0
@@ -8187,7 +8423,7 @@ function runKmFromEntries(entries){
 function maxRunStreak(entries){
   const dates=[...new Set(
     entries
-      .filter(item=>item.workout.type==="Run")
+      .filter(item=>isRunLikeWorkout(item.workout))
       .map(item=>item.date)
   )].sort();
 
@@ -8213,7 +8449,7 @@ function maxRunStreak(entries){
 function minimumHardSessionGap(entries){
   const hard=entries
     .filter(item=>
-      item.workout.type==="Run" &&
+      isRunLikeWorkout(item.workout) &&
       isHardWorkout(item.workout)
     )
     .sort((a,b)=>a.date.localeCompare(b.date));
@@ -8286,7 +8522,7 @@ function buildLoadMonitor(){
   const hard=minimumHardSessionGap(last7);
   const streak=maxRunStreak(last14);
 
-  const runEntries7=last7.filter(item=>item.workout.type==="Run");
+  const runEntries7=last7.filter(item=>isRunLikeWorkout(item.workout));
   const longestRunKm=runEntries7.length
     ?Math.max(...runEntries7.map(item=>Number(item.workout.distanceKm)||0))
     :null;
@@ -8624,11 +8860,11 @@ function renderLoadMonitor(){
 }
 
 function historicalWorkoutEntries(days){
-  return Object.entries({...serverWorkouts,...customWorkouts})
+  return Object.entries(allWorkouts())
     .map(([date,workout])=>({date,workout}))
     .filter(item=>{
       if(!item.workout) return false;
-      if(["Race","Rest"].includes(item.workout.type)) return false;
+      if(item.workout.type==="Rest") return false;
       if(!workoutWasCompleted(item.date,item.workout)) return false;
 
       const age=calendarDayDifference(todayDateString(),item.date);
@@ -8638,15 +8874,10 @@ function historicalWorkoutEntries(days){
 
 function historySummary(days){
   const entries=historicalWorkoutEntries(days);
-  const runEntries=entries.filter(item=>item.workout.type==="Run");
+  const runEntries=entries.filter(item=>isRunLikeWorkout(item.workout));
   const runKm=runEntries.reduce((sum,item)=>sum+(Number(item.workout.distanceKm)||0),0);
 
-  const quality=runEntries.filter(item=>{
-    const type=String(item.workout.planType||"").toLowerCase();
-    const name=String(item.workout.name||"").toLowerCase();
-    return["quality","threshold","vo2"].includes(type) ||
-      /interval|vo₂|vo2|drempel|threshold|tempo|400|1000|2000/.test(name);
-  });
+  const quality=runEntries.filter(item=>isHardWorkout(item.workout));
 
   const longRuns=runEntries.filter(item=>{
     const type=String(item.workout.planType||"").toLowerCase();
@@ -9701,43 +9932,6 @@ function assignAiWeekToAvailability(context,unscheduled,variant=0){
     context.start,
     context.availability
   );
-  scheduled=applyRaceCalendarToWeek(context,scheduled);
-
-  // Add core or mobility only if a free available day remains.
-  const usedDates=new Set(scheduled.map(workout=>workout.date));
-  const freeDay=context.availability.find(day=>{
-    const date=addDays(context.start,day.index);
-    return !usedDates.has(date) &&
-      ["core","mobiliteit","rustig"].includes(day.preference);
-  });
-
-  if(freeDay && context.profile.autoCore){
-    const date=addDays(context.start,freeDay.index);
-    const extra=freeDay.preference==="mobiliteit"
-      ? {
-          date,type:"Mobility",distanceKm:0,
-          durationMinutes:Math.min(freeDay.maxMinutes||15,20),
-          name:"Mobiliteit en herstel",
-          uploadName:"Jaco - Mobiliteit en herstel",
-          rpe:"2/10",status:"planned",
-          priority:freeDay.priority||"could",
-          planType:"mobility",
-          displaySteps:[
-            "Heupmobiliteit",
-            "Enkelmobiliteit",
-            "Hamstrings en bilspieren",
-            "Borstrotaties"
-          ],
-          intervalsDescription:"Mobiliteit en herstel."
-        }
-      : makeCoreWorkout(
-          date,
-          Math.min(freeDay.maxMinutes||15,20),
-          freeDay.priority||"could"
-        );
-
-    scheduled.push(extra);
-  }
 
   scheduled=applyRaceCalendarToWeek(context,scheduled);
   scheduled.sort((a,b)=>a.date.localeCompare(b.date));
@@ -10276,9 +10470,9 @@ function clampScore(value){
 }
 
 function calculateConsistencyScore(){
-  const workouts=Object.entries({...serverWorkouts,...customWorkouts})
+  const workouts=Object.entries(allWorkouts())
     .filter(([date,workout])=>{
-      if(!workout || workout.type==="Race" || workout.type==="Rest") return false;
+      if(!workout || workout.type==="Rest") return false;
 
       const age=calendarDayDifference(todayDateString(),date);
       // Vandaag telt pas mee nadat de dag voorbij is; anders zou een nog
@@ -10296,9 +10490,7 @@ function calculateConsistencyScore(){
   }
 
   const completed=workouts.filter(([date,workout])=>
-    Boolean(doneWorkouts[date]) ||
-    workout.status==="done" ||
-    workout.status==="completed"
+    workoutWasCompleted(date,workout)
   ).length;
 
   const ratio=completed/workouts.length;
@@ -10629,6 +10821,16 @@ function createTodayRecommendation(readiness,race,phase,availability,currentWork
       workout:currentWorkout,
       title:currentWorkout.name,
       text:"Vandaag is een wedstrijddag. De coach vervangt je wedstrijd niet automatisch door een andere training.",
+      steps:currentWorkout.displaySteps||[]
+    };
+  }
+
+  if(currentWorkout && !availability.available){
+    return{
+      kind:"keep",
+      workout:currentWorkout,
+      title:currentWorkout.name,
+      text:"Je terugkerende beschikbaarheid staat vandaag op niet beschikbaar, maar er staat al expliciet een training in je kalender. De coach wijzigt die niet automatisch; verplaats hem als je vandaag echt niet kunt trainen.",
       steps:currentWorkout.displaySteps||[]
     };
   }
