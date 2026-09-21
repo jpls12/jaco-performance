@@ -6305,6 +6305,7 @@ function saveRace(event){
   };
 
   saveObject(RACES_KEY,races);
+  resetGeneratedPlannerPreviews();
   document.getElementById("raceFormStatus").className="status ok";
   document.getElementById("raceFormStatus").textContent=
     existingId ? "Wedstrijd bijgewerkt." : "Wedstrijd toegevoegd aan de kalender.";
@@ -6315,10 +6316,10 @@ function saveRace(event){
   renderRaceCalendarOptimizer();
   renderSeasonPlanner();
   renderFullSeasonTargetOptions();
-  pendingFullSeasonSchedule=null;
   renderFullSeasonSchedulePreview();
   renderMonth();
   renderSelected();
+  refreshDerivedCoachViews();
 }
 
 function editRace(id){
@@ -6377,6 +6378,7 @@ function deleteRace(id){
   saveObject(RACES_KEY,races);
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
+  resetGeneratedPlannerPreviews();
 
   renderRaces();
   renderRaceOptions();
@@ -6384,10 +6386,10 @@ function deleteRace(id){
   renderRaceCalendarOptimizer();
   renderSeasonPlanner();
   renderFullSeasonTargetOptions();
-  pendingFullSeasonSchedule=null;
   renderFullSeasonSchedulePreview();
   renderMonth();
   renderSelected();
+  refreshDerivedCoachViews();
 }
 
 function openRace(id){
@@ -6431,9 +6433,9 @@ function renderRaces(){
         </p>
         ${race.notes ? `<p class="help">${safe(race.notes)}</p>` : ""}
         <div class="mini-actions">
-          <button class="secondary" onclick="openRace('${race.id}')">Open</button>
-          <button class="secondary" onclick="editRace('${race.id}')">Bewerk</button>
-          <button class="danger" onclick="deleteRace('${race.id}')">Verwijder</button>
+          <button class="secondary" type="button" onclick="openRace('${race.id}')">Open</button>
+          <button class="secondary" type="button" onclick="editRace('${race.id}')">Bewerk</button>
+          <button class="danger" type="button" onclick="deleteRace('${race.id}')">Verwijder</button>
         </div>
       </div>`;
   }).join("");
@@ -6725,6 +6727,7 @@ function generateRacePlan(){
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
   saveObject(UPLOAD_KEY,uploadedWorkouts);
+  resetGeneratedPlannerPreviews();
 
   selectedDate=race.date;
   visibleMonth=new Date(raceDate.getFullYear(),raceDate.getMonth(),1);
@@ -6733,6 +6736,8 @@ function generateRacePlan(){
   renderMonth();
   renderSelected();
   renderSaved();
+  renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
 
   status.className="status ok";
   status.textContent=
@@ -9583,11 +9588,7 @@ function applyFullSeasonSchedule(){
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
   saveObject(UPLOAD_KEY,uploadedWorkouts);
-  renderMonth();
-  renderSelected();
-  renderSaved();
-  renderTodayCoach();
-  renderFullSeasonTargetOptions();
+  refreshAfterCalendarMutation();
 
   status.className="status ok";
   status.textContent=
@@ -9616,11 +9617,13 @@ function removeFullSeasonSchedule(){
   });
 
   saveObject(STORAGE_KEY,customWorkouts);
-  pendingFullSeasonSchedule=null;
+  resetGeneratedPlannerPreviews();
   renderMonth();
   renderSelected();
   renderSaved();
+  renderFullSeasonTargetOptions();
   renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
 
   const status=document.getElementById("fullSeasonStatus");
   status.className="status ok";
