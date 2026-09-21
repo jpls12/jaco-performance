@@ -3062,6 +3062,15 @@ function workoutUploadIsCurrent(date,workout){
   return String(record.name||"")===String(workout.name||"");
 }
 
+function clearDerivedStateForWorkout(date,workout){
+  if(completionMarkerMatches(doneWorkouts[date],workout)){
+    delete doneWorkouts[date];
+  }
+  if(workoutUploadIsCurrent(date,workout)){
+    delete uploadedWorkouts[date];
+  }
+}
+
 function resetWorkoutDerivedState(date){
   delete doneWorkouts[date];
   delete uploadedWorkouts[date];
@@ -4779,12 +4788,16 @@ function saveWorkout(event){
       `Op ${workout.date} staat al "${targetExisting.name}". Deze vervangen door "${workout.name}"?`
     );
     if(!confirmed) return;
+
+    resetWorkoutDerivedState(workout.date);
   }
 
   if(originalDate && originalDate!==workout.date){
+    const originalWorkout=customWorkouts[originalDate]||null;
+    if(originalWorkout){
+      clearDerivedStateForWorkout(originalDate,originalWorkout);
+    }
     delete customWorkouts[originalDate];
-    delete doneWorkouts[originalDate];
-    delete uploadedWorkouts[originalDate];
   }
 
   customWorkouts[workout.date]=workout;
@@ -4872,9 +4885,9 @@ function deleteWorkout(date){
   if(!customWorkouts[date]) return;
   if(!confirm(`Training "${customWorkouts[date].name}" verwijderen?`)) return;
 
+  const deletedWorkout=customWorkouts[date];
+  clearDerivedStateForWorkout(date,deletedWorkout);
   delete customWorkouts[date];
-  delete doneWorkouts[date];
-  delete uploadedWorkouts[date];
 
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
@@ -6374,6 +6387,7 @@ function saveRace(event){
       customWorkouts[oldDate]?.type==="Race" &&
       customWorkouts[oldDate]?.importedPlan
     ){
+      clearDerivedStateForWorkout(oldDate,customWorkouts[oldDate]);
       delete customWorkouts[oldDate];
     }
 
@@ -6381,6 +6395,7 @@ function saveRace(event){
   }
 
   if(importedRaceFallback){
+    clearDerivedStateForWorkout(date,targetCustom);
     delete customWorkouts[date];
   }
 
@@ -6461,6 +6476,7 @@ function deleteRace(id){
     hiddenCustom?.type==="Race" &&
     hiddenCustom?.importedPlan
   ){
+    clearDerivedStateForWorkout(date,hiddenCustom);
     delete customWorkouts[date];
   }
 
@@ -7198,8 +7214,8 @@ function renderWellnessDashboard(data){
         return `
           <div class="wellness-row">
             <div>
-              <strong>${record.id || record.date || "Datum onbekend"}</strong>
-              <small>HRV ${record.hrv ?? "—"} · RHR ${record.restingHR ?? "—"} · slaap ${formatSleep(record.sleepSecs)}</small>
+              <strong>${safe(record.id || record.date || "Datum onbekend")}</strong>
+              <small>HRV ${safe(record.hrv ?? "—")} · RHR ${safe(record.restingHR ?? "—")} · slaap ${safe(formatSleep(record.sleepSecs))}</small>
             </div>
             <div>
               <strong>${formatMetric(recordForm,1)}</strong>
@@ -9612,7 +9628,7 @@ function applyFullSeasonSchedule(){
       date>=plan.start &&
       date<=plan.end
     ){
-      resetWorkoutDerivedState(date);
+      clearDerivedStateForWorkout(date,workout);
       delete customWorkouts[date];
     }
   });
@@ -9686,8 +9702,8 @@ function removeFullSeasonSchedule(){
   );
   if(!confirmed) return;
 
-  generated.forEach(([date])=>{
-    resetWorkoutDerivedState(date);
+  generated.forEach(([date,workout])=>{
+    clearDerivedStateForWorkout(date,workout);
     delete customWorkouts[date];
   });
 
