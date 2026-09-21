@@ -412,6 +412,8 @@ function saveCompletedVisualWorkout(){
     }
   }
 
+  clearWorkoutMarkersForDate(date);
+
   const workout={
     date,
     type:workoutDefinition.type,
@@ -435,6 +437,7 @@ function saveCompletedVisualWorkout(){
   markWorkoutCompleted(date,workout);
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   refreshAfterCalendarMutation();
 
@@ -1883,8 +1886,14 @@ function applyCoachChatWorkout(){
   const saved=JSON.parse(JSON.stringify(pendingCoachChatWorkout));
   saved.date=date;
   saved.status="planned";
+  if(existing){
+    clearWorkoutMarkersForDate(date);
+  }
+
   customWorkouts[date]=saved;
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   refreshAfterCalendarMutation();
 
@@ -2478,7 +2487,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"8.3.4",
+    appVersion:"8.3.6",
     createdAt:new Date().toISOString(),
     data
   };
@@ -2511,6 +2520,90 @@ function backupPayloadSummary(payload){
     uploaded:backupObjectCount(payload,UPLOAD_KEY),
     profile:isPlainBackupObject(profileValue)
   };
+}
+
+function validateDateKeyedBackupObject(value,label,{requireWorkoutObject=false}={}){
+  for(const [date,item] of Object.entries(value)){
+    if(calendarDayNumber(date)===null){
+      throw new Error(`${label} bevat een ongeldige datum: ${date}.`);
+    }
+
+    if(requireWorkoutObject){
+      if(!isPlainBackupObject(item)){
+        throw new Error(`${label} bevat een ongeldige training op ${date}.`);
+      }
+
+      if(item.date && item.date!==date){
+        throw new Error(`${label} bevat een training met een afwijkende datum op ${date}.`);
+      }
+    }
+  }
+}
+
+function validateRaceBackupObject(value){
+  for(const [id,race] of Object.entries(value)){
+    if(!/^[A-Za-z0-9_-]{1,100}$/.test(id)){
+      throw new Error("De backup bevat een ongeldige wedstrijd-ID.");
+    }
+
+    if(!isPlainBackupObject(race)){
+      throw new Error(`Wedstrijd ${id} heeft geen geldige gegevens.`);
+    }
+
+    if(race.id && String(race.id)!==id){
+      throw new Error(`Wedstrijd ${id} heeft een afwijkende interne ID.`);
+    }
+
+    if(calendarDayNumber(String(race.date||""))===null){
+      throw new Error(`Wedstrijd ${id} heeft een ongeldige datum.`);
+    }
+
+    const distance=finiteNumberOrNull(race.distanceKm);
+    if(distance===null || distance<=0 || distance>1000){
+      throw new Error(`Wedstrijd ${id} heeft een ongeldige afstand.`);
+    }
+
+    if(!["A","B","C"].includes(String(race.priority||"C").toUpperCase())){
+      throw new Error(`Wedstrijd ${id} heeft een ongeldige prioriteit.`);
+    }
+  }
+}
+
+function validateKnownBackupContents(key,value){
+  if(key===STORAGE_KEY){
+    validateDateKeyedBackupObject(value,"Trainingen",{requireWorkoutObject:true});
+    return;
+  }
+
+  if([
+    DONE_KEY,
+    UPLOAD_KEY,
+    DIARY_KEY
+  ].includes(key)){
+    validateDateKeyedBackupObject(value,key);
+    return;
+  }
+
+  if([
+    HM_AMSTERDAM_BACKUP_KEY,
+    HM_AMSTERDAM_RACEWEEK_BACKUP_KEY
+  ].includes(key)){
+    validateDateKeyedBackupObject(value,key,{requireWorkoutObject:true});
+    return;
+  }
+
+  if(key===RACES_KEY){
+    validateRaceBackupObject(value);
+    return;
+  }
+
+  if(key==="jp_race_simulations_v1"){
+    for(const raceId of Object.keys(value)){
+      if(!/^[A-Za-z0-9_-]{1,100}$/.test(raceId)){
+        throw new Error("De backup bevat een ongeldige simulatie-ID.");
+      }
+    }
+  }
 }
 
 function validateBackupPayload(input){
@@ -2576,6 +2669,8 @@ function validateBackupPayload(input){
       if(!isPlainBackupObject(parsedValue)){
         throw new Error(`De backup bevat een ongeldig object voor ${key}.`);
       }
+
+      validateKnownBackupContents(key,parsedValue);
     }
 
     totalCharacters+=value.length;
@@ -3040,6 +3135,12 @@ function workoutUploadIsCurrent(date,workout){
   return String(record.name||"")===String(workout.name||"");
 }
 
+
+function clearWorkoutMarkersForDate(date){
+  delete doneWorkouts[date];
+  delete uploadedWorkouts[date];
+}
+
 function upgradeCompletionMarkers(){
   let changed=false;
 
@@ -3180,7 +3281,7 @@ function renderMonth(){
     const dateObj=new Date(year,month,day);
     const date=ymd(dateObj);
     const workout=workouts[date];
-    const isToday=date===ymd(today);
+    const isToday=date===todayDateString();
     const isSelected=date===selectedDate;
     const state=workout ? workoutState(date,workout) : "";
     const uploaded=workoutUploadIsCurrent(date,workout) ? "uploaded" : "";
@@ -3255,7 +3356,7 @@ function renderSelected(){
         ${trainingTypeInfo(workout.type).uploadable ? "" : "disabled"}>
         ${trainingTypeInfo(workout.type).uploadable
           ? (uploaded?"Opnieuw naar Intervals":"Zet in Intervals.icu")
-          : "Intervals-export volgt"}
+          : "Niet exporteerbaar"}
       </button>
 
       ${isCalendarRace?`
@@ -3313,7 +3414,7 @@ async function uploadSelected(){
     const status=document.getElementById("uploadStatus");
     if(status){
       status.className="status error";
-      status.textContent=`Intervals.icu-export voor ${trainingTypeInfo(workout.type).label.toLowerCase()} wordt in fase 2 toegevoegd.`;
+      status.textContent=`Intervals.icu-export is niet beschikbaar voor ${trainingTypeInfo(workout.type).label.toLowerCase()}.`;
     }
     return;
   }
@@ -3381,7 +3482,7 @@ async function uploadSelected(){
   }
 }
 
-function setDefaultForm(date=ymd(today)){
+function setDefaultForm(date=todayDateString()){
   clearExactRunMode(false);
   document.getElementById("workoutForm").reset();
   document.getElementById("originalDate").value="";
@@ -4727,6 +4828,12 @@ function saveWorkout(event){
 
   const workout=buildWorkout();
   const originalDate=document.getElementById("originalDate").value;
+  const originalWorkout=originalDate
+    ?customWorkouts[originalDate]||null
+    :null;
+  const originalWasDone=
+    originalWorkout &&
+    workoutWasCompleted(originalDate,originalWorkout);
 
   if(!workout.date || !workout.name){
     document.getElementById("formStatus").className="status error";
@@ -4756,11 +4863,33 @@ function saveWorkout(event){
 
   if(originalDate && originalDate!==workout.date){
     delete customWorkouts[originalDate];
-    delete doneWorkouts[originalDate];
-    delete uploadedWorkouts[originalDate];
+    clearWorkoutMarkersForDate(originalDate);
+  }
+
+  if(targetExisting && !sameCustomDate){
+    clearWorkoutMarkersForDate(workout.date);
+  }
+
+  if(sameCustomDate && originalWorkout){
+    const uploadChanged=
+      workoutUploadFingerprint(originalWorkout)!==
+      workoutUploadFingerprint(workout);
+
+    if(uploadChanged){
+      delete uploadedWorkouts[workout.date];
+    }
+
+    if(!originalWasDone){
+      delete doneWorkouts[workout.date];
+    }
   }
 
   customWorkouts[workout.date]=workout;
+
+  if(sameCustomDate && originalWasDone){
+    markWorkoutCompleted(workout.date,workout);
+  }
+
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
   saveObject(UPLOAD_KEY,uploadedWorkouts);
@@ -6284,14 +6413,72 @@ function saveRace(event){
 
   const existingId=document.getElementById("raceOriginalId").value;
   const id=existingId || raceId();
+  const previousRace=existingId?races[existingId]||null:null;
   const name=safe(document.getElementById("raceName").value).trim();
   const date=document.getElementById("raceDate").value;
   const distanceKm=selectedRaceDistance();
+  const status=document.getElementById("raceFormStatus");
 
   if(!name || !date || !distanceKm){
-    document.getElementById("raceFormStatus").className="status error";
-    document.getElementById("raceFormStatus").textContent="Naam, datum en afstand zijn verplicht.";
+    status.className="status error";
+    status.textContent="Naam, datum en afstand zijn verplicht.";
     return;
+  }
+
+  const competingRace=Object.values(races).find(
+    race=>race.id!==id && race.date===date
+  );
+
+  if(competingRace){
+    status.className="status error";
+    status.textContent=
+      `Op ${date} staat al wedstrijd "${competingRace.name}". Jaco Performance bewaart één hoofdwedstrijd per dag.`;
+    return;
+  }
+
+  const movingDate=Boolean(previousRace && previousRace.date!==date);
+  const targetCustom=customWorkouts[date]||null;
+  const targetServer=serverWorkouts[date]||null;
+  const importedRaceFallback=
+    targetCustom?.type==="Race" &&
+    targetCustom?.importedPlan;
+
+  if(
+    (movingDate || !previousRace) &&
+    ((targetCustom && !importedRaceFallback) || targetServer)
+  ){
+    const occupied=targetCustom && !importedRaceFallback
+      ?targetCustom
+      :targetServer;
+
+    status.className="status error";
+    status.textContent=
+      `Op ${date} staat al "${occupied.name}". Verplaats die training eerst voordat je hier een wedstrijd zet.`;
+    return;
+  }
+
+  let preserveCompletedRace=false;
+
+  if(movingDate){
+    const oldDate=previousRace.date;
+    const oldRaceWorkout={
+      ...previousRace,
+      raceId:id,
+      type:"Race"
+    };
+
+    preserveCompletedRace=
+      completionMarkerMatches(doneWorkouts[oldDate],oldRaceWorkout);
+
+    const hiddenOldCustom=customWorkouts[oldDate]||null;
+    if(
+      hiddenOldCustom?.type==="Race" &&
+      hiddenOldCustom?.importedPlan
+    ){
+      delete customWorkouts[oldDate];
+    }
+
+    clearWorkoutMarkersForDate(oldDate);
   }
 
   races[id]={
@@ -6304,7 +6491,18 @@ function saveRace(event){
     notes:safe(document.getElementById("raceNotes").value).trim()
   };
 
+  if(preserveCompletedRace){
+    markWorkoutCompleted(date,{
+      ...races[id],
+      raceId:id,
+      type:"Race"
+    });
+  }
+
   saveObject(RACES_KEY,races);
+  saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
   resetGeneratedPlannerPreviews();
   document.getElementById("raceFormStatus").className="status ok";
   document.getElementById("raceFormStatus").textContent=
@@ -6649,7 +6847,7 @@ function generateRacePlan(){
     return;
   }
 
-  const start=document.getElementById("planStartDate").value || ymd(today);
+  const start=document.getElementById("planStartDate").value || todayDateString();
   const weeklyKm=Number(document.getElementById("planWeeklyKm").value);
   const days=Number(document.getElementById("planDays").value);
   const overwrite=document.getElementById("overwritePlan").checked;
@@ -9614,9 +9812,12 @@ function removeFullSeasonSchedule(){
 
   generated.forEach(([date])=>{
     delete customWorkouts[date];
+    clearWorkoutMarkersForDate(date);
   });
 
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
   resetGeneratedPlannerPreviews();
   renderMonth();
   renderSelected();
@@ -10514,8 +10715,14 @@ function saveAiGeneratedTraining(){
   const saved=JSON.parse(JSON.stringify(workout));
   saved.date=date;
   saved.status="planned";
+  if(existing){
+    clearWorkoutMarkersForDate(date);
+  }
+
   customWorkouts[date]=saved;
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   refreshAfterCalendarMutation();
 
@@ -11411,8 +11618,14 @@ function applyTodayRecommendation(){
 
   const workout=JSON.parse(JSON.stringify(pendingTodayAdvice.workout));
   workout.date=date;
+  if(existing){
+    clearWorkoutMarkersForDate(date);
+  }
+
   customWorkouts[date]=workout;
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   refreshAfterCalendarMutation();
 
