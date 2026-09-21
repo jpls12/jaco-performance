@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**8.3.4 · Planner Alignment**
+**8.3.6 · Final Audit**
 
-Deze release rondt de stabilisatie af door alle weekplanners dezelfde taper-, race-, seizoens- en kalenderbescherming te laten gebruiken.
+Deze release sluit de volledige stabilisatie-audit af: kalenderstatus, racedagen, plannerpreviews, lokale markers, backupmetadata en lang-openstaande mobiele sessies zijn op één consistente basis gebracht.
 
 ## Architectuur
 
@@ -117,3 +117,15 @@ de bestaande modules.
 - Volledig Seizoensschema controleert racedagen opnieuw op het moment van toepassen.
 - Bij bewust vervangen van een training worden lokale voltooid- en uploadmarkers opgeschoond.
 - Workout-upload valideert kalenderdatums strikt en gebruikt alleen eigen properties uit de vaste workoutbibliotheek.
+
+
+## 8.3.6 final audit
+
+- Backupbestanden dragen weer exact dezelfde appversie als de actieve release.
+- De kalender bepaalt “vandaag” dynamisch; een lang geopende/PWA-sessie corrigeert zichzelf bij terugkeer naar de app.
+- Vervangen of verwijderen van trainingen ruimt verouderde voltooid- en uploadmarkers op.
+- Een handmatig bewerkte voltooide training behoudt zijn voltooidstatus, terwijl gewijzigde uploadinhoud opnieuw gesynchroniseerd moet worden.
+- Het verwijderen van een 8.2-seizoensschema verwijdert ook bijbehorende lokale statusmarkers.
+- Wedstrijden kunnen niet stilzwijgend op een bezette trainings- of andere wedstrijddag worden geplaatst.
+- Bij het verplaatsen van een voltooide wedstrijd verhuist de voltooidstatus mee en een verborgen geïmporteerde racefallback komt niet terug op de oude datum.
+- Niet-ondersteunde Intervals.icu-export wordt als niet beschikbaar weergegeven in plaats van als toekomstige fase.
