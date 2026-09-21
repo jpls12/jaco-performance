@@ -8604,39 +8604,91 @@ function buildCoachIntelligence(){
   const twentyEight=historySummary(28);
   const ninety=historySummary(90);
 
-  const runTotal=Math.max(1,twentyEight.runSessions);
-  const easyPct=percentage(twentyEight.easy,runTotal);
-  const qualityPct=percentage(twentyEight.quality,runTotal);
-  const supportPct=percentage(twentyEight.support,Math.max(1,twentyEight.sessions));
+  // Met minder dan vier voltooide looptrainingen in 28 dagen is een
+  // procentuele trainingsbalans te fragiel om inhoudelijke conclusies te trekken.
+  const sufficientHistory=twentyEight.runSessions>=4;
+
+  const easyPct=sufficientHistory
+    ?percentage(twentyEight.easy,twentyEight.runSessions)
+    :null;
+  const qualityPct=sufficientHistory
+    ?percentage(twentyEight.quality,twentyEight.runSessions)
+    :null;
+  const supportPct=sufficientHistory
+    ?percentage(twentyEight.support,Math.max(1,twentyEight.sessions))
+    :null;
 
   const signals=[];
 
-  if(twentyEight.quality===0){
-    signals.push({state:"warn",icon:"!",text:"De afgelopen 28 dagen staat lokaal geen kwaliteitstraining geregistreerd."});
-  }else if(qualityPct>35){
-    signals.push({state:"warn",icon:"!",text:`${qualityPct}% van je looptrainingen was kwaliteit; bewaak voldoende rustige dagen.`});
+  if(!sufficientHistory){
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:`Slechts ${twentyEight.runSessions} voltooide looptrainingen in de laatste 28 dagen; trainingsbalans wordt nog niet beoordeeld.`
+    });
   }else{
-    signals.push({state:"good",icon:"✓",text:`${twentyEight.quality} kwaliteitstrainingen in 28 dagen geeft een bruikbare trainingsprikkel.`});
-  }
+    if(twentyEight.quality===0){
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:"De afgelopen 28 dagen staat lokaal geen voltooide kwaliteitstraining geregistreerd."
+      });
+    }else if(qualityPct>35){
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`${qualityPct}% van je voltooide looptrainingen was kwaliteit; bewaak voldoende rustige dagen.`
+      });
+    }else{
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`${twentyEight.quality} voltooide kwaliteitstrainingen in 28 dagen geven een bruikbare trainingsprikkel.`
+      });
+    }
 
-  if(easyPct>=55){
-    signals.push({state:"good",icon:"✓",text:`Rustige looptrainingen vormen ${easyPct}% van je loopfrequentie.`});
-  }else{
-    signals.push({state:"warn",icon:"!",text:`Rustige looptrainingen vormen slechts ${easyPct}% van je loopfrequentie.`});
-  }
+    if(easyPct>=55){
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`Rustige looptrainingen vormen ${easyPct}% van je voltooide loopfrequentie.`
+      });
+    }else{
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`Rustige looptrainingen vormen ${easyPct}% van je voltooide loopfrequentie.`
+      });
+    }
 
-  if(twentyEight.longRuns>=3){
-    signals.push({state:"good",icon:"✓",text:`${twentyEight.longRuns} lange duurlopen in 28 dagen ondersteunen je duurvermogen.`});
-  }else{
-    signals.push({state:"warn",icon:"!",text:`Slechts ${twentyEight.longRuns} lange duurlopen in 28 dagen geregistreerd.`});
-  }
+    if(twentyEight.longRuns>=3){
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`${twentyEight.longRuns} lange duurlopen in 28 dagen ondersteunen je duurvermogen.`
+      });
+    }else{
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`${twentyEight.longRuns} lange duurlopen in 28 dagen geregistreerd.`
+      });
+    }
 
-  if(twentyEight.support>=4){
-    signals.push({state:"good",icon:"✓",text:`${twentyEight.support} core-, mobiliteits- of krachtsessies ondersteunen belastbaarheid.`});
-  }else{
-    signals.push({state:"warn",icon:"!",text:`${twentyEight.support} ondersteunende sessies in 28 dagen; regelmaat kan beter.`});
+    if(twentyEight.support>=4){
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`${twentyEight.support} core-, mobiliteits- of krachtsessies ondersteunen belastbaarheid.`
+      });
+    }else{
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`${twentyEight.support} ondersteunende sessies in 28 dagen; regelmaat kan beter.`
+      });
+    }
   }
-
 
   const diary=buildDiaryContext();
   if(diary.level==="elevated"){
@@ -8660,23 +8712,43 @@ function buildCoachIntelligence(){
   }
 
   let headline="Trainingsbalans is bruikbaar";
-  let conclusion="Behoud de huidige verhouding en laat zware sessies volgen door rustige belasting.";
+  let conclusion=
+    "Behoud de huidige verhouding en laat zware sessies volgen door rustige belasting.";
 
-  if(qualityPct>35 || easyPct<50){
+  if(!sufficientHistory){
+    headline="Onvoldoende voltooide trainingshistorie";
+    conclusion=
+      "Markeer uitgevoerde trainingen als voltooid; vanaf vier voltooide looptrainingen in 28 dagen beoordeelt de coach de balans.";
+  }else if(qualityPct>35 || easyPct<50){
     headline="Meer rustige training aanbevolen";
-    conclusion="De lokale geschiedenis bevat relatief veel kwaliteit. Verhoog het aandeel rustige duur en herstel.";
+    conclusion=
+      "De voltooide lokale geschiedenis bevat relatief veel kwaliteit. Verhoog het aandeel rustige duur en herstel.";
   }else if(twentyEight.quality===0){
     headline="Kwaliteitsprikkel ontbreekt";
-    conclusion="Wanneer je herstel het toelaat, plan één gerichte drempel- of VO₂max-training per week.";
+    conclusion=
+      "Wanneer je herstel het toelaat, plan één gerichte drempel- of VO₂max-training per week.";
   }else if(twentyEight.support<4){
     headline="Ondersteunende training kan consistenter";
-    conclusion="Plan minimaal één core- en één mobiliteitssessie per week naast het lopen.";
+    conclusion=
+      "Plan regelmatig core en mobiliteit naast het lopen.";
   }else if(twentyEight.longRuns<3){
     headline="Lange duur verdient meer aandacht";
-    conclusion="Richting langere wedstrijden is ongeveer één passende lange duurloop per week wenselijk.";
+    conclusion=
+      "Richting langere wedstrijden is regelmatige passende lange duur nuttig.";
   }
 
-  return{seven,twentyEight,ninety,easyPct,qualityPct,supportPct,signals,headline,conclusion};
+  return{
+    seven,
+    twentyEight,
+    ninety,
+    sufficientHistory,
+    easyPct,
+    qualityPct,
+    supportPct,
+    signals,
+    headline,
+    conclusion
+  };
 }
 
 function renderCoachIntelligence(){
@@ -8690,13 +8762,26 @@ function renderCoachIntelligence(){
   setPeriod("intel28",result.twentyEight);
   setPeriod("intel90",result.ninety);
 
-  document.getElementById("intelEasyBar").style.width=`${result.easyPct}%`;
-  document.getElementById("intelQualityBar").style.width=`${result.qualityPct}%`;
-  document.getElementById("intelSupportBar").style.width=`${result.supportPct}%`;
+  const easyWidth=result.easyPct===null?0:result.easyPct;
+  const qualityWidth=result.qualityPct===null?0:result.qualityPct;
+  const supportWidth=result.supportPct===null?0:result.supportPct;
 
-  document.getElementById("intelEasyText").textContent=`${result.twentyEight.easy} rustige looptrainingen · ${result.easyPct}%`;
-  document.getElementById("intelQualityText").textContent=`${result.twentyEight.quality} kwaliteitstrainingen · ${result.qualityPct}%`;
-  document.getElementById("intelSupportText").textContent=`${result.twentyEight.support} ondersteunende sessies · ${result.supportPct}%`;
+  document.getElementById("intelEasyBar").style.width=`${easyWidth}%`;
+  document.getElementById("intelQualityBar").style.width=`${qualityWidth}%`;
+  document.getElementById("intelSupportBar").style.width=`${supportWidth}%`;
+
+  document.getElementById("intelEasyText").textContent=
+    result.easyPct===null
+      ?`${result.twentyEight.easy} voltooide rustige looptrainingen · onvoldoende data`
+      :`${result.twentyEight.easy} rustige looptrainingen · ${result.easyPct}%`;
+  document.getElementById("intelQualityText").textContent=
+    result.qualityPct===null
+      ?`${result.twentyEight.quality} voltooide kwaliteitstrainingen · onvoldoende data`
+      :`${result.twentyEight.quality} kwaliteitstrainingen · ${result.qualityPct}%`;
+  document.getElementById("intelSupportText").textContent=
+    result.supportPct===null
+      ?`${result.twentyEight.support} voltooide ondersteunende sessies · onvoldoende data`
+      :`${result.twentyEight.support} ondersteunende sessies · ${result.supportPct}%`;
 
   document.getElementById("coachIntelligenceSignals").innerHTML=
     result.signals.map(signal=>`
