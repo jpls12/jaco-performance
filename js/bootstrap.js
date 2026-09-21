@@ -66,6 +66,7 @@ document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
 document.getElementById("refreshLoadMonitor").onclick=()=>{
+  renderLoadMonitor();
   renderTodayCoach();
 };
 document.getElementById("coachDiaryForm").onsubmit=saveCoachDiary;
@@ -100,10 +101,7 @@ document.getElementById("saveAiWeek").onclick=saveAiGeneratedWeek;
 document.getElementById("generateAiTraining").onclick=generateAiTrainingOptions;
 document.getElementById("regenerateAiTraining").onclick=regenerateAiTraining;
 document.getElementById("saveAiTraining").onclick=saveAiGeneratedTraining;
-document.getElementById("refreshTodayCoach").onclick=async()=>{
-  await refreshTodayCoach();
-  renderCoachBrain();
-};
+document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
 document.getElementById("applyTodayAdvice").onclick=applyTodayRecommendation;
 document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
 document.getElementById("buildAdaptiveWeek").onclick=()=>{
@@ -150,14 +148,12 @@ document.getElementById("fullSeasonOverwriteManual").onchange=()=>{
 document.getElementById("refreshSeasonPlanner").onclick=()=>{
   renderSeasonPlanner();
   renderRaceCalendarOptimizer();
-  renderTodayCoach();
-  renderSmartWeekCoach();
+  refreshDerivedCoachViews();
 };
 document.getElementById("refreshRaceCalendarOptimizer").onclick=()=>{
   renderRaceCalendarOptimizer();
   renderSeasonPlanner();
-  renderTodayCoach();
-  renderSmartWeekCoach();
+  refreshDerivedCoachViews();
 };
 document.getElementById("simulateRace").onclick=renderRaceSimulator;
 document.getElementById("raceSimulatorSelect").onchange=renderRaceSimulator;
