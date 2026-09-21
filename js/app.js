@@ -1335,6 +1335,28 @@ function installHmAmsterdamRaceweek2026(){
   localStorage.setItem(HM_AMSTERDAM_RACEWEEK_KEY,"1");
 }
 
+function cleanupImportedRaceFallbacks(){
+  let changed=false;
+
+  Object.values(races).forEach(race=>{
+    const fallback=customWorkouts[race.date];
+    if(
+      fallback?.type==="Race" &&
+      fallback?.importedPlan
+    ){
+      clearDerivedStateForWorkout(race.date,fallback);
+      delete customWorkouts[race.date];
+      changed=true;
+    }
+  });
+
+  if(changed){
+    saveObject(STORAGE_KEY,customWorkouts);
+    saveObject(DONE_KEY,doneWorkouts);
+    saveObject(UPLOAD_KEY,uploadedWorkouts);
+  }
+}
+
 
 function finiteNumberOrNull(value){
   if(value===null || value===undefined || typeof value==="boolean") return null;
@@ -5905,7 +5927,12 @@ function racePriorityRank(priority){
 
 function futureRacesSorted(){
   return Object.values(races)
-    .filter(race=>daysUntil(race.date)>=0)
+    .filter(race=>
+      calendarDayNumber(race?.date)!==null &&
+      Number.isFinite(Number(race?.distanceKm)) &&
+      Number(race.distanceKm)>0 &&
+      daysUntil(race.date)>=0
+    )
     .sort((a,b)=>a.date.localeCompare(b.date));
 }
 
@@ -9387,6 +9414,9 @@ function replaceRaceWeekQualityWhenNeeded(context,workouts){
 }
 
 function existingNonSeasonWorkout(date){
+  const race=Object.values(races).find(item=>item.date===date)||null;
+  if(race) return raceMarkerWorkout(race);
+
   const custom=customWorkouts[date];
   if(custom && !custom.seasonGenerated) return custom;
   if(!custom && serverWorkouts[date]) return serverWorkouts[date];
@@ -10711,7 +10741,7 @@ function calculatePerformanceEngine(){
   ].filter(value=>value!==null && value!==undefined).length;
 
   let raceReadiness=
-    race && substantiveRaceInputs>=1
+    race && substantiveRaceInputs>=2
       ?weightedAvailableScore(raceReadinessInputs)
       :null;
 
