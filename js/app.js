@@ -2522,6 +2522,90 @@ function backupPayloadSummary(payload){
   };
 }
 
+function validateDateKeyedBackupObject(value,label,{requireWorkoutObject=false}={}){
+  for(const [date,item] of Object.entries(value)){
+    if(calendarDayNumber(date)===null){
+      throw new Error(`${label} bevat een ongeldige datum: ${date}.`);
+    }
+
+    if(requireWorkoutObject){
+      if(!isPlainBackupObject(item)){
+        throw new Error(`${label} bevat een ongeldige training op ${date}.`);
+      }
+
+      if(item.date && item.date!==date){
+        throw new Error(`${label} bevat een training met een afwijkende datum op ${date}.`);
+      }
+    }
+  }
+}
+
+function validateRaceBackupObject(value){
+  for(const [id,race] of Object.entries(value)){
+    if(!/^[A-Za-z0-9_-]{1,100}$/.test(id)){
+      throw new Error("De backup bevat een ongeldige wedstrijd-ID.");
+    }
+
+    if(!isPlainBackupObject(race)){
+      throw new Error(`Wedstrijd ${id} heeft geen geldige gegevens.`);
+    }
+
+    if(race.id && String(race.id)!==id){
+      throw new Error(`Wedstrijd ${id} heeft een afwijkende interne ID.`);
+    }
+
+    if(calendarDayNumber(String(race.date||""))===null){
+      throw new Error(`Wedstrijd ${id} heeft een ongeldige datum.`);
+    }
+
+    const distance=finiteNumberOrNull(race.distanceKm);
+    if(distance===null || distance<=0 || distance>1000){
+      throw new Error(`Wedstrijd ${id} heeft een ongeldige afstand.`);
+    }
+
+    if(!["A","B","C"].includes(String(race.priority||"C").toUpperCase())){
+      throw new Error(`Wedstrijd ${id} heeft een ongeldige prioriteit.`);
+    }
+  }
+}
+
+function validateKnownBackupContents(key,value){
+  if(key===STORAGE_KEY){
+    validateDateKeyedBackupObject(value,"Trainingen",{requireWorkoutObject:true});
+    return;
+  }
+
+  if([
+    DONE_KEY,
+    UPLOAD_KEY,
+    DIARY_KEY
+  ].includes(key)){
+    validateDateKeyedBackupObject(value,key);
+    return;
+  }
+
+  if([
+    HM_AMSTERDAM_BACKUP_KEY,
+    HM_AMSTERDAM_RACEWEEK_BACKUP_KEY
+  ].includes(key)){
+    validateDateKeyedBackupObject(value,key,{requireWorkoutObject:true});
+    return;
+  }
+
+  if(key===RACES_KEY){
+    validateRaceBackupObject(value);
+    return;
+  }
+
+  if(key==="jp_race_simulations_v1"){
+    for(const raceId of Object.keys(value)){
+      if(!/^[A-Za-z0-9_-]{1,100}$/.test(raceId)){
+        throw new Error("De backup bevat een ongeldige simulatie-ID.");
+      }
+    }
+  }
+}
+
 function validateBackupPayload(input){
   if(!isPlainBackupObject(input)){
     throw new Error("Dit bestand bevat geen geldige Jaco Performance-backup.");
@@ -2585,6 +2669,8 @@ function validateBackupPayload(input){
       if(!isPlainBackupObject(parsedValue)){
         throw new Error(`De backup bevat een ongeldig object voor ${key}.`);
       }
+
+      validateKnownBackupContents(key,parsedValue);
     }
 
     totalCharacters+=value.length;
@@ -4793,9 +4879,7 @@ function saveWorkout(event){
       delete uploadedWorkouts[workout.date];
     }
 
-    if(originalWasDone){
-      markWorkoutCompleted(workout.date,workout);
-    }else{
+    if(!originalWasDone){
       delete doneWorkouts[workout.date];
     }
   }
