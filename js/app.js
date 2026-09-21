@@ -1307,13 +1307,24 @@ function installHmAmsterdamRaceweek2026(){
 }
 
 
-function diaryNumber(value){
-  const number=Number(value);
+function finiteNumberOrNull(value){
+  if(value===null || value===undefined || typeof value==="boolean") return null;
+  if(typeof value==="string" && value.trim()==="") return null;
+
+  const normalized=
+    typeof value==="string"
+      ?value.trim().replace(",",".")
+      :value;
+
+  const number=Number(normalized);
   return Number.isFinite(number)?number:null;
 }
 
+function diaryNumber(value){
+  return finiteNumberOrNull(value);
+}
+
 function coachDiaryEntries(days=28){
-  const todayValue=new Date(todayDateString()+"T12:00:00");
   return Object.entries(coachDiary)
     .map(([date,entry])=>({
       date,
@@ -1322,8 +1333,8 @@ function coachDiaryEntries(days=28){
     }))
     .filter(item=>{
       if(Number.isNaN(item.parsed.getTime())) return false;
-      const age=Math.floor((todayValue-item.parsed)/86400000);
-      return age>=0 && age<days;
+      const age=calendarDayDifference(todayDateString(),item.date);
+      return age!==null && age>=0 && age<days;
     })
     .sort((a,b)=>b.date.localeCompare(a.date));
 }
@@ -1615,12 +1626,25 @@ function coachChatContext(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
   const race=getRaceFocus();
-  const phase=classifyRacePhase(race);
+  const seasonBlock=seasonBlockForDate(todayDateString());
+  const phase=seasonPhaseToLegacyPhase(seasonBlock,race);
   const profileData=getProfile();
   const existing=currentTodayWorkout();
   const loadMonitor=buildLoadMonitor();
   const diary=buildDiaryContext();
-  return{availability,snapshot,readiness,race,phase,profile:profileData,existing,loadMonitor,diary};
+
+  return{
+    availability,
+    snapshot,
+    readiness,
+    race,
+    phase,
+    seasonBlock,
+    profile:profileData,
+    existing,
+    loadMonitor,
+    diary
+  };
 }
 
 function normalizeCoachMessage(message){
@@ -1667,6 +1691,13 @@ function coachChatResponse(message){
   const missed=/gemist|training overgeslagen|niet kunnen trainen/.test(text);
   const wantsLong=/lange duur|lange duurloop|long run/.test(text);
   const pain=/pijn|blessure|stekende|scherpe pijn|gezwollen/.test(text);
+
+  if(context.existing?.type==="Race"){
+    response=pain
+      ?"Vandaag staat je wedstrijd gepland. Omdat je pijn noemt, maak ik geen vervangende training of intensiteitsadvies. Beoordeel eerst of starten verantwoord is en laat duidelijke of aanhoudende klachten zo nodig professioneel beoordelen."
+      :"Vandaag is wedstrijddag. Coach Chat verandert je wedstrijd niet automatisch. Gebruik de chat alleen voor uitvoering, planning en hoe je je voelt; de wedstrijd blijft in de kalender staan.";
+    return{response,workout:null};
+  }
 
   if(pain){
     response="Bij pijn maak ik geen intensieve trainingsaanpassing. Kies vandaag voor rust of zeer lichte mobiliteit en beoordeel eerst of trainen verantwoord voelt. Bij aanhoudende of duidelijke pijn is professionele beoordeling verstandiger.";
@@ -1813,7 +1844,13 @@ function applyCoachChatWorkout(){
   if(!pendingCoachChatWorkout) return;
 
   const date=todayDateString();
-  const existing=customWorkouts[date];
+  const existing=currentTodayWorkout();
+
+  if(existing?.type==="Race"){
+    status.className="status error";
+    status.textContent="Coach Chat vervangt een wedstrijd niet automatisch.";
+    return;
+  }
 
   if(existing){
     const confirmed=confirm(`De bestaande training "${existing.name}" vervangen door "${pendingCoachChatWorkout.name}"?`);
@@ -1932,11 +1969,7 @@ function fitsTime(workout,dayInfo){
 }
 
 function dateGapDays(a,b){
-  return Math.round(
-    Math.abs(
-      new Date(a+"T12:00:00")-new Date(b+"T12:00:00")
-    )/86400000
-  );
+  return Math.abs(signedDateGapDays(a,b));
 }
 
 function smartWeekWarningsFor(workouts,context){
@@ -2263,7 +2296,7 @@ function applySmartWeekPlan(){
   let skipped=0;
 
   for(const workout of option){
-    if(customWorkouts[workout.date]){
+    if(allWorkouts()[workout.date]){
       skipped++;
       continue;
     }
@@ -2288,7 +2321,7 @@ let pendingTodayAdvice = null;
 
 const today = new Date();
 let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-let selectedDate = "2026-08-04";
+let selectedDate = ymd(today);
 let duplicateSourceDate = null;
 
 const fullDate = new Intl.DateTimeFormat("nl-NL",{
@@ -2339,7 +2372,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"8.3",
+    appVersion:"8.3.1",
     createdAt:new Date().toISOString(),
     data
   };
@@ -2816,6 +2849,23 @@ function ymd(date){
   const d=String(date.getDate()).padStart(2,"0");
   return `${y}-${m}-${d}`;
 }
+function calendarDayNumber(dateString){
+  const match=String(dateString||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!match) return null;
+
+  const year=Number(match[1]);
+  const month=Number(match[2]);
+  const day=Number(match[3]);
+  const value=Date.UTC(year,month-1,day)/86400000;
+
+  return Number.isFinite(value)?value:null;
+}
+function calendarDayDifference(laterDate,earlierDate){
+  const later=calendarDayNumber(laterDate);
+  const earlier=calendarDayNumber(earlierDate);
+  if(later===null || earlier===null) return null;
+  return Math.round(later-earlier);
+}
 function clone(value){
   return JSON.parse(JSON.stringify(value));
 }
@@ -2988,8 +3038,13 @@ async function uploadSelected(){
   if(pin===null) return;
 
   const status=document.getElementById("uploadStatus");
+  if(!status) return;
+
+  const wasUploaded=Boolean(uploadedWorkouts[selectedDate]);
   status.className="status";
-  status.textContent="Workout wordt verstuurd…";
+  status.textContent=wasUploaded
+    ?"Workout wordt bijgewerkt in Intervals.icu…"
+    :"Workout wordt verstuurd naar Intervals.icu…";
 
   try{
     const payload={workoutDate:selectedDate,pin};
@@ -3027,12 +3082,16 @@ async function uploadSelected(){
 
     uploadedWorkouts[selectedDate]={
       uploadedAt:new Date().toISOString(),
-      name:workout.name
+      name:workout.name,
+      externalId:data.externalId||`jaco-performance-${selectedDate}`,
+      eventId:data.eventId??null
     };
     saveObject(UPLOAD_KEY,uploadedWorkouts);
 
     status.className="status ok";
-    status.textContent="Gelukt: workout staat in Intervals.icu.";
+    status.textContent=wasUploaded
+      ?"Workout bijgewerkt in Intervals.icu."
+      :"Gelukt: workout staat in Intervals.icu.";
     renderMonth();
   }catch(error){
     status.className="status error";
@@ -4096,8 +4155,7 @@ function fillEditor(workout,originalDate){
 
 
 function parseLocaleNumber(value){
-  const number=Number(String(value??"").replace(",","."));
-  return Number.isFinite(number)?number:null;
+  return finiteNumberOrNull(value);
 }
 
 function parseStructuredRunData(workout){
@@ -4359,7 +4417,7 @@ function updateRecoveryLabel(){
   const isTime=document.getElementById("recoveryType").value==="time";
   const input=document.getElementById("recoveryValue");
 
-  document.getElementById("recoveryValueLabel").firstChild.textContent=
+  document.getElementById("recoveryValueLabelText").textContent=
     isTime ? "Herstel (minuten)" : "Herstel (meter)";
 
   input.min=isTime ? "0.5" : "50";
@@ -5518,9 +5576,8 @@ function racesInRange(start,end){
 }
 
 function signedDateGapDays(dateA,dateB){
-  return Math.round(
-    (new Date(dateA+"T12:00:00")-new Date(dateB+"T12:00:00"))/86400000
-  );
+  const difference=calendarDayDifference(dateA,dateB);
+  return difference===null?0:difference;
 }
 
 function raceRecoveryDays(race){
@@ -5788,27 +5845,6 @@ function renderRaceCalendarOptimizer(){
       :'<p class="help">Nog geen komende wedstrijden.</p>';
 }
 
-function raceMarkerWorkout(race){
-  return{
-    date:race.date,
-    type:"Race",
-    distanceKm:Number(race.distanceKm)||0,
-    durationMinutes:0,
-    name:race.name,
-    uploadName:race.name,
-    rpe:"10/10",
-    status:"planned",
-    priority:race.priority,
-    planType:"race",
-    raceMarker:true,
-    displaySteps:[
-      `${race.priority}-wedstrijd · ${formatRaceDistance(race.distanceKm)}`,
-      race.targetTime?`Streeftijd: ${race.targetTime}`:"Geen streeftijd ingevuld"
-    ],
-    intervalsDescription:""
-  };
-}
-
 function protectedEasyWorkout(workout,race,recovery=false){
   const originalKm=Number(workout?.distanceKm)||8;
   const km=Math.max(5,Math.min(recovery?7:9,originalKm));
@@ -5935,10 +5971,8 @@ function formatPace(seconds){
 }
 
 function daysUntil(date){
-  const now=new Date();
-  now.setHours(0,0,0,0);
-  const target=new Date(date+"T00:00:00");
-  return Math.ceil((target-now)/86400000);
+  const difference=calendarDayDifference(date,todayDateString());
+  return difference===null?0:difference;
 }
 
 function selectedRaceDistance(){
@@ -5946,15 +5980,6 @@ function selectedRaceDistance(){
   return value==="other"
     ? Number(document.getElementById("customRaceDistance").value)
     : Number(value);
-}
-
-function resetRaceForm(){
-  document.getElementById("raceForm").reset();
-  document.getElementById("raceOriginalId").value="";
-  document.getElementById("raceDistance").value="5";
-  document.getElementById("customRaceDistanceLabel").hidden=true;
-  document.getElementById("racePriority").value="A";
-  document.getElementById("raceFormStatus").textContent="";
 }
 
 function saveRace(event){
@@ -6306,8 +6331,7 @@ function generateRacePlan(){
   const days=Number(document.getElementById("planDays").value);
   const overwrite=document.getElementById("overwritePlan").checked;
   const raceDate=new Date(race.date+"T12:00:00");
-  const startDate=new Date(start+"T12:00:00");
-  const totalDays=Math.floor((raceDate-startDate)/86400000);
+  const totalDays=signedDateGapDays(race.date,start);
 
   if(totalDays<7){
     status.className="status error";
@@ -6321,7 +6345,7 @@ function generateRacePlan(){
 
   for(let week=0;week<weeks;week++){
     const weekStart=addDays(firstMonday,week*7);
-    const daysToRace=Math.floor((raceDate-new Date(weekStart+"T12:00:00"))/86400000);
+    const daysToRace=signedDateGapDays(race.date,weekStart);
     if(daysToRace<0) break;
 
     const taperFactor=daysToRace<=7 ? 0.55 : daysToRace<=14 ? 0.75 : 1;
@@ -6376,28 +6400,8 @@ function generateRacePlan(){
 
 
 function numberOrNull(value){
-  const n=Number(value);
-  return Number.isFinite(n) ? n : null;
+  return finiteNumberOrNull(value);
 }
-
-function latestValue(records,key){
-  for(let i=records.length-1;i>=0;i--){
-    const value=numberOrNull(records[i]?.[key]);
-    if(value!==null) return value;
-  }
-  return null;
-}
-
-function averageRecent(records,key,count=7){
-  const values=[];
-  for(let i=records.length-1;i>=0 && values.length<count;i--){
-    const value=numberOrNull(records[i]?.[key]);
-    if(value!==null) values.push(value);
-  }
-  if(!values.length) return null;
-  return values.reduce((a,b)=>a+b,0)/values.length;
-}
-
 
 function wellnessRecordDate(record){
   const raw=record?.id || record?.date || null;
@@ -6409,13 +6413,8 @@ function wellnessRecordDate(record){
 
 function wellnessDaysOld(dateString){
   if(!dateString) return null;
-  const measurement=new Date(dateString+"T12:00:00");
-  if(Number.isNaN(measurement.getTime())) return null;
-
-  const today=new Date();
-  today.setHours(12,0,0,0);
-
-  return Math.floor((today-measurement)/86400000);
+  const difference=calendarDayDifference(todayDateString(),dateString);
+  return difference===null?null:difference;
 }
 
 function latestMetric(records,key,maxAgeDays=1){
@@ -6584,6 +6583,16 @@ function buildCoachAdvice(latest,averages){
 }
 
 
+function refreshDerivedCoachViews(){
+  renderTodayCoach();
+  renderCoachBrain();
+  buildCoachHorizon();
+  renderCoachIntelligence();
+  renderPerformanceTrend(activeTrendDays);
+  renderSmartWeekCoach();
+  renderRaceSimulator();
+}
+
 function renderWellnessDashboard(data){
   const records=Array.isArray(data.records)?data.records:[];
   latestWellnessRecords=records;
@@ -6725,13 +6734,10 @@ function renderWellnessDashboard(data){
   document.getElementById("coachHeadline").textContent=advice.headline;
   document.getElementById("coachAdvice").textContent=advice.advice;
 
-  renderTodayCoach();
-
   document.getElementById("dashboardUpdated").textContent=
     `Intervals.icu gecontroleerd t/m ${latest.id || latest.date || "onbekende datum"}.`;
 
-  renderPerformanceEngine();
-  renderPerformanceTrend(activeTrendDays);
+  refreshDerivedCoachViews();
 
   const history=records.slice(-7).reverse();
   document.getElementById("wellnessHistory").innerHTML=history.length
@@ -6774,16 +6780,34 @@ async function loadWellnessDashboard(){
   if(error) error.textContent="";
   if(success) success.textContent="";
 
-  document.getElementById("dashboardUpdated").textContent="Intervals.icu-data wordt geladen…";
+  document.getElementById("dashboardUpdated").textContent=
+    "Intervals.icu-data wordt geladen…";
 
   try{
     const response=await fetch("/api/intervals-status");
     const data=await response.json();
-    if(!response.ok) throw new Error(data.error || "Dashboarddata kon niet worden geladen.");
+
+    if(!response.ok){
+      throw new Error(
+        data.error || "Dashboarddata kon niet worden geladen."
+      );
+    }
+
     renderWellnessDashboard(data);
+    return{ok:true,data};
   }catch(err){
     if(error) error.textContent=err.message;
-    document.getElementById("dashboardUpdated").textContent="Data niet beschikbaar.";
+    if(success){
+      success.className="status error";
+      success.textContent="Actuele Intervals.icu-data kon niet worden vernieuwd.";
+    }
+
+    document.getElementById("dashboardUpdated").textContent=
+      "Data niet beschikbaar.";
+
+    // De rest van de app blijft bruikbaar met eerder geladen of onbekende data.
+    refreshDerivedCoachViews();
+    return{ok:false,error:err};
   }
 }
 
@@ -7171,7 +7195,15 @@ function coachContext(){
   const availability=todayAvailabilityInfo();
   const existing=currentTodayWorkout();
 
-  return{snapshot,readiness,race,phase,availability,existing};
+  return{
+    snapshot,
+    readiness,
+    race,
+    phase,
+    seasonBlock:currentSeasonBlock,
+    availability,
+    existing
+  };
 }
 
 function scoreLibraryItem(item,context){
@@ -7373,9 +7405,57 @@ Easy
 }
 
 function renderCoachBrain(){
+  const context=coachContext();
+
+  if(context.existing?.type==="Race"){
+    const raceWorkout=context.existing;
+
+    document.getElementById("brainDecisionTitle").textContent=
+      raceWorkout.name;
+    document.getElementById("brainDecisionText").textContent=
+      "Wedstrijddag is beschermd. Coach Brain maakt vandaag geen vervangende trainingssessie.";
+
+    const factorRows=[
+      {
+        cls:"good",
+        icon:"🏁",
+        text:`Wedstrijd vandaag: ${raceWorkout.name}`
+      },
+      {
+        cls:context.readiness.level==="unknown"
+          ?"warn"
+          :context.readiness.level==="good"
+            ?"good"
+            :context.readiness.level==="moderate"
+              ?"warn"
+              :"bad",
+        icon:context.readiness.level==="unknown"?"?":"✓",
+        text:context.readiness.level==="unknown"
+          ?"Herstelstatus: onvoldoende actuele data"
+          :`Herstelstatus: ${context.readiness.level} (${context.readiness.score}/100)`
+      },
+      {
+        cls:"good",
+        icon:"↗",
+        text:context.seasonBlock
+          ?`Seizoensblok: ${context.seasonBlock.label}`
+          :"Wedstrijd blijft leidend"
+      }
+    ];
+
+    document.getElementById("brainFactors").innerHTML=
+      factorRows.map(row=>`
+        <div class="reason-item">
+          <div class="reason-icon ${row.cls}">${row.icon}</div>
+          <div>${safe(row.text)}</div>
+        </div>
+      `).join("");
+
+    return;
+  }
+
   const decision=chooseCoachBrainSession();
   const workout=buildLibraryWorkout(decision);
-  const context=decision.context;
   const choice=decision.choice;
 
   pendingTodayAdvice={
@@ -7431,8 +7511,6 @@ function renderCoachBrain(){
       <div class="reason-icon ${row.cls}">${row.icon}</div>
       <div>${safe(row.text)}</div>
     </div>`).join("");
-
-  renderTodayCoach();
 }
 
 
@@ -7487,27 +7565,60 @@ function buildCoachHorizon(){
   }
 
   const raceDays=daysUntil(race.date);
-  const baseKm=Math.min(Number(profileData.maxKm)||70,Number(profileData.weeklyKm)||60);
-  const readinessFactor=readiness.level==="low"?0.78:readiness.level==="moderate"?0.90:1;
+  const baseKm=Math.min(
+    Number(profileData.maxKm)||70,
+    Number(profileData.weeklyKm)||60
+  );
 
   const weeks=[0,1,2,3].map(offset=>{
-    const phase=horizonWeekPhase(raceDays,offset);
-    let phaseFactor=1;
-
-    if(phase==="Taper") phaseFactor=0.75;
-    if(phase==="Wedstrijdweek") phaseFactor=0.50;
-
-    const km=Math.max(20,Math.round(baseKm*readinessFactor*phaseFactor));
     const start=addDays(nextMonday(),offset*7);
     const end=addDays(start,6);
+    const block=seasonBlockForWeek(start);
+
+    const fallbackPhase=horizonWeekPhase(raceDays,offset);
+    const phaseLabelText=block?.label || fallbackPhase;
+
+    let phaseFactor=block?.volumeFactor ?? 1;
+    if(!block && fallbackPhase==="Taper") phaseFactor=.75;
+    if(!block && fallbackPhase==="Wedstrijdweek") phaseFactor=.50;
+
+    // Alleen de eerstvolgende week mag actuele hersteldata gebruiken.
+    // Voor toekomstige weken wordt herstel niet voorspeld.
+    const readinessFactor=
+      offset===0
+        ?readiness.level==="low"
+          ?.78
+          :readiness.level==="moderate"
+            ?.90
+            :1
+        :1;
+
+    const km=Math.max(
+      20,
+      Math.round(baseKm*readinessFactor*phaseFactor)
+    );
+
+    const focus=
+      block?.quality ||
+      horizonQualityFocus(race,fallbackPhase);
+
+    const color=
+      block?.phase==="race" || fallbackPhase==="Wedstrijdweek"
+        ?"red"
+        :block?.phase==="taper" || fallbackPhase==="Taper"
+          ?"orange"
+          :"green";
 
     return{
       offset,
       start,
       end,
-      phase,
+      phase:phaseLabelText,
       km,
-      focus:horizonQualityFocus(race,phase)
+      focus,
+      color,
+      targetRace:block?.targetRace || race,
+      usesCurrentRecovery:offset===0 && readiness.level!=="unknown"
     };
   });
 
@@ -7519,10 +7630,10 @@ function buildCoachHorizon(){
         – ${new Intl.DateTimeFormat("nl-NL",{day:"numeric",month:"short"}).format(new Date(week.end+"T12:00:00"))}</small>
       </div>
       <div>
-        <strong>${week.phase}</strong>
-        <small>${safe(week.focus)}</small>
+        <strong>${safe(week.phase)}</strong>
+        <small>${safe(week.focus)} · ${safe(week.targetRace.name)}${week.usesCurrentRecovery?" · actuele recovery meegewogen":""}</small>
       </div>
-      <span class="adaptive-tag ${week.phase==="Wedstrijdweek"?"red":week.phase==="Taper"?"orange":"green"}">
+      <span class="adaptive-tag ${week.color}">
         ± ${week.km} km
       </span>
     </div>
@@ -7533,13 +7644,10 @@ function buildCoachHorizon(){
 
 
 
-
-
 let activeTrendDays=7;
 
 function trendNumber(value){
-  const number=Number(value);
-  return Number.isFinite(number)?number:null;
+  return finiteNumberOrNull(value);
 }
 
 function trendAverage(values){
@@ -7630,11 +7738,19 @@ function recordPerformanceScore(record,index,records){
     recovery=clampScore(value);
   }
 
-  const performance=weightedAvailableScore([
+  const performanceInputs=[
     {value:fitness,weight:.40},
     {value:fatigue,weight:.22},
     {value:recovery,weight:.38}
-  ]);
+  ];
+  const availablePerformanceInputs=performanceInputs.filter(
+    item=>item.value!==null && item.value!==undefined
+  ).length;
+
+  const performance=
+    availablePerformanceInputs>=2
+      ?weightedAvailableScore(performanceInputs)
+      :null;
 
   return{
     date:record.id||record.date||"",
@@ -7675,9 +7791,18 @@ function renderTrendChart(points){
 
   if(!chart || !line || !dots || !grid) return;
 
-  if(points.length<2){
+  const validPoints=points.filter(point=>
+    point.performance!==null &&
+    point.performance!==undefined &&
+    Number.isFinite(Number(point.performance))
+  );
+
+  if(validPoints.length<2){
     chart.hidden=true;
     empty.hidden=false;
+    line.setAttribute("points","");
+    dots.innerHTML="";
+    grid.innerHTML="";
     return;
   }
 
@@ -7691,8 +7816,8 @@ function renderTrendChart(points){
   const width=right-left;
   const height=bottom-top;
 
-  const coordinates=points.map((point,index)=>{
-    const x=left+(index/(points.length-1))*width;
+  const coordinates=validPoints.map((point,index)=>{
+    const x=left+(index/(validPoints.length-1))*width;
     const y=bottom-(clampScore(point.performance)/100)*height;
     return{x,y,value:point.performance,date:point.date};
   });
@@ -7908,22 +8033,15 @@ function workoutWasCompleted(date,workout){
 }
 
 function completedWorkoutEntriesBetween(minDaysAgo,maxDaysAgo){
-  const todayValue=new Date();
-  todayValue.setHours(12,0,0,0);
-
   return Object.entries({...serverWorkouts,...customWorkouts})
-    .map(([date,workout])=>({
-      date,
-      workout,
-      parsed:new Date(date+"T12:00:00")
-    }))
+    .map(([date,workout])=>({date,workout}))
     .filter(item=>{
       if(!item.workout) return false;
       if(["Race","Rest"].includes(item.workout.type)) return false;
       if(!workoutWasCompleted(item.date,item.workout)) return false;
 
-      const age=Math.floor((todayValue-item.parsed)/86400000);
-      return age>=minDaysAgo && age<=maxDaysAgo;
+      const age=calendarDayDifference(todayDateString(),item.date);
+      return age!==null && age>=minDaysAgo && age<=maxDaysAgo;
     });
 }
 
@@ -8380,22 +8498,16 @@ function renderLoadMonitor(){
 }
 
 function historicalWorkoutEntries(days){
-  const cutoff=new Date();
-  cutoff.setHours(0,0,0,0);
-  cutoff.setDate(cutoff.getDate()-days+1);
-
-  const end=new Date();
-  end.setHours(23,59,59,999);
-
   return Object.entries({...serverWorkouts,...customWorkouts})
-    .map(([date,workout])=>({date,workout,parsed:new Date(date+"T12:00:00")}))
-    .filter(item=>
-      item.workout &&
-      item.parsed>=cutoff &&
-      item.parsed<=end &&
-      item.workout.type!=="Race" &&
-      item.workout.type!=="Rest"
-    );
+    .map(([date,workout])=>({date,workout}))
+    .filter(item=>{
+      if(!item.workout) return false;
+      if(["Race","Rest"].includes(item.workout.type)) return false;
+      if(!workoutWasCompleted(item.date,item.workout)) return false;
+
+      const age=calendarDayDifference(todayDateString(),item.date);
+      return age!==null && age>=0 && age<days;
+    });
 }
 
 function historySummary(days){
@@ -8443,39 +8555,91 @@ function buildCoachIntelligence(){
   const twentyEight=historySummary(28);
   const ninety=historySummary(90);
 
-  const runTotal=Math.max(1,twentyEight.runSessions);
-  const easyPct=percentage(twentyEight.easy,runTotal);
-  const qualityPct=percentage(twentyEight.quality,runTotal);
-  const supportPct=percentage(twentyEight.support,Math.max(1,twentyEight.sessions));
+  // Met minder dan vier voltooide looptrainingen in 28 dagen is een
+  // procentuele trainingsbalans te fragiel om inhoudelijke conclusies te trekken.
+  const sufficientHistory=twentyEight.runSessions>=4;
+
+  const easyPct=sufficientHistory
+    ?percentage(twentyEight.easy,twentyEight.runSessions)
+    :null;
+  const qualityPct=sufficientHistory
+    ?percentage(twentyEight.quality,twentyEight.runSessions)
+    :null;
+  const supportPct=sufficientHistory
+    ?percentage(twentyEight.support,Math.max(1,twentyEight.sessions))
+    :null;
 
   const signals=[];
 
-  if(twentyEight.quality===0){
-    signals.push({state:"warn",icon:"!",text:"De afgelopen 28 dagen staat lokaal geen kwaliteitstraining geregistreerd."});
-  }else if(qualityPct>35){
-    signals.push({state:"warn",icon:"!",text:`${qualityPct}% van je looptrainingen was kwaliteit; bewaak voldoende rustige dagen.`});
+  if(!sufficientHistory){
+    signals.push({
+      state:"warn",
+      icon:"?",
+      text:`Slechts ${twentyEight.runSessions} voltooide looptrainingen in de laatste 28 dagen; trainingsbalans wordt nog niet beoordeeld.`
+    });
   }else{
-    signals.push({state:"good",icon:"✓",text:`${twentyEight.quality} kwaliteitstrainingen in 28 dagen geeft een bruikbare trainingsprikkel.`});
-  }
+    if(twentyEight.quality===0){
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:"De afgelopen 28 dagen staat lokaal geen voltooide kwaliteitstraining geregistreerd."
+      });
+    }else if(qualityPct>35){
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`${qualityPct}% van je voltooide looptrainingen was kwaliteit; bewaak voldoende rustige dagen.`
+      });
+    }else{
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`${twentyEight.quality} voltooide kwaliteitstrainingen in 28 dagen geven een bruikbare trainingsprikkel.`
+      });
+    }
 
-  if(easyPct>=55){
-    signals.push({state:"good",icon:"✓",text:`Rustige looptrainingen vormen ${easyPct}% van je loopfrequentie.`});
-  }else{
-    signals.push({state:"warn",icon:"!",text:`Rustige looptrainingen vormen slechts ${easyPct}% van je loopfrequentie.`});
-  }
+    if(easyPct>=55){
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`Rustige looptrainingen vormen ${easyPct}% van je voltooide loopfrequentie.`
+      });
+    }else{
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`Rustige looptrainingen vormen ${easyPct}% van je voltooide loopfrequentie.`
+      });
+    }
 
-  if(twentyEight.longRuns>=3){
-    signals.push({state:"good",icon:"✓",text:`${twentyEight.longRuns} lange duurlopen in 28 dagen ondersteunen je duurvermogen.`});
-  }else{
-    signals.push({state:"warn",icon:"!",text:`Slechts ${twentyEight.longRuns} lange duurlopen in 28 dagen geregistreerd.`});
-  }
+    if(twentyEight.longRuns>=3){
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`${twentyEight.longRuns} lange duurlopen in 28 dagen ondersteunen je duurvermogen.`
+      });
+    }else{
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`${twentyEight.longRuns} lange duurlopen in 28 dagen geregistreerd.`
+      });
+    }
 
-  if(twentyEight.support>=4){
-    signals.push({state:"good",icon:"✓",text:`${twentyEight.support} core-, mobiliteits- of krachtsessies ondersteunen belastbaarheid.`});
-  }else{
-    signals.push({state:"warn",icon:"!",text:`${twentyEight.support} ondersteunende sessies in 28 dagen; regelmaat kan beter.`});
+    if(twentyEight.support>=4){
+      signals.push({
+        state:"good",
+        icon:"✓",
+        text:`${twentyEight.support} core-, mobiliteits- of krachtsessies ondersteunen belastbaarheid.`
+      });
+    }else{
+      signals.push({
+        state:"warn",
+        icon:"!",
+        text:`${twentyEight.support} ondersteunende sessies in 28 dagen; regelmaat kan beter.`
+      });
+    }
   }
-
 
   const diary=buildDiaryContext();
   if(diary.level==="elevated"){
@@ -8499,23 +8663,43 @@ function buildCoachIntelligence(){
   }
 
   let headline="Trainingsbalans is bruikbaar";
-  let conclusion="Behoud de huidige verhouding en laat zware sessies volgen door rustige belasting.";
+  let conclusion=
+    "Behoud de huidige verhouding en laat zware sessies volgen door rustige belasting.";
 
-  if(qualityPct>35 || easyPct<50){
+  if(!sufficientHistory){
+    headline="Onvoldoende voltooide trainingshistorie";
+    conclusion=
+      "Markeer uitgevoerde trainingen als voltooid; vanaf vier voltooide looptrainingen in 28 dagen beoordeelt de coach de balans.";
+  }else if(qualityPct>35 || easyPct<50){
     headline="Meer rustige training aanbevolen";
-    conclusion="De lokale geschiedenis bevat relatief veel kwaliteit. Verhoog het aandeel rustige duur en herstel.";
+    conclusion=
+      "De voltooide lokale geschiedenis bevat relatief veel kwaliteit. Verhoog het aandeel rustige duur en herstel.";
   }else if(twentyEight.quality===0){
     headline="Kwaliteitsprikkel ontbreekt";
-    conclusion="Wanneer je herstel het toelaat, plan één gerichte drempel- of VO₂max-training per week.";
+    conclusion=
+      "Wanneer je herstel het toelaat, plan één gerichte drempel- of VO₂max-training per week.";
   }else if(twentyEight.support<4){
     headline="Ondersteunende training kan consistenter";
-    conclusion="Plan minimaal één core- en één mobiliteitssessie per week naast het lopen.";
+    conclusion=
+      "Plan regelmatig core en mobiliteit naast het lopen.";
   }else if(twentyEight.longRuns<3){
     headline="Lange duur verdient meer aandacht";
-    conclusion="Richting langere wedstrijden is ongeveer één passende lange duurloop per week wenselijk.";
+    conclusion=
+      "Richting langere wedstrijden is regelmatige passende lange duur nuttig.";
   }
 
-  return{seven,twentyEight,ninety,easyPct,qualityPct,supportPct,signals,headline,conclusion};
+  return{
+    seven,
+    twentyEight,
+    ninety,
+    sufficientHistory,
+    easyPct,
+    qualityPct,
+    supportPct,
+    signals,
+    headline,
+    conclusion
+  };
 }
 
 function renderCoachIntelligence(){
@@ -8529,13 +8713,26 @@ function renderCoachIntelligence(){
   setPeriod("intel28",result.twentyEight);
   setPeriod("intel90",result.ninety);
 
-  document.getElementById("intelEasyBar").style.width=`${result.easyPct}%`;
-  document.getElementById("intelQualityBar").style.width=`${result.qualityPct}%`;
-  document.getElementById("intelSupportBar").style.width=`${result.supportPct}%`;
+  const easyWidth=result.easyPct===null?0:result.easyPct;
+  const qualityWidth=result.qualityPct===null?0:result.qualityPct;
+  const supportWidth=result.supportPct===null?0:result.supportPct;
 
-  document.getElementById("intelEasyText").textContent=`${result.twentyEight.easy} rustige looptrainingen · ${result.easyPct}%`;
-  document.getElementById("intelQualityText").textContent=`${result.twentyEight.quality} kwaliteitstrainingen · ${result.qualityPct}%`;
-  document.getElementById("intelSupportText").textContent=`${result.twentyEight.support} ondersteunende sessies · ${result.supportPct}%`;
+  document.getElementById("intelEasyBar").style.width=`${easyWidth}%`;
+  document.getElementById("intelQualityBar").style.width=`${qualityWidth}%`;
+  document.getElementById("intelSupportBar").style.width=`${supportWidth}%`;
+
+  document.getElementById("intelEasyText").textContent=
+    result.easyPct===null
+      ?`${result.twentyEight.easy} voltooide rustige looptrainingen · onvoldoende data`
+      :`${result.twentyEight.easy} rustige looptrainingen · ${result.easyPct}%`;
+  document.getElementById("intelQualityText").textContent=
+    result.qualityPct===null
+      ?`${result.twentyEight.quality} voltooide kwaliteitstrainingen · onvoldoende data`
+      :`${result.twentyEight.quality} kwaliteitstrainingen · ${result.qualityPct}%`;
+  document.getElementById("intelSupportText").textContent=
+    result.supportPct===null
+      ?`${result.twentyEight.support} voltooide ondersteunende sessies · onvoldoende data`
+      :`${result.twentyEight.support} ondersteunende sessies · ${result.supportPct}%`;
 
   document.getElementById("coachIntelligenceSignals").innerHTML=
     result.signals.map(signal=>`
@@ -9532,7 +9729,7 @@ function saveAiGeneratedWeek(){
   let skipped=0;
 
   for(const workout of option.workouts){
-    if(customWorkouts[workout.date]){
+    if(allWorkouts()[workout.date]){
       skipped++;
       continue;
     }
@@ -9945,28 +10142,20 @@ function clampScore(value){
   return Math.max(0,Math.min(100,Math.round(Number(value)||0)));
 }
 
-function dateDaysAgo(days){
-  const value=new Date();
-  value.setHours(0,0,0,0);
-  value.setDate(value.getDate()-days);
-  return value;
-}
-
 function calculateConsistencyScore(){
-  const cutoff=dateDaysAgo(28);
-  const todayValue=new Date();
-  todayValue.setHours(23,59,59,999);
-
   const workouts=Object.entries({...serverWorkouts,...customWorkouts})
     .filter(([date,workout])=>{
       if(!workout || workout.type==="Race" || workout.type==="Rest") return false;
-      const parsed=new Date(date+"T12:00:00");
-      return parsed>=cutoff && parsed<=todayValue;
+
+      const age=calendarDayDifference(todayDateString(),date);
+      // Vandaag telt pas mee nadat de dag voorbij is; anders zou een nog
+      // uit te voeren training je consistentie al verlagen.
+      return age!==null && age>=1 && age<=28;
     });
 
   if(!workouts.length){
     return{
-      score:60,
+      score:null,
       completed:0,
       planned:0,
       explanation:"Nog onvoldoende lokale trainingshistorie"
@@ -9993,7 +10182,8 @@ function calculatePerformanceEngine(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
   const race=getRaceFocus();
-  const phase=classifyRacePhase(race);
+  const seasonBlock=seasonBlockForDate(todayDateString());
+  const phase=seasonPhaseToLegacyPhase(seasonBlock,race);
   const consistency=calculateConsistencyScore();
 
   const ctl=snapshot.ctl;
@@ -10026,12 +10216,22 @@ function calculatePerformanceEngine(){
   if(phase.phase==="race-week") phaseScore=90;
   if(!race) phaseScore=null;
 
-  let raceReadiness=weightedAvailableScore([
+  const raceReadinessInputs=[
     {value:fitness,weight:.32},
     {value:recovery,weight:.30},
     {value:consistency.score,weight:.23},
     {value:phaseScore,weight:.15}
-  ]);
+  ];
+  const substantiveRaceInputs=[
+    fitness,
+    recovery,
+    consistency.score
+  ].filter(value=>value!==null && value!==undefined).length;
+
+  let raceReadiness=
+    race && substantiveRaceInputs>=1
+      ?weightedAvailableScore(raceReadinessInputs)
+      :null;
 
   if(
     race &&
@@ -10061,14 +10261,25 @@ function calculatePerformanceEngine(){
     20+(dataPoints/possibleDataPoints)*80
   );
 
-  const performance=weightedAvailableScore([
+  const performanceInputs=[
     {value:fitness,weight:.23},
     {value:fatigue,weight:.17},
     {value:recovery,weight:.27},
     {value:consistency.score,weight:.16},
     {value:raceReadiness,weight:.12},
     {value:confidence,weight:.05}
-  ]);
+  ];
+  const substantivePerformanceInputs=[
+    fitness,
+    fatigue,
+    recovery,
+    consistency.score
+  ].filter(value=>value!==null && value!==undefined).length;
+
+  const performance=
+    substantivePerformanceInputs>=2
+      ?weightedAvailableScore(performanceInputs)
+      :null;
 
   const signals=[];
 
@@ -10095,8 +10306,20 @@ function calculatePerformanceEngine(){
   });
 
   signals.push({
-    state:consistency.score>=75?"good":consistency.score>=55?"warn":"bad",
-    icon:consistency.score>=75?"✓":consistency.score>=55?"!":"×",
+    state:consistency.score===null
+      ?"warn"
+      :consistency.score>=75
+        ?"good"
+        :consistency.score>=55
+          ?"warn"
+          :"bad",
+    icon:consistency.score===null
+      ?"?"
+      :consistency.score>=75
+        ?"✓"
+        :consistency.score>=55
+          ?"!"
+          :"×",
     text:consistency.explanation
   });
 
@@ -10266,6 +10489,16 @@ function phaseLabel(phase){
 
 function createTodayRecommendation(readiness,race,phase,availability,currentWorkout){
   const date=todayDateString();
+
+  if(currentWorkout?.type==="Race"){
+    return{
+      kind:"keep",
+      workout:currentWorkout,
+      title:currentWorkout.name,
+      text:"Vandaag is een wedstrijddag. De coach vervangt je wedstrijd niet automatisch door een andere training.",
+      steps:currentWorkout.displaySteps||[]
+    };
+  }
 
   if(!availability.available){
     const minutes=15;
@@ -10740,7 +10973,14 @@ function applyTodayRecommendation(){
   if(!pendingTodayAdvice?.workout) return;
 
   const date=todayDateString();
-  const existing=customWorkouts[date];
+  const existing=currentTodayWorkout();
+  const status=document.getElementById("todayStatus");
+
+  if(existing?.type==="Race"){
+    status.className="status error";
+    status.textContent="Een wedstrijd wordt niet automatisch vervangen door coachadvies.";
+    return;
+  }
 
   if(existing){
     const replacement=pendingTodayAdvice.kind==="rest"
@@ -10762,7 +11002,6 @@ function applyTodayRecommendation(){
   renderSaved();
   renderTodayCoach();
 
-  const status=document.getElementById("todayStatus");
   status.className="status ok";
   status.textContent=`${workout.name} is toegevoegd aan vandaag.`;
 }
@@ -10772,16 +11011,17 @@ async function refreshTodayCoach(){
   status.className="status";
   status.textContent="Hersteldata wordt vernieuwd…";
 
-  try{
-    await loadWellnessDashboard();
-    renderTodayCoach();
+  const result=await loadWellnessDashboard();
+
+  if(result.ok){
     status.className="status ok";
     status.textContent="Coachadvies is bijgewerkt.";
-  }catch(error){
-    renderTodayCoach();
-    status.className="status error";
-    status.textContent=`Wellnessdata kon niet volledig worden vernieuwd: ${error.message}`;
+    return;
   }
+
+  status.className="status error";
+  status.textContent=
+    `Wellnessdata kon niet worden vernieuwd: ${result.error?.message || "onbekende fout"}. Bestaande lokale planning blijft beschikbaar.`;
 }
 
 
@@ -11214,11 +11454,11 @@ function saveAdaptiveWeek(){
   let skipped=0;
 
   for(const workout of pendingAdaptiveWeek){
-    if(customWorkouts[workout.date]){
+    if(allWorkouts()[workout.date]){
       skipped++;
       continue;
     }
-    customWorkouts[workout.date]=workout;
+    customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
     added++;
   }
 
@@ -11327,32 +11567,56 @@ function preferenceLabel(value){
   return labels[value] || value;
 }
 
-function fillProfileForm(){const p=getProfile();profileName.value=p.name;profileDays.value=String(p.days);profileWeeklyKm.value=p.weeklyKm;profileMaxKm.value=p.maxKm;profileFiveKPr.value=p.fiveKPr;profileFiveKGoal.value=p.fiveKGoal;profileTenKPr.value=p.tenKPr;profileHalfGoal.value=p.halfGoal;profileMaxHr.value=p.maxHr;profileZ2Hr.value=p.z2Hr;renderProfileSummary();}
+function fillProfileForm(){
+  const p=getProfile();
+  document.getElementById("profileName").value=p.name;
+  document.getElementById("profileDays").value=String(p.days);
+  document.getElementById("profileWeeklyKm").value=p.weeklyKm;
+  document.getElementById("profileMaxKm").value=p.maxKm;
+  document.getElementById("profileFiveKPr").value=p.fiveKPr;
+  document.getElementById("profileFiveKGoal").value=p.fiveKGoal;
+  document.getElementById("profileTenKPr").value=p.tenKPr;
+  document.getElementById("profileHalfGoal").value=p.halfGoal;
+  document.getElementById("profileMaxHr").value=p.maxHr;
+  document.getElementById("profileZ2Hr").value=p.z2Hr;
+  renderProfileSummary();
+}
 function saveProfile(e){
   e.preventDefault();
   const current=getProfile();
   profile={
     ...current,
-    name:safe(profileName.value).trim()||"Jaco",
-    days:Number(profileDays.value),
-    weeklyKm:Number(profileWeeklyKm.value),
-    maxKm:Number(profileMaxKm.value),
-    fiveKPr:safe(profileFiveKPr.value).trim(),
-    fiveKGoal:safe(profileFiveKGoal.value).trim(),
-    tenKPr:safe(profileTenKPr.value).trim(),
-    halfGoal:safe(profileHalfGoal.value).trim(),
-    maxHr:Number(profileMaxHr.value),
-    z2Hr:Number(profileZ2Hr.value)
+    name:safe(document.getElementById("profileName").value).trim()||"Jaco",
+    days:Number(document.getElementById("profileDays").value),
+    weeklyKm:Number(document.getElementById("profileWeeklyKm").value),
+    maxKm:Number(document.getElementById("profileMaxKm").value),
+    fiveKPr:safe(document.getElementById("profileFiveKPr").value).trim(),
+    fiveKGoal:safe(document.getElementById("profileFiveKGoal").value).trim(),
+    tenKPr:safe(document.getElementById("profileTenKPr").value).trim(),
+    halfGoal:safe(document.getElementById("profileHalfGoal").value).trim(),
+    maxHr:Number(document.getElementById("profileMaxHr").value),
+    z2Hr:Number(document.getElementById("profileZ2Hr").value)
   };
   saveObject(PROFILE_KEY,profile);
-  profileStatus.className="status ok";
-  profileStatus.textContent="Profiel opgeslagen.";
+
+  const status=document.getElementById("profileStatus");
+  status.className="status ok";
+  status.textContent="Profiel opgeslagen.";
   renderProfileSummary();
 }
-function renderProfileSummary(){const p=getProfile();summaryDays.textContent=p.days;summaryKm.textContent=`${p.weeklyKm} km`;summaryFiveK.textContent=p.fiveKGoal||"—";summaryHalf.textContent=p.halfGoal||"—";}
+function renderProfileSummary(){
+  const p=getProfile();
+  document.getElementById("summaryDays").textContent=p.days;
+  document.getElementById("summaryKm").textContent=`${p.weeklyKm} km`;
+  document.getElementById("summaryFiveK").textContent=p.fiveKGoal||"—";
+  document.getElementById("summaryHalf").textContent=p.halfGoal||"—";
+}
 function nextMonday(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day+7);return ymd(d);}
 function raceForPlanner(){return getRaceFocus();}
-function plannerReduced(){const form=Number(metricForm.textContent);return Number.isFinite(form)&&form<-15;}
+function plannerReduced(){
+  const form=finiteNumberOrNull(document.getElementById("metricForm")?.textContent);
+  return form!==null && form<-15;
+}
 function makeWeekWorkout(date,arg2,arg3,arg4,arg5,arg6,arg7){
   // Ondersteunt zowel de oude 6-argument vorm als de nieuwere
   // (date, planType, km, name, steps, description, rpe) vorm.
@@ -11409,8 +11673,55 @@ pendingWeekPlan=applyRaceCalendarToWeek(
   pendingWeekPlan
 );
 renderWeekPlan(reduced,race,target);}
-function renderWeekPlan(reduced,race,target){const seasonBlock=seasonBlockForWeek(nextMonday());weekPlan.innerHTML=pendingWeekPlan.map(w=>`<div class="week-plan-row"><div><strong>${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(w.date+"T12:00:00"))}</strong><small>${w.distanceKm} km</small></div><div><strong>${safe(w.name)}</strong><small>${safe(w.displaySteps[0]||"")}</small></div><span class="readiness-badge">${safe(w.rpe)}</span></div>`).join("");saveWeekPlan.disabled=false;weekPlanStatus.className="status";weekPlanStatus.textContent=`${target} km gepland${race?` richting ${race.name}`:""}${seasonBlock?` · blok ${seasonBlock.label}`:""}${reduced?" · volume verlaagd door herstelsignalen":""}.`;}
-function savePersonalWeek(){if(!pendingWeekPlan.length)return;let added=0;for(const w of pendingWeekPlan){if(!customWorkouts[w.date]){customWorkouts[w.date]=w;added++;}}saveObject(STORAGE_KEY,customWorkouts);renderMonth();renderSaved();weekPlanStatus.className="status ok";weekPlanStatus.textContent=`${added} trainingen toegevoegd aan de kalender.`;}
+function renderWeekPlan(reduced,race,target){
+  const seasonBlock=seasonBlockForWeek(nextMonday());
+  const plan=document.getElementById("weekPlan");
+  const saveButton=document.getElementById("saveWeekPlan");
+  const status=document.getElementById("weekPlanStatus");
+
+  plan.innerHTML=pendingWeekPlan.map(workout=>`
+    <div class="week-plan-row">
+      <div>
+        <strong>${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(workout.date+"T12:00:00"))}</strong>
+        <small>${trainingVolumeLabel(workout)}</small>
+      </div>
+      <div>
+        <strong>${safe(workout.name)}</strong>
+        <small>${safe(workout.displaySteps?.[0]||"")}</small>
+      </div>
+      <span class="readiness-badge">${safe(workout.rpe)}</span>
+    </div>
+  `).join("");
+
+  saveButton.disabled=false;
+  status.className="status";
+  status.textContent=
+    `${target} km gepland${race?` richting ${race.name}`:""}${seasonBlock?` · blok ${seasonBlock.label}`:""}${reduced?" · volume verlaagd door herstelsignalen":""}.`;
+}
+function savePersonalWeek(){
+  if(!pendingWeekPlan.length) return;
+
+  let added=0;
+  let skipped=0;
+
+  for(const workout of pendingWeekPlan){
+    if(allWorkouts()[workout.date]){
+      skipped++;
+      continue;
+    }
+    customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
+    added++;
+  }
+
+  saveObject(STORAGE_KEY,customWorkouts);
+  renderMonth();
+  renderSaved();
+
+  const status=document.getElementById("weekPlanStatus");
+  status.className="status ok";
+  status.textContent=
+    `${added} trainingen toegevoegd${skipped?` · ${skipped} bestaande dagen behouden`:""}.`;
+}
 
 async function loadServer(){
   try{

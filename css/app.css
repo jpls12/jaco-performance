@@ -9,7 +9,8 @@
       margin:0;min-height:100vh;
       background:linear-gradient(180deg,#07111f,#0b1626 55%,#07111f);
       color:var(--text);
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      -webkit-text-size-adjust:100%
     }
     main{max-width:880px;margin:auto;padding:20px 14px 78px}
     h1,h2,h3,p{margin-top:0}
@@ -27,7 +28,8 @@
     .tabs{display:grid;grid-template-columns:repeat(9,1fr);gap:9px;margin:17px 0}
     button{
       border:0;border-radius:13px;padding:13px;background:var(--green);
-      color:#062311;font-size:.96rem;font-weight:850;cursor:pointer
+      color:#062311;font-size:.96rem;font-weight:850;cursor:pointer;
+      touch-action:manipulation
     }
     button.secondary,.tab{background:#182b42;color:#dce8f8;border:1px solid #304a69}
     button.danger{background:#4a2027;color:#ffd9df;border:1px solid #78404b}
@@ -82,6 +84,9 @@
     }
     textarea{min-height:86px;resize:vertical}
     input:focus,select:focus,textarea:focus{border-color:var(--blue)}
+    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+      outline:2px solid #76c7ff;outline-offset:2px
+    }
     .section{padding-top:13px;border-top:1px solid #263a55}
     .form-mode{
       display:flex;justify-content:space-between;align-items:center;gap:10px;
@@ -390,7 +395,20 @@
         grid-template-columns:1fr 1fr;
       }
       .availability-day{grid-column:1/-1;padding-bottom:0}
-      .tabs{grid-template-columns:1fr}
+      .tabs{
+        display:flex;overflow-x:auto;overscroll-behavior-x:contain;
+        gap:7px;position:sticky;top:0;z-index:30;
+        margin:10px -14px 14px;padding:10px 14px;
+        background:rgba(7,17,31,.94);
+        backdrop-filter:blur(12px);
+        -webkit-backdrop-filter:blur(12px);
+        scrollbar-width:none
+      }
+      .tabs::-webkit-scrollbar{display:none}
+      .tab{
+        flex:0 0 auto;white-space:nowrap;
+        padding:10px 12px;min-height:44px
+      }
       .grid2{grid-template-columns:1fr}
       .day{min-height:61px;padding:6px}
       .day-name{display:none}
@@ -1001,4 +1019,14 @@
       .backup-preview-grid{grid-template-columns:repeat(2,1fr)}
       .backup-restore-row{align-items:stretch;flex-direction:column}
       .backup-restore-row button{width:100%}
+    }
+
+
+    @media (prefers-reduced-motion:reduce){
+      *,*::before,*::after{
+        scroll-behavior:auto!important;
+        animation-duration:.01ms!important;
+        animation-iteration-count:1!important;
+        transition-duration:.01ms!important
+      }
     }

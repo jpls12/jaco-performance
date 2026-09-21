@@ -66,7 +66,6 @@ document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
 document.getElementById("refreshLoadMonitor").onclick=()=>{
-  renderLoadMonitor();
   renderTodayCoach();
 };
 document.getElementById("coachDiaryForm").onsubmit=saveCoachDiary;
@@ -152,14 +151,12 @@ document.getElementById("refreshSeasonPlanner").onclick=()=>{
   renderSeasonPlanner();
   renderRaceCalendarOptimizer();
   renderTodayCoach();
-  renderAiWeekPlanner();
   renderSmartWeekCoach();
 };
 document.getElementById("refreshRaceCalendarOptimizer").onclick=()=>{
   renderRaceCalendarOptimizer();
   renderSeasonPlanner();
   renderTodayCoach();
-  renderAiWeekPlanner();
   renderSmartWeekCoach();
 };
 document.getElementById("simulateRace").onclick=renderRaceSimulator;
@@ -207,29 +204,16 @@ async function initializeJacoPerformance(){
   // Lokale trainingen en wedstrijden eerst tonen.
   await loadServer();
 
-  // Daarna actuele wellnessdata ophalen.
-  try{
-    await loadWellnessDashboard();
-  }catch(error){
-    console.error("Wellnessdata laden mislukt:",error);
+  // Daarna actuele wellnessdata ophalen. De wellness-loader herberekent
+  // alle afhankelijke coachpanelen exact één keer, ook bij een fout.
+  const wellnessResult=await loadWellnessDashboard();
+  if(!wellnessResult.ok){
+    console.error(
+      "Wellnessdata laden mislukt:",
+      wellnessResult.error
+    );
   }
 
-  // Coach pas berekenen nadat profiel, planning, wedstrijden en wellness geladen zijn.
-  renderTodayCoach();
-  renderCoachBrain();
-  buildCoachHorizon();
-  renderPerformanceEngine();
-  renderAiTrainingGenerator();
-  renderAiWeekPlanner();
-  renderCoachIntelligence();
-  renderPerformanceTrend(7);
-  renderSmartWeekCoach();
-  renderRaceSimulator();
-  renderRaceCalendarOptimizer();
-  renderSeasonPlanner();
-  renderFullSeasonTargetOptions();
-  renderFullSeasonSchedulePreview();
-  renderLoadMonitor();
   renderCoachDiary(todayDateString());
 }
 
