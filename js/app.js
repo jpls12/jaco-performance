@@ -431,10 +431,15 @@ function saveCompletedVisualWorkout(){
     ].join("\n")
   };
 
+  if(existing){
+    resetWorkoutDerivedState(date);
+  }
+
   customWorkouts[date]=workout;
   markWorkoutCompleted(date,workout);
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   renderMonth();
   renderSelected();
@@ -1881,11 +1886,17 @@ function applyCoachChatWorkout(){
     if(!confirmed) return;
   }
 
+  if(existing){
+    resetWorkoutDerivedState(date);
+  }
+
   const saved=JSON.parse(JSON.stringify(pendingCoachChatWorkout));
   saved.date=date;
   saved.status="planned";
   customWorkouts[date]=saved;
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   renderMonth();
   renderSelected();
@@ -2489,7 +2500,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"8.3.3",
+    appVersion:"8.3.4",
     createdAt:new Date().toISOString(),
     data
   };
@@ -3049,6 +3060,11 @@ function workoutUploadIsCurrent(date,workout){
 
   // Backwards compatibility voor uploadrecords van vóór 8.3.3.
   return String(record.name||"")===String(workout.name||"");
+}
+
+function resetWorkoutDerivedState(date){
+  delete doneWorkouts[date];
+  delete uploadedWorkouts[date];
 }
 
 function upgradeCompletionMarkers(){
@@ -6298,16 +6314,74 @@ function selectedRaceDistance(){
 function saveRace(event){
   event.preventDefault();
 
+  const formStatus=document.getElementById("raceFormStatus");
   const existingId=document.getElementById("raceOriginalId").value;
   const id=existingId || raceId();
+  const previousRace=existingId ? races[existingId]||null : null;
   const name=safe(document.getElementById("raceName").value).trim();
   const date=document.getElementById("raceDate").value;
   const distanceKm=selectedRaceDistance();
 
-  if(!name || !date || !distanceKm){
-    document.getElementById("raceFormStatus").className="status error";
-    document.getElementById("raceFormStatus").textContent="Naam, datum en afstand zijn verplicht.";
+  if(
+    !name ||
+    calendarDayNumber(date)===null ||
+    !Number.isFinite(distanceKm) ||
+    distanceKm<=0
+  ){
+    formStatus.className="status error";
+    formStatus.textContent="Naam, geldige datum en positieve afstand zijn verplicht.";
     return;
+  }
+
+  const anotherRace=Object.values(races).find(
+    race=>race.id!==id && race.date===date
+  );
+  if(anotherRace){
+    formStatus.className="status error";
+    formStatus.textContent=
+      `Op ${date} staat al wedstrijd "${anotherRace.name}". Per dag kan één hoofdwedstrijd in de kalender staan.`;
+    return;
+  }
+
+  const targetCustom=customWorkouts[date]||null;
+  const importedRaceFallback=
+    targetCustom?.type==="Race" &&
+    Boolean(targetCustom.importedPlan);
+  const targetServer=serverWorkouts[date]||null;
+  const movingToNewDate=!previousRace || previousRace.date!==date;
+
+  if(
+    movingToNewDate &&
+    ((targetCustom && !importedRaceFallback) || targetServer)
+  ){
+    const conflict=targetCustom || targetServer;
+    formStatus.className="status error";
+    formStatus.textContent=
+      `Op ${date} staat al "${conflict.name}". Verplaats of verwijder die training eerst.`;
+    return;
+  }
+
+  let preserveCompleted=false;
+
+  if(previousRace && previousRace.date!==date){
+    const oldDate=previousRace.date;
+    const oldVisible=allWorkouts()[oldDate]||null;
+    preserveCompleted=
+      Boolean(oldVisible) &&
+      completionMarkerMatches(doneWorkouts[oldDate],oldVisible);
+
+    if(
+      customWorkouts[oldDate]?.type==="Race" &&
+      customWorkouts[oldDate]?.importedPlan
+    ){
+      delete customWorkouts[oldDate];
+    }
+
+    resetWorkoutDerivedState(oldDate);
+  }
+
+  if(importedRaceFallback){
+    delete customWorkouts[date];
   }
 
   races[id]={
@@ -6320,9 +6394,17 @@ function saveRace(event){
     notes:safe(document.getElementById("raceNotes").value).trim()
   };
 
+  if(preserveCompleted){
+    markWorkoutCompleted(date,allWorkouts()[date]);
+  }
+
   saveObject(RACES_KEY,races);
-  document.getElementById("raceFormStatus").className="status ok";
-  document.getElementById("raceFormStatus").textContent=
+  saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
+
+  formStatus.className="status ok";
+  formStatus.textContent=
     existingId ? "Wedstrijd bijgewerkt." : "Wedstrijd toegevoegd aan de kalender.";
 
   renderRaces();
@@ -6336,7 +6418,6 @@ function saveRace(event){
   renderMonth();
   renderSelected();
 }
-
 function editRace(id){
   const race=races[id];
   if(!race) return;
@@ -6678,6 +6759,8 @@ function generateRacePlan(){
 
   const weeks=Math.max(1,Math.ceil(totalDays/7));
   let created=0;
+  let replaced=0;
+  let skipped=0;
   const firstMonday=mondayOf(start);
 
   for(let week=0;week<weeks;week++){
@@ -6704,7 +6787,16 @@ function generateRacePlan(){
     for(const [offset,type] of schedule){
       const date=addDays(weekStart,offset);
       if(date>=race.date) continue;
-      if(customWorkouts[date] && !overwrite) continue;
+
+      const existing=allWorkouts()[date]||null;
+      if(existing?.type==="Race"){
+        skipped++;
+        continue;
+      }
+      if(existing && !overwrite){
+        skipped++;
+        continue;
+      }
 
       let workout;
       if(type==="quality") workout=createQualityWorkout(date,race,week,weeks);
@@ -6715,6 +6807,11 @@ function generateRacePlan(){
       workout=adjustWorkoutForRaceCalendar(workout,date,race.id);
       if(!workout) continue;
 
+      if(existing && overwrite){
+        resetWorkoutDerivedState(date);
+        replaced++;
+      }
+
       customWorkouts[date]=workout;
       created++;
     }
@@ -6722,6 +6819,8 @@ function generateRacePlan(){
 
   // Race day marker is already provided by races.
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   selectedDate=race.date;
   visibleMonth=new Date(raceDate.getFullYear(),raceDate.getMonth(),1);
@@ -6732,7 +6831,10 @@ function generateRacePlan(){
   renderSaved();
 
   status.className="status ok";
-  status.textContent=`Schema aangemaakt: ${created} trainingen richting ${race.name}.`;
+  status.textContent=
+    `Schema aangemaakt: ${created} trainingen richting ${race.name}`+
+    `${replaced?` · ${replaced} bestaande vervangen`:""}`+
+    `${skipped?` · ${skipped} bestaande/racedagen behouden`:""}.`;
 }
 
 
@@ -6920,14 +7022,23 @@ function buildCoachAdvice(latest,averages){
 }
 
 
+function safeRenderView(label,render){
+  try{
+    return render();
+  }catch(error){
+    console.error(`${label} kon niet worden bijgewerkt:`,error);
+    return null;
+  }
+}
+
 function refreshDerivedCoachViews(){
-  renderTodayCoach();
-  renderCoachBrain();
-  buildCoachHorizon();
-  renderCoachIntelligence();
-  renderPerformanceTrend(activeTrendDays);
-  renderSmartWeekCoach();
-  renderRaceSimulator();
+  safeRenderView("Dagelijkse coach",renderTodayCoach);
+  safeRenderView("Coach Brain",renderCoachBrain);
+  safeRenderView("Coach Horizon",buildCoachHorizon);
+  safeRenderView("Coach Intelligence",renderCoachIntelligence);
+  safeRenderView("Performance Trend",()=>renderPerformanceTrend(activeTrendDays));
+  safeRenderView("Slimme Weekcoach",renderSmartWeekCoach);
+  safeRenderView("Race Simulator",renderRaceSimulator);
 }
 
 function renderWellnessDashboard(data){
@@ -7074,8 +7185,6 @@ function renderWellnessDashboard(data){
   document.getElementById("dashboardUpdated").textContent=
     `Intervals.icu gecontroleerd t/m ${latest.id || latest.date || "onbekende datum"}.`;
 
-  refreshDerivedCoachViews();
-
   const history=records.slice(-7).reverse();
   document.getElementById("wellnessHistory").innerHTML=history.length
     ? history.map(record=>{
@@ -7108,6 +7217,10 @@ function renderWellnessDashboard(data){
         ? "Actuele hersteldata geladen."
         : "Data geladen, maar onvoldoende actuele herstelmetingen voor een coachscore.";
   }
+
+  // Een fout in één coachpaneel mag een succesvol wellnessverzoek niet
+  // meer als een API-fout laten eindigen.
+  refreshDerivedCoachViews();
 }
 
 async function loadWellnessDashboard(){
@@ -9492,7 +9605,6 @@ function applyFullSeasonSchedule(){
   );
   if(!confirmed) return;
 
-  // Eerdere 8.2-versies binnen deze periode worden vervangen.
   Object.entries(customWorkouts).forEach(([date,workout])=>{
     if(
       workout?.seasonGenerated &&
@@ -9500,6 +9612,7 @@ function applyFullSeasonSchedule(){
       date>=plan.start &&
       date<=plan.end
     ){
+      resetWorkoutDerivedState(date);
       delete customWorkouts[date];
     }
   });
@@ -9507,10 +9620,22 @@ function applyFullSeasonSchedule(){
   let added=0;
   let replaced=0;
   let skipped=0;
+  let raceDaysProtected=0;
 
   for(const workout of plan.workouts){
-    const customExisting=customWorkouts[workout.date];
-    const serverExisting=!customExisting?serverWorkouts[workout.date]:null;
+    const raceOnDate=Object.values(races).find(
+      race=>race.date===workout.date
+    )||null;
+
+    if(raceOnDate){
+      raceDaysProtected++;
+      continue;
+    }
+
+    const customExisting=customWorkouts[workout.date]||null;
+    const serverExisting=!customExisting
+      ?serverWorkouts[workout.date]||null
+      :null;
     const manualExisting=
       (customExisting && !customExisting.seasonGenerated)
         ?customExisting
@@ -9522,6 +9647,7 @@ function applyFullSeasonSchedule(){
     }
 
     if(manualExisting && overwrite){
+      resetWorkoutDerivedState(workout.date);
       replaced++;
     }
 
@@ -9530,6 +9656,9 @@ function applyFullSeasonSchedule(){
   }
 
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
+
   renderMonth();
   renderSelected();
   renderSaved();
@@ -9538,9 +9667,11 @@ function applyFullSeasonSchedule(){
 
   status.className="status ok";
   status.textContent=
-    `${added} trainingen ingepland${replaced?` · ${replaced} bestaande vervangen`:""}${skipped?` · ${skipped} bestaande behouden`:""}.`;
+    `${added} trainingen ingepland`+
+    `${replaced?` · ${replaced} bestaande vervangen`:""}`+
+    `${skipped?` · ${skipped} bestaande behouden`:""}`+
+    `${raceDaysProtected?` · ${raceDaysProtected} racedag(en) beschermd`:""}.`;
 }
-
 function removeFullSeasonSchedule(){
   const generated=Object.entries(customWorkouts).filter(
     ([,workout])=>
@@ -9556,10 +9687,13 @@ function removeFullSeasonSchedule(){
   if(!confirmed) return;
 
   generated.forEach(([date])=>{
+    resetWorkoutDerivedState(date);
     delete customWorkouts[date];
   });
 
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
   pendingFullSeasonSchedule=null;
   renderMonth();
   renderSelected();
@@ -10439,11 +10573,17 @@ function saveAiGeneratedTraining(){
     if(!confirmed) return;
   }
 
+  if(existing){
+    resetWorkoutDerivedState(date);
+  }
+
   const saved=JSON.parse(JSON.stringify(workout));
   saved.date=date;
   saved.status="planned";
   customWorkouts[date]=saved;
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   renderMonth();
   renderSelected();
@@ -11312,10 +11452,10 @@ function renderTodayCoach(){
           :"Plan advies voor vandaag";
 
   renderCurrentTodayWorkout(existing);
-  renderPerformanceEngine();
-  renderAiTrainingGenerator();
-  renderAiWeekPlanner();
-  renderLoadMonitor();
+  safeRenderView("Performance Engine",renderPerformanceEngine);
+  safeRenderView("AI Training Generator",renderAiTrainingGenerator);
+  safeRenderView("AI Week Planner",renderAiWeekPlanner);
+  safeRenderView("Belastbaarheidsmonitor",renderLoadMonitor);
 }
 
 function applyTodayRecommendation(){
@@ -11341,10 +11481,16 @@ function applyTodayRecommendation(){
     }
   }
 
+  if(existing){
+    resetWorkoutDerivedState(date);
+  }
+
   const workout=JSON.parse(JSON.stringify(pendingTodayAdvice.workout));
   workout.date=date;
   customWorkouts[date]=workout;
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   renderMonth();
   renderSelected();
