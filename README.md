@@ -4,9 +4,25 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**8.3.3 · Security & Consistency**
+**8.3.4 · Final Stability**
 
 Deze release bouwt voort op de stabilisatierondes en sluit de laatste gevonden punten rond privacy, wedstrijdhistorie, voltooid-/uploadstatus en weekplanning af voordat nieuwe features worden toegevoegd.
+
+### 8.3.4 stabiliteitslaag
+
+Deze laatste hardeningronde voegt geen nieuwe coachfeature toe. Hij sluit
+resterende randgevallen af:
+
+- rendererfouten in één coachpaneel kunnen het wellnessdashboard niet meer
+  ten onrechte als API-fout laten eindigen;
+- één kalenderdag kan niet stilzwijgend twee wedstrijden of een nieuwe
+  wedstrijd plus een verborgen training bevatten;
+- racedagen blijven beschermd bij volledige en handmatige schemageneratie;
+- bij expliciete vervanging van een training worden verouderde voltooid- en
+  uploadmarkers opgeschoond;
+- verwijderen of opnieuw genereren van 8.2-schema's laat geen verborgen
+  statusresten achter;
+- custom workout-uploads valideren nu ook of een kalenderdatum echt bestaat.
 
 ## Architectuur
 
