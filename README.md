@@ -4,10 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**8.3.2 · Final Hardening**
+**8.3.3 · Security & Consistency**
 
-Deze release bouwt voort op 8.3.1 en sluit resterende randgevallen rond lokale opslag,
-backup-herstel, kalenderconflicten, racedagen en bronherkenning af voordat nieuwe features worden toegevoegd.
+Deze release bouwt voort op de stabilisatierondes en sluit de laatste gevonden punten rond privacy, wedstrijdhistorie, voltooid-/uploadstatus en weekplanning af voordat nieuwe features worden toegevoegd.
 
 ## Architectuur
 
@@ -97,3 +96,13 @@ gecontroleerd en daarna naar `main` gemerged. Vercel deployt vervolgens vanuit
 
 Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
+
+
+## 8.3.3 hardening
+
+- Persoonlijke Intervals.icu-wellnessdata vereist nu dezelfde app-pincode als workout-export.
+- De pincode wordt alleen voor de huidige browsersessie bewaard en komt niet in backups.
+- Voltooidstatus wordt aan de concrete workout gekoppeld in plaats van alleen aan een datum.
+- Uploadstatus gebruikt een workout-fingerprint, zodat een gewijzigde training niet onterecht als gesynchroniseerd wordt getoond.
+- Voltooide wedstrijden tellen mee in lokale loopbelasting en zware-sessiehistorie.
+- Automatische core/mobility wordt maximaal één keer per gegenereerde week toegevoegd.

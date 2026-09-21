@@ -109,7 +109,7 @@ export default async function handler(req, res) {
   }
 
   const workoutDate = requestBody?.workoutDate;
-  const pin = requestBody?.pin;
+  const pin = req.headers["x-jaco-pin"] ?? requestBody?.pin;
 
   if (String(pin ?? "") !== String(appPin)) {
     return sendJson(res, 401, { error: "Onjuiste app-pincode." });
