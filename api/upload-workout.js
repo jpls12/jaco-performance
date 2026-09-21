@@ -10,6 +10,22 @@ function cleanText(value, maxLength = 200) {
   return String(value ?? "").trim().slice(0, maxLength);
 }
 
+function isValidIsoDate(value) {
+  const match = String(value || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) return false;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
 function validateCustomWorkout(input) {
   if (!input || typeof input !== "object") {
     throw new Error("De eigen training ontbreekt.");
@@ -21,7 +37,7 @@ function validateCustomWorkout(input) {
   const type = cleanText(input.type || "Run", 20);
   const description = cleanText(input.intervalsDescription, 5000);
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (!isValidIsoDate(date)) {
     throw new Error("De datum van de training is ongeldig.");
   }
   if (!name) {
