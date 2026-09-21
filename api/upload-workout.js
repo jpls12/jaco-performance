@@ -10,6 +10,21 @@ function cleanText(value, maxLength = 200) {
   return String(value ?? "").trim().slice(0, maxLength);
 }
 
+function isValidIsoDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false;
+  }
+
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  );
+}
+
 function validateCustomWorkout(input) {
   if (!input || typeof input !== "object") {
     throw new Error("De eigen training ontbreekt.");
@@ -21,7 +36,7 @@ function validateCustomWorkout(input) {
   const type = cleanText(input.type || "Run", 20);
   const description = cleanText(input.intervalsDescription, 5000);
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  if (!isValidIsoDate(date)) {
     throw new Error("De datum van de training is ongeldig.");
   }
   if (!name) {
@@ -108,7 +123,7 @@ export default async function handler(req, res) {
     }
   }
 
-  const workoutDate = requestBody?.workoutDate;
+  const workoutDate = cleanText(requestBody?.workoutDate, 10);
   const pin = req.headers["x-jaco-pin"] ?? requestBody?.pin;
 
   if (String(pin ?? "") !== String(appPin)) {
@@ -121,7 +136,16 @@ export default async function handler(req, res) {
     if (requestBody?.customWorkout) {
       workout = validateCustomWorkout(requestBody.customWorkout);
     } else {
-      workout = WORKOUTS[workoutDate];
+      if (!isValidIsoDate(workoutDate)) {
+        return sendJson(res, 400, {
+          error: "De datum van de training is ongeldig."
+        });
+      }
+
+      workout = Object.prototype.hasOwnProperty.call(WORKOUTS, workoutDate)
+        ? WORKOUTS[workoutDate]
+        : null;
+
       if (!workout) {
         return sendJson(res, 400, {
           error: "Voor deze datum is geen uploadbare workout ingesteld."
