@@ -1307,13 +1307,24 @@ function installHmAmsterdamRaceweek2026(){
 }
 
 
-function diaryNumber(value){
-  const number=Number(value);
+function finiteNumberOrNull(value){
+  if(value===null || value===undefined || typeof value==="boolean") return null;
+  if(typeof value==="string" && value.trim()==="") return null;
+
+  const normalized=
+    typeof value==="string"
+      ?value.trim().replace(",",".")
+      :value;
+
+  const number=Number(normalized);
   return Number.isFinite(number)?number:null;
 }
 
+function diaryNumber(value){
+  return finiteNumberOrNull(value);
+}
+
 function coachDiaryEntries(days=28){
-  const todayValue=new Date(todayDateString()+"T12:00:00");
   return Object.entries(coachDiary)
     .map(([date,entry])=>({
       date,
@@ -1322,8 +1333,8 @@ function coachDiaryEntries(days=28){
     }))
     .filter(item=>{
       if(Number.isNaN(item.parsed.getTime())) return false;
-      const age=Math.floor((todayValue-item.parsed)/86400000);
-      return age>=0 && age<days;
+      const age=calendarDayDifference(todayDateString(),item.date);
+      return age!==null && age>=0 && age<days;
     })
     .sort((a,b)=>b.date.localeCompare(a.date));
 }
@@ -1813,7 +1824,13 @@ function applyCoachChatWorkout(){
   if(!pendingCoachChatWorkout) return;
 
   const date=todayDateString();
-  const existing=customWorkouts[date];
+  const existing=currentTodayWorkout();
+
+  if(existing?.type==="Race"){
+    status.className="status error";
+    status.textContent="Coach Chat vervangt een wedstrijd niet automatisch.";
+    return;
+  }
 
   if(existing){
     const confirmed=confirm(`De bestaande training "${existing.name}" vervangen door "${pendingCoachChatWorkout.name}"?`);
@@ -1932,11 +1949,7 @@ function fitsTime(workout,dayInfo){
 }
 
 function dateGapDays(a,b){
-  return Math.round(
-    Math.abs(
-      new Date(a+"T12:00:00")-new Date(b+"T12:00:00")
-    )/86400000
-  );
+  return Math.abs(signedDateGapDays(a,b));
 }
 
 function smartWeekWarningsFor(workouts,context){
@@ -2263,7 +2276,7 @@ function applySmartWeekPlan(){
   let skipped=0;
 
   for(const workout of option){
-    if(customWorkouts[workout.date]){
+    if(allWorkouts()[workout.date]){
       skipped++;
       continue;
     }
@@ -2288,7 +2301,7 @@ let pendingTodayAdvice = null;
 
 const today = new Date();
 let visibleMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-let selectedDate = "2026-08-04";
+let selectedDate = ymd(today);
 let duplicateSourceDate = null;
 
 const fullDate = new Intl.DateTimeFormat("nl-NL",{
@@ -2339,7 +2352,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"8.3",
+    appVersion:"8.3.1",
     createdAt:new Date().toISOString(),
     data
   };
@@ -2816,6 +2829,23 @@ function ymd(date){
   const d=String(date.getDate()).padStart(2,"0");
   return `${y}-${m}-${d}`;
 }
+function calendarDayNumber(dateString){
+  const match=String(dateString||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!match) return null;
+
+  const year=Number(match[1]);
+  const month=Number(match[2]);
+  const day=Number(match[3]);
+  const value=Date.UTC(year,month-1,day)/86400000;
+
+  return Number.isFinite(value)?value:null;
+}
+function calendarDayDifference(laterDate,earlierDate){
+  const later=calendarDayNumber(laterDate);
+  const earlier=calendarDayNumber(earlierDate);
+  if(later===null || earlier===null) return null;
+  return Math.round(later-earlier);
+}
 function clone(value){
   return JSON.parse(JSON.stringify(value));
 }
@@ -2988,8 +3018,13 @@ async function uploadSelected(){
   if(pin===null) return;
 
   const status=document.getElementById("uploadStatus");
+  if(!status) return;
+
+  const wasUploaded=Boolean(uploadedWorkouts[selectedDate]);
   status.className="status";
-  status.textContent="Workout wordt verstuurd…";
+  status.textContent=wasUploaded
+    ?"Workout wordt bijgewerkt in Intervals.icu…"
+    :"Workout wordt verstuurd naar Intervals.icu…";
 
   try{
     const payload={workoutDate:selectedDate,pin};
@@ -3027,12 +3062,16 @@ async function uploadSelected(){
 
     uploadedWorkouts[selectedDate]={
       uploadedAt:new Date().toISOString(),
-      name:workout.name
+      name:workout.name,
+      externalId:data.externalId||`jaco-performance-${selectedDate}`,
+      eventId:data.eventId??null
     };
     saveObject(UPLOAD_KEY,uploadedWorkouts);
 
     status.className="status ok";
-    status.textContent="Gelukt: workout staat in Intervals.icu.";
+    status.textContent=wasUploaded
+      ?"Workout bijgewerkt in Intervals.icu."
+      :"Gelukt: workout staat in Intervals.icu.";
     renderMonth();
   }catch(error){
     status.className="status error";
@@ -4096,8 +4135,7 @@ function fillEditor(workout,originalDate){
 
 
 function parseLocaleNumber(value){
-  const number=Number(String(value??"").replace(",","."));
-  return Number.isFinite(number)?number:null;
+  return finiteNumberOrNull(value);
 }
 
 function parseStructuredRunData(workout){
@@ -5518,9 +5556,8 @@ function racesInRange(start,end){
 }
 
 function signedDateGapDays(dateA,dateB){
-  return Math.round(
-    (new Date(dateA+"T12:00:00")-new Date(dateB+"T12:00:00"))/86400000
-  );
+  const difference=calendarDayDifference(dateA,dateB);
+  return difference===null?0:difference;
 }
 
 function raceRecoveryDays(race){
@@ -5935,10 +5972,8 @@ function formatPace(seconds){
 }
 
 function daysUntil(date){
-  const now=new Date();
-  now.setHours(0,0,0,0);
-  const target=new Date(date+"T00:00:00");
-  return Math.ceil((target-now)/86400000);
+  const difference=calendarDayDifference(date,todayDateString());
+  return difference===null?0:difference;
 }
 
 function selectedRaceDistance(){
@@ -6306,8 +6341,7 @@ function generateRacePlan(){
   const days=Number(document.getElementById("planDays").value);
   const overwrite=document.getElementById("overwritePlan").checked;
   const raceDate=new Date(race.date+"T12:00:00");
-  const startDate=new Date(start+"T12:00:00");
-  const totalDays=Math.floor((raceDate-startDate)/86400000);
+  const totalDays=signedDateGapDays(race.date,start);
 
   if(totalDays<7){
     status.className="status error";
@@ -6321,7 +6355,7 @@ function generateRacePlan(){
 
   for(let week=0;week<weeks;week++){
     const weekStart=addDays(firstMonday,week*7);
-    const daysToRace=Math.floor((raceDate-new Date(weekStart+"T12:00:00"))/86400000);
+    const daysToRace=signedDateGapDays(race.date,weekStart);
     if(daysToRace<0) break;
 
     const taperFactor=daysToRace<=7 ? 0.55 : daysToRace<=14 ? 0.75 : 1;
@@ -6376,8 +6410,7 @@ function generateRacePlan(){
 
 
 function numberOrNull(value){
-  const n=Number(value);
-  return Number.isFinite(n) ? n : null;
+  return finiteNumberOrNull(value);
 }
 
 function latestValue(records,key){
@@ -6409,13 +6442,8 @@ function wellnessRecordDate(record){
 
 function wellnessDaysOld(dateString){
   if(!dateString) return null;
-  const measurement=new Date(dateString+"T12:00:00");
-  if(Number.isNaN(measurement.getTime())) return null;
-
-  const today=new Date();
-  today.setHours(12,0,0,0);
-
-  return Math.floor((today-measurement)/86400000);
+  const difference=calendarDayDifference(todayDateString(),dateString);
+  return difference===null?null:difference;
 }
 
 function latestMetric(records,key,maxAgeDays=1){
@@ -7538,8 +7566,7 @@ function buildCoachHorizon(){
 let activeTrendDays=7;
 
 function trendNumber(value){
-  const number=Number(value);
-  return Number.isFinite(number)?number:null;
+  return finiteNumberOrNull(value);
 }
 
 function trendAverage(values){
@@ -9532,7 +9559,7 @@ function saveAiGeneratedWeek(){
   let skipped=0;
 
   for(const workout of option.workouts){
-    if(customWorkouts[workout.date]){
+    if(allWorkouts()[workout.date]){
       skipped++;
       continue;
     }
@@ -10267,6 +10294,16 @@ function phaseLabel(phase){
 function createTodayRecommendation(readiness,race,phase,availability,currentWorkout){
   const date=todayDateString();
 
+  if(currentWorkout?.type==="Race"){
+    return{
+      kind:"keep",
+      workout:currentWorkout,
+      title:currentWorkout.name,
+      text:"Vandaag is een wedstrijddag. De coach vervangt je wedstrijd niet automatisch door een andere training.",
+      steps:currentWorkout.displaySteps||[]
+    };
+  }
+
   if(!availability.available){
     const minutes=15;
     const workout={
@@ -10740,7 +10777,14 @@ function applyTodayRecommendation(){
   if(!pendingTodayAdvice?.workout) return;
 
   const date=todayDateString();
-  const existing=customWorkouts[date];
+  const existing=currentTodayWorkout();
+  const status=document.getElementById("todayStatus");
+
+  if(existing?.type==="Race"){
+    status.className="status error";
+    status.textContent="Een wedstrijd wordt niet automatisch vervangen door coachadvies.";
+    return;
+  }
 
   if(existing){
     const replacement=pendingTodayAdvice.kind==="rest"
@@ -10762,7 +10806,6 @@ function applyTodayRecommendation(){
   renderSaved();
   renderTodayCoach();
 
-  const status=document.getElementById("todayStatus");
   status.className="status ok";
   status.textContent=`${workout.name} is toegevoegd aan vandaag.`;
 }
@@ -11214,11 +11257,11 @@ function saveAdaptiveWeek(){
   let skipped=0;
 
   for(const workout of pendingAdaptiveWeek){
-    if(customWorkouts[workout.date]){
+    if(allWorkouts()[workout.date]){
       skipped++;
       continue;
     }
-    customWorkouts[workout.date]=workout;
+    customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
     added++;
   }
 
@@ -11327,32 +11370,56 @@ function preferenceLabel(value){
   return labels[value] || value;
 }
 
-function fillProfileForm(){const p=getProfile();profileName.value=p.name;profileDays.value=String(p.days);profileWeeklyKm.value=p.weeklyKm;profileMaxKm.value=p.maxKm;profileFiveKPr.value=p.fiveKPr;profileFiveKGoal.value=p.fiveKGoal;profileTenKPr.value=p.tenKPr;profileHalfGoal.value=p.halfGoal;profileMaxHr.value=p.maxHr;profileZ2Hr.value=p.z2Hr;renderProfileSummary();}
+function fillProfileForm(){
+  const p=getProfile();
+  document.getElementById("profileName").value=p.name;
+  document.getElementById("profileDays").value=String(p.days);
+  document.getElementById("profileWeeklyKm").value=p.weeklyKm;
+  document.getElementById("profileMaxKm").value=p.maxKm;
+  document.getElementById("profileFiveKPr").value=p.fiveKPr;
+  document.getElementById("profileFiveKGoal").value=p.fiveKGoal;
+  document.getElementById("profileTenKPr").value=p.tenKPr;
+  document.getElementById("profileHalfGoal").value=p.halfGoal;
+  document.getElementById("profileMaxHr").value=p.maxHr;
+  document.getElementById("profileZ2Hr").value=p.z2Hr;
+  renderProfileSummary();
+}
 function saveProfile(e){
   e.preventDefault();
   const current=getProfile();
   profile={
     ...current,
-    name:safe(profileName.value).trim()||"Jaco",
-    days:Number(profileDays.value),
-    weeklyKm:Number(profileWeeklyKm.value),
-    maxKm:Number(profileMaxKm.value),
-    fiveKPr:safe(profileFiveKPr.value).trim(),
-    fiveKGoal:safe(profileFiveKGoal.value).trim(),
-    tenKPr:safe(profileTenKPr.value).trim(),
-    halfGoal:safe(profileHalfGoal.value).trim(),
-    maxHr:Number(profileMaxHr.value),
-    z2Hr:Number(profileZ2Hr.value)
+    name:safe(document.getElementById("profileName").value).trim()||"Jaco",
+    days:Number(document.getElementById("profileDays").value),
+    weeklyKm:Number(document.getElementById("profileWeeklyKm").value),
+    maxKm:Number(document.getElementById("profileMaxKm").value),
+    fiveKPr:safe(document.getElementById("profileFiveKPr").value).trim(),
+    fiveKGoal:safe(document.getElementById("profileFiveKGoal").value).trim(),
+    tenKPr:safe(document.getElementById("profileTenKPr").value).trim(),
+    halfGoal:safe(document.getElementById("profileHalfGoal").value).trim(),
+    maxHr:Number(document.getElementById("profileMaxHr").value),
+    z2Hr:Number(document.getElementById("profileZ2Hr").value)
   };
   saveObject(PROFILE_KEY,profile);
-  profileStatus.className="status ok";
-  profileStatus.textContent="Profiel opgeslagen.";
+
+  const status=document.getElementById("profileStatus");
+  status.className="status ok";
+  status.textContent="Profiel opgeslagen.";
   renderProfileSummary();
 }
-function renderProfileSummary(){const p=getProfile();summaryDays.textContent=p.days;summaryKm.textContent=`${p.weeklyKm} km`;summaryFiveK.textContent=p.fiveKGoal||"—";summaryHalf.textContent=p.halfGoal||"—";}
+function renderProfileSummary(){
+  const p=getProfile();
+  document.getElementById("summaryDays").textContent=p.days;
+  document.getElementById("summaryKm").textContent=`${p.weeklyKm} km`;
+  document.getElementById("summaryFiveK").textContent=p.fiveKGoal||"—";
+  document.getElementById("summaryHalf").textContent=p.halfGoal||"—";
+}
 function nextMonday(){const d=new Date();const day=(d.getDay()+6)%7;d.setDate(d.getDate()-day+7);return ymd(d);}
 function raceForPlanner(){return getRaceFocus();}
-function plannerReduced(){const form=Number(metricForm.textContent);return Number.isFinite(form)&&form<-15;}
+function plannerReduced(){
+  const form=finiteNumberOrNull(document.getElementById("metricForm")?.textContent);
+  return form!==null && form<-15;
+}
 function makeWeekWorkout(date,arg2,arg3,arg4,arg5,arg6,arg7){
   // Ondersteunt zowel de oude 6-argument vorm als de nieuwere
   // (date, planType, km, name, steps, description, rpe) vorm.
@@ -11409,8 +11476,55 @@ pendingWeekPlan=applyRaceCalendarToWeek(
   pendingWeekPlan
 );
 renderWeekPlan(reduced,race,target);}
-function renderWeekPlan(reduced,race,target){const seasonBlock=seasonBlockForWeek(nextMonday());weekPlan.innerHTML=pendingWeekPlan.map(w=>`<div class="week-plan-row"><div><strong>${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(w.date+"T12:00:00"))}</strong><small>${w.distanceKm} km</small></div><div><strong>${safe(w.name)}</strong><small>${safe(w.displaySteps[0]||"")}</small></div><span class="readiness-badge">${safe(w.rpe)}</span></div>`).join("");saveWeekPlan.disabled=false;weekPlanStatus.className="status";weekPlanStatus.textContent=`${target} km gepland${race?` richting ${race.name}`:""}${seasonBlock?` · blok ${seasonBlock.label}`:""}${reduced?" · volume verlaagd door herstelsignalen":""}.`;}
-function savePersonalWeek(){if(!pendingWeekPlan.length)return;let added=0;for(const w of pendingWeekPlan){if(!customWorkouts[w.date]){customWorkouts[w.date]=w;added++;}}saveObject(STORAGE_KEY,customWorkouts);renderMonth();renderSaved();weekPlanStatus.className="status ok";weekPlanStatus.textContent=`${added} trainingen toegevoegd aan de kalender.`;}
+function renderWeekPlan(reduced,race,target){
+  const seasonBlock=seasonBlockForWeek(nextMonday());
+  const plan=document.getElementById("weekPlan");
+  const saveButton=document.getElementById("saveWeekPlan");
+  const status=document.getElementById("weekPlanStatus");
+
+  plan.innerHTML=pendingWeekPlan.map(workout=>`
+    <div class="week-plan-row">
+      <div>
+        <strong>${new Intl.DateTimeFormat("nl-NL",{weekday:"short",day:"numeric"}).format(new Date(workout.date+"T12:00:00"))}</strong>
+        <small>${trainingVolumeLabel(workout)}</small>
+      </div>
+      <div>
+        <strong>${safe(workout.name)}</strong>
+        <small>${safe(workout.displaySteps?.[0]||"")}</small>
+      </div>
+      <span class="readiness-badge">${safe(workout.rpe)}</span>
+    </div>
+  `).join("");
+
+  saveButton.disabled=false;
+  status.className="status";
+  status.textContent=
+    `${target} km gepland${race?` richting ${race.name}`:""}${seasonBlock?` · blok ${seasonBlock.label}`:""}${reduced?" · volume verlaagd door herstelsignalen":""}.`;
+}
+function savePersonalWeek(){
+  if(!pendingWeekPlan.length) return;
+
+  let added=0;
+  let skipped=0;
+
+  for(const workout of pendingWeekPlan){
+    if(allWorkouts()[workout.date]){
+      skipped++;
+      continue;
+    }
+    customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
+    added++;
+  }
+
+  saveObject(STORAGE_KEY,customWorkouts);
+  renderMonth();
+  renderSaved();
+
+  const status=document.getElementById("weekPlanStatus");
+  status.className="status ok";
+  status.textContent=
+    `${added} trainingen toegevoegd${skipped?` · ${skipped} bestaande dagen behouden`:""}.`;
+}
 
 async function loadServer(){
   try{
