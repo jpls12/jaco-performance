@@ -6632,6 +6632,16 @@ function buildCoachAdvice(latest,averages){
 }
 
 
+function refreshDerivedCoachViews(){
+  renderTodayCoach();
+  renderCoachBrain();
+  buildCoachHorizon();
+  renderCoachIntelligence();
+  renderPerformanceTrend(activeTrendDays);
+  renderSmartWeekCoach();
+  renderRaceSimulator();
+}
+
 function renderWellnessDashboard(data){
   const records=Array.isArray(data.records)?data.records:[];
   latestWellnessRecords=records;
@@ -6773,13 +6783,10 @@ function renderWellnessDashboard(data){
   document.getElementById("coachHeadline").textContent=advice.headline;
   document.getElementById("coachAdvice").textContent=advice.advice;
 
-  renderTodayCoach();
-
   document.getElementById("dashboardUpdated").textContent=
     `Intervals.icu gecontroleerd t/m ${latest.id || latest.date || "onbekende datum"}.`;
 
-  renderPerformanceEngine();
-  renderPerformanceTrend(activeTrendDays);
+  refreshDerivedCoachViews();
 
   const history=records.slice(-7).reverse();
   document.getElementById("wellnessHistory").innerHTML=history.length
@@ -6822,16 +6829,34 @@ async function loadWellnessDashboard(){
   if(error) error.textContent="";
   if(success) success.textContent="";
 
-  document.getElementById("dashboardUpdated").textContent="Intervals.icu-data wordt geladen…";
+  document.getElementById("dashboardUpdated").textContent=
+    "Intervals.icu-data wordt geladen…";
 
   try{
     const response=await fetch("/api/intervals-status");
     const data=await response.json();
-    if(!response.ok) throw new Error(data.error || "Dashboarddata kon niet worden geladen.");
+
+    if(!response.ok){
+      throw new Error(
+        data.error || "Dashboarddata kon niet worden geladen."
+      );
+    }
+
     renderWellnessDashboard(data);
+    return{ok:true,data};
   }catch(err){
     if(error) error.textContent=err.message;
-    document.getElementById("dashboardUpdated").textContent="Data niet beschikbaar.";
+    if(success){
+      success.className="status error";
+      success.textContent="Actuele Intervals.icu-data kon niet worden vernieuwd.";
+    }
+
+    document.getElementById("dashboardUpdated").textContent=
+      "Data niet beschikbaar.";
+
+    // De rest van de app blijft bruikbaar met eerder geladen of onbekende data.
+    refreshDerivedCoachViews();
+    return{ok:false,error:err};
   }
 }
 
@@ -7535,8 +7560,6 @@ function renderCoachBrain(){
       <div class="reason-icon ${row.cls}">${row.icon}</div>
       <div>${safe(row.text)}</div>
     </div>`).join("");
-
-  renderTodayCoach();
 }
 
 
@@ -10923,16 +10946,17 @@ async function refreshTodayCoach(){
   status.className="status";
   status.textContent="Hersteldata wordt vernieuwd…";
 
-  try{
-    await loadWellnessDashboard();
-    renderTodayCoach();
+  const result=await loadWellnessDashboard();
+
+  if(result.ok){
     status.className="status ok";
     status.textContent="Coachadvies is bijgewerkt.";
-  }catch(error){
-    renderTodayCoach();
-    status.className="status error";
-    status.textContent=`Wellnessdata kon niet volledig worden vernieuwd: ${error.message}`;
+    return;
   }
+
+  status.className="status error";
+  status.textContent=
+    `Wellnessdata kon niet worden vernieuwd: ${result.error?.message || "onbekende fout"}. Bestaande lokale planning blijft beschikbaar.`;
 }
 
 
