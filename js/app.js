@@ -10884,14 +10884,27 @@ function renderCurrentTodayWorkout(workout){
     return;
   }
 
+  const date=todayDateString();
+  const isCalendarRace=
+    workout.type==="Race" &&
+    Object.values(races).some(race=>race.date===date);
+
+  const sourceLabel=isCalendarRace
+    ?"WEDSTRIJD"
+    :customWorkouts[date]
+      ?"EIGEN"
+      :serverWorkouts[date]
+        ?"SCHEMA"
+        :"PLAN";
+
   box.innerHTML=`
     <div class="saved-row">
       <div class="saved-row-top">
         <div>
           <strong>${safe(workout.name)}</strong>
-          <small>${safe(workout.type||"Run")} · ${workout.distanceKm ? `${workout.distanceKm} km` : `${workout.durationMinutes||0} min`} · RPE ${safe(workout.rpe||"—")}</small>
+          <small>${safe(workout.type||"Run")} · ${trainingVolumeLabel(workout)} · RPE ${safe(workout.rpe||"—")}</small>
         </div>
-        <span class="pill">${customWorkouts[todayDateString()]?"EIGEN":"SCHEMA"}</span>
+        <span class="pill">${sourceLabel}</span>
       </div>
     </div>`;
 }
