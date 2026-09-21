@@ -957,3 +957,48 @@
       .full-season-workout-row{grid-template-columns:72px 1fr}
       .full-season-pill{grid-column:2;justify-self:start}
     }
+
+
+    .data-sync-card{
+      background:linear-gradient(155deg,rgba(30,43,61,.98),rgba(13,29,44,.98));
+      border-color:#53718d
+    }
+    .backup-metrics{
+      display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px
+    }
+    .backup-metrics small{
+      display:block;color:var(--muted);margin-top:4px;line-height:1.35
+    }
+    .backup-actions{
+      display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0
+    }
+    .backup-import-panel{
+      margin-top:16px;padding:14px;border-radius:15px;
+      background:#0d1928;border:1px solid #35516f
+    }
+    .backup-import-panel h3{margin:4px 0}
+    .backup-preview-grid{
+      display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0
+    }
+    .backup-preview-grid>div{
+      padding:10px;border-radius:12px;background:#122236;border:1px solid #29415e
+    }
+    .backup-preview-grid span{
+      display:block;color:var(--muted);font-size:.76rem
+    }
+    .backup-preview-grid strong{
+      display:block;font-size:1.05rem;margin-top:4px
+    }
+    .backup-restore-row{
+      margin-top:16px;padding:13px;border:1px solid #29415e;border-radius:14px;
+      display:flex;gap:14px;justify-content:space-between;align-items:center
+    }
+    .backup-restore-row p{margin:4px 0 0}
+    .backup-restore-row button{width:auto;flex:0 0 auto}
+    @media(max-width:700px){
+      .backup-metrics{grid-template-columns:repeat(2,1fr)}
+      .backup-actions{grid-template-columns:1fr}
+      .backup-preview-grid{grid-template-columns:repeat(2,1fr)}
+      .backup-restore-row{align-items:stretch;flex-direction:column}
+      .backup-restore-row button{width:100%}
+    }

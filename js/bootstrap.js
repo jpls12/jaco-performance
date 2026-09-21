@@ -123,6 +123,15 @@ document.getElementById("buildAdaptiveWeek").onclick=()=>{
 document.getElementById("saveAdaptiveWeek").onclick=saveAdaptiveWeek;
 document.getElementById("planMyWeek").onclick=generatePersonalWeek;
 document.getElementById("saveWeekPlan").onclick=savePersonalWeek;
+document.getElementById("exportLocalBackup").onclick=exportLocalBackup;
+document.getElementById("chooseBackupFile").onclick=()=>{
+  document.getElementById("backupFileInput").click();
+};
+document.getElementById("backupFileInput").onchange=handleBackupFileSelection;
+document.getElementById("backupImportMode").onchange=updateBackupImportModeHelp;
+document.getElementById("applyBackupImport").onclick=applySelectedBackupImport;
+document.getElementById("cancelBackupImport").onclick=cancelBackupImport;
+document.getElementById("restoreSafetyBackup").onclick=restoreLastSafetyBackup;
 document.getElementById("profileForm").onsubmit=saveProfile;
 document.getElementById("planningForm").onsubmit=savePlanning;
 document.getElementById("buildFullSeasonSchedule").onclick=buildFullSeasonSchedulePreview;
@@ -184,6 +193,8 @@ async function initializeJacoPerformance(){
   fillProfileForm();
   fillPlanningForm();
   renderProfileSummary();
+  renderBackupManager();
+  renderPendingBackupImport();
   renderRaces();
   renderRaceOptions();
   renderRaceSimulator();

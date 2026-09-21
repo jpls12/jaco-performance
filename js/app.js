@@ -587,6 +587,9 @@ const HM_AMSTERDAM_BLOCK_KEY = "jp_hm_amsterdam_2026_v1_installed";
 const HM_AMSTERDAM_BACKUP_KEY = "jp_hm_amsterdam_2026_v1_backup";
 const HM_AMSTERDAM_RACEWEEK_KEY = "jp_hm_amsterdam_2026_raceweek_v1_installed";
 const HM_AMSTERDAM_RACEWEEK_BACKUP_KEY = "jp_hm_amsterdam_2026_raceweek_v1_backup";
+const PREIMPORT_BACKUP_KEY = "jp_last_preimport_backup_v1";
+const BACKUP_FORMAT = "jaco-performance-backup";
+const BACKUP_SCHEMA_VERSION = 1;
 
 let serverWorkouts = {};
 let customWorkouts = loadObject(STORAGE_KEY);
@@ -599,6 +602,7 @@ let pendingWeekPlan = [];
 let pendingAdaptiveWeek = [];
 let latestWellnessSnapshot = null;
 let exactRunDraft = null;
+let pendingBackupImport = null;
 
 
 
@@ -2298,6 +2302,488 @@ function loadObject(key){
 function saveObject(key,value){
   localStorage.setItem(key,JSON.stringify(value));
 }
+
+function isPlainBackupObject(value){
+  return Boolean(
+    value &&
+    typeof value==="object" &&
+    !Array.isArray(value)
+  );
+}
+
+function managedLocalStorageKeys(){
+  const keys=[];
+  for(let index=0;index<localStorage.length;index++){
+    const key=localStorage.key(index);
+    if(
+      key &&
+      key.startsWith("jp_") &&
+      key!==PREIMPORT_BACKUP_KEY
+    ){
+      keys.push(key);
+    }
+  }
+  return keys.sort();
+}
+
+function buildLocalBackupPayload(){
+  const data={};
+
+  managedLocalStorageKeys().forEach(key=>{
+    const value=localStorage.getItem(key);
+    if(value!==null){
+      data[key]=value;
+    }
+  });
+
+  return{
+    format:BACKUP_FORMAT,
+    schemaVersion:BACKUP_SCHEMA_VERSION,
+    appVersion:"8.3",
+    createdAt:new Date().toISOString(),
+    data
+  };
+}
+
+function backupParsedValue(payload,key){
+  const raw=payload?.data?.[key];
+  if(typeof raw!=="string") return null;
+  try{
+    return JSON.parse(raw);
+  }catch{
+    return null;
+  }
+}
+
+function backupObjectCount(payload,key){
+  const value=backupParsedValue(payload,key);
+  return isPlainBackupObject(value)
+    ?Object.keys(value).length
+    :0;
+}
+
+function backupPayloadSummary(payload){
+  const profileValue=backupParsedValue(payload,PROFILE_KEY);
+  return{
+    workouts:backupObjectCount(payload,STORAGE_KEY),
+    races:backupObjectCount(payload,RACES_KEY),
+    diary:backupObjectCount(payload,DIARY_KEY),
+    done:backupObjectCount(payload,DONE_KEY),
+    uploaded:backupObjectCount(payload,UPLOAD_KEY),
+    profile:isPlainBackupObject(profileValue)
+  };
+}
+
+function validateBackupPayload(input){
+  if(!isPlainBackupObject(input)){
+    throw new Error("Dit bestand bevat geen geldige Jaco Performance-backup.");
+  }
+
+  if(input.format!==BACKUP_FORMAT){
+    throw new Error("Dit is geen Jaco Performance-backupbestand.");
+  }
+
+  if(Number(input.schemaVersion)!==BACKUP_SCHEMA_VERSION){
+    if(Number(input.schemaVersion)>BACKUP_SCHEMA_VERSION){
+      throw new Error("Deze backup is gemaakt met een nieuwere backupversie.");
+    }
+    throw new Error("Deze backupversie wordt niet ondersteund.");
+  }
+
+  if(!isPlainBackupObject(input.data)){
+    throw new Error("De backup bevat geen geldige data-sectie.");
+  }
+
+  const entries=Object.entries(input.data);
+  if(entries.length>100){
+    throw new Error("De backup bevat onverwacht veel datasleutels.");
+  }
+
+  let totalCharacters=0;
+  const cleanData={};
+
+  for(const [key,value] of entries){
+    if(
+      !key.startsWith("jp_") ||
+      key===PREIMPORT_BACKUP_KEY
+    ){
+      throw new Error("De backup bevat een niet-toegestane datasleutel.");
+    }
+
+    if(typeof value!=="string"){
+      throw new Error("De backup bevat een ongeldige gegevenswaarde.");
+    }
+
+    totalCharacters+=value.length;
+    if(totalCharacters>5_000_000){
+      throw new Error("De backup is te groot om veilig te importeren.");
+    }
+
+    cleanData[key]=value;
+  }
+
+  return{
+    format:BACKUP_FORMAT,
+    schemaVersion:BACKUP_SCHEMA_VERSION,
+    appVersion:safe(input.appVersion||"onbekend"),
+    createdAt:input.createdAt||null,
+    data:cleanData
+  };
+}
+
+function formatBackupTimestamp(value){
+  if(!value) return "datum onbekend";
+  const date=new Date(value);
+  if(Number.isNaN(date.getTime())) return "datum onbekend";
+
+  return new Intl.DateTimeFormat("nl-NL",{
+    day:"2-digit",
+    month:"2-digit",
+    year:"numeric",
+    hour:"2-digit",
+    minute:"2-digit"
+  }).format(date);
+}
+
+function currentBackupSummary(){
+  return backupPayloadSummary(buildLocalBackupPayload());
+}
+
+function renderBackupManager(){
+  const workouts=document.getElementById("backupCurrentWorkouts");
+  if(!workouts) return;
+
+  const summary=currentBackupSummary();
+  workouts.textContent=String(summary.workouts);
+  document.getElementById("backupCurrentRaces").textContent=
+    String(summary.races);
+  document.getElementById("backupCurrentDiary").textContent=
+    String(summary.diary);
+
+  const safetyRaw=localStorage.getItem(PREIMPORT_BACKUP_KEY);
+  const restoreButton=document.getElementById("restoreSafetyBackup");
+  const safetyState=document.getElementById("backupSafetyState");
+  const safetyDate=document.getElementById("backupSafetyDate");
+
+  if(safetyRaw){
+    try{
+      const safety=validateBackupPayload(JSON.parse(safetyRaw));
+      safetyState.textContent="Beschikbaar";
+      safetyDate.textContent=formatBackupTimestamp(safety.createdAt);
+      restoreButton.disabled=false;
+    }catch{
+      safetyState.textContent="Ongeldig";
+      safetyDate.textContent="kan niet worden hersteld";
+      restoreButton.disabled=true;
+    }
+  }else{
+    safetyState.textContent="Geen";
+    safetyDate.textContent="nog niet gemaakt";
+    restoreButton.disabled=true;
+  }
+}
+
+function triggerBackupDownload(fileName,jsonText){
+  const blob=new Blob([jsonText],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const anchor=document.createElement("a");
+  anchor.href=url;
+  anchor.download=fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+async function exportLocalBackup(){
+  const status=document.getElementById("backupStatus");
+  const payload=buildLocalBackupPayload();
+  const jsonText=JSON.stringify(payload,null,2);
+  const fileName=`jaco-performance-backup-${ymd(new Date())}.json`;
+
+  status.className="status";
+  status.textContent="Backup wordt voorbereid…";
+
+  try{
+    if(
+      typeof File!=="undefined" &&
+      navigator.share &&
+      navigator.canShare
+    ){
+      const file=new File(
+        [jsonText],
+        fileName,
+        {type:"application/json"}
+      );
+
+      if(navigator.canShare({files:[file]})){
+        try{
+          await navigator.share({
+            title:"Jaco Performance backup",
+            text:"Backup van mijn Jaco Performance-data.",
+            files:[file]
+          });
+
+          status.className="status ok";
+          status.textContent=
+            "Backup gedeeld. Kies op iPhone bijvoorbeeld ‘Bewaar in Bestanden’ om hem lokaal te bewaren.";
+          return;
+        }catch(error){
+          if(error?.name==="AbortError"){
+            status.className="status";
+            status.textContent="Delen van de backup geannuleerd.";
+            return;
+          }
+          console.warn("Web Share mislukt, download wordt gebruikt:",error);
+        }
+      }
+    }
+
+    triggerBackupDownload(fileName,jsonText);
+    status.className="status ok";
+    status.textContent="Backupbestand aangemaakt.";
+  }catch(error){
+    status.className="status error";
+    status.textContent=`Backup maken mislukt: ${error.message}`;
+  }
+}
+
+function renderPendingBackupImport(){
+  const panel=document.getElementById("backupImportPanel");
+  if(!panel) return;
+
+  if(!pendingBackupImport){
+    panel.hidden=true;
+    document.getElementById("applyBackupImport").disabled=true;
+    return;
+  }
+
+  const {payload,fileName,fileSize}=pendingBackupImport;
+  const summary=backupPayloadSummary(payload);
+
+  panel.hidden=false;
+  document.getElementById("backupImportName").textContent=
+    fileName||"Backupbestand";
+  document.getElementById("backupImportMeta").textContent=
+    `Backup ${formatBackupTimestamp(payload.createdAt)} · app ${payload.appVersion} · ${Math.max(1,Math.round(fileSize/1024))} KB`;
+
+  document.getElementById("backupImportWorkouts").textContent=
+    String(summary.workouts);
+  document.getElementById("backupImportRaces").textContent=
+    String(summary.races);
+  document.getElementById("backupImportDiary").textContent=
+    String(summary.diary);
+  document.getElementById("backupImportDone").textContent=
+    String(summary.done);
+  document.getElementById("backupImportUploaded").textContent=
+    String(summary.uploaded);
+  document.getElementById("backupImportProfile").textContent=
+    summary.profile?"Ja":"Nee";
+
+  document.getElementById("applyBackupImport").disabled=false;
+  updateBackupImportModeHelp();
+}
+
+function updateBackupImportModeHelp(){
+  const help=document.getElementById("backupImportModeHelp");
+  if(!help) return;
+
+  const mode=document.getElementById("backupImportMode").value;
+  help.textContent=
+    mode==="replace"
+      ?"Alle huidige Jaco Performance-data op dit toestel wordt vervangen door de backup. Er wordt eerst automatisch een herstelpunt gemaakt."
+      :"Bestaande en geïmporteerde gegevens worden gecombineerd. Bij dezelfde sleutel wint het backupbestand. Er wordt eerst automatisch een herstelpunt gemaakt.";
+}
+
+async function handleBackupFileSelection(event){
+  const status=document.getElementById("backupStatus");
+  const file=event.target.files?.[0];
+
+  pendingBackupImport=null;
+  renderPendingBackupImport();
+
+  if(!file) return;
+
+  if(file.size>5_000_000){
+    status.className="status error";
+    status.textContent="Dit backupbestand is groter dan 5 MB en wordt niet geïmporteerd.";
+    event.target.value="";
+    return;
+  }
+
+  try{
+    const text=await file.text();
+    const parsed=JSON.parse(text);
+    const payload=validateBackupPayload(parsed);
+
+    pendingBackupImport={
+      payload,
+      fileName:file.name,
+      fileSize:file.size
+    };
+
+    renderPendingBackupImport();
+    status.className="status ok";
+    status.textContent=
+      "Backup gecontroleerd. Bekijk de preview en kies daarna de importmethode.";
+  }catch(error){
+    status.className="status error";
+    status.textContent=`Backup kan niet worden gelezen: ${error.message}`;
+    event.target.value="";
+  }
+}
+
+function cancelBackupImport(){
+  pendingBackupImport=null;
+  const input=document.getElementById("backupFileInput");
+  if(input) input.value="";
+  renderPendingBackupImport();
+
+  const status=document.getElementById("backupStatus");
+  status.className="status";
+  status.textContent="Import geannuleerd.";
+}
+
+function mergedBackupStorageValue(currentRaw,incomingRaw){
+  if(currentRaw===null) return incomingRaw;
+
+  try{
+    const current=JSON.parse(currentRaw);
+    const incoming=JSON.parse(incomingRaw);
+
+    if(
+      isPlainBackupObject(current) &&
+      isPlainBackupObject(incoming)
+    ){
+      return JSON.stringify({
+        ...current,
+        ...incoming
+      });
+    }
+  }catch{
+    // Bij niet-objectwaarden wint de backup.
+  }
+
+  return incomingRaw;
+}
+
+function removeManagedLocalStorageData(){
+  const keys=[];
+  for(let index=0;index<localStorage.length;index++){
+    const key=localStorage.key(index);
+    if(
+      key &&
+      key.startsWith("jp_") &&
+      key!==PREIMPORT_BACKUP_KEY
+    ){
+      keys.push(key);
+    }
+  }
+
+  keys.forEach(key=>localStorage.removeItem(key));
+}
+
+function writeBackupData(payload,mode="merge"){
+  if(mode==="replace"){
+    removeManagedLocalStorageData();
+  }
+
+  Object.entries(payload.data).forEach(([key,incomingRaw])=>{
+    const value=
+      mode==="merge"
+        ?mergedBackupStorageValue(localStorage.getItem(key),incomingRaw)
+        :incomingRaw;
+
+    localStorage.setItem(key,value);
+  });
+}
+
+function applySelectedBackupImport(){
+  const status=document.getElementById("backupStatus");
+  if(!pendingBackupImport) return;
+
+  const mode=document.getElementById("backupImportMode").value;
+  const summary=backupPayloadSummary(pendingBackupImport.payload);
+  const action=mode==="replace"?"volledig vervangen":"veilig samenvoegen";
+
+  const confirmed=confirm(
+    `Backup importeren via ‘${action}’?\n\n`+
+    `${summary.workouts} trainingen · ${summary.races} wedstrijden · ${summary.diary} dagboekitems.\n\n`+
+    "De huidige data wordt eerst automatisch als veiligheidskopie bewaard."
+  );
+
+  if(!confirmed) return;
+
+  try{
+    const safety=buildLocalBackupPayload();
+    localStorage.setItem(
+      PREIMPORT_BACKUP_KEY,
+      JSON.stringify(safety)
+    );
+
+    writeBackupData(pendingBackupImport.payload,mode);
+
+    status.className="status ok";
+    status.textContent=
+      "Import gelukt. De app wordt opnieuw geladen met de geïmporteerde gegevens.";
+
+    setTimeout(()=>location.reload(),450);
+  }catch(error){
+    status.className="status error";
+    status.textContent=`Import mislukt: ${error.message}`;
+  }
+}
+
+function restoreLastSafetyBackup(){
+  const status=document.getElementById("backupStatus");
+  const raw=localStorage.getItem(PREIMPORT_BACKUP_KEY);
+
+  if(!raw){
+    status.className="status error";
+    status.textContent="Er is nog geen veiligheidskopie beschikbaar.";
+    return;
+  }
+
+  let safety;
+  try{
+    safety=validateBackupPayload(JSON.parse(raw));
+  }catch(error){
+    status.className="status error";
+    status.textContent=`Veiligheidskopie is ongeldig: ${error.message}`;
+    return;
+  }
+
+  const confirmed=confirm(
+    "De app terugzetten naar de toestand van vóór de laatste import?\n\n"+
+    "De huidige toestand wordt op zijn beurt als nieuw herstelpunt bewaard."
+  );
+  if(!confirmed) return;
+
+  try{
+    const current=buildLocalBackupPayload();
+
+    removeManagedLocalStorageData();
+    Object.entries(safety.data).forEach(([key,value])=>{
+      localStorage.setItem(key,value);
+    });
+
+    localStorage.setItem(
+      PREIMPORT_BACKUP_KEY,
+      JSON.stringify(current)
+    );
+
+    status.className="status ok";
+    status.textContent=
+      "Veiligheidskopie hersteld. De app wordt opnieuw geladen.";
+
+    setTimeout(()=>location.reload(),450);
+  }catch(error){
+    status.className="status error";
+    status.textContent=`Herstellen mislukt: ${error.message}`;
+  }
+}
+
+
 function allWorkouts(){
   const raceWorkouts = Object.fromEntries(
     Object.values(races).map(race => [
@@ -2346,7 +2832,10 @@ function switchView(id){
     renderFullSeasonTargetOptions();
   }
   if(id==="dashboard"){loadWellnessDashboard();renderProfileSummary();}
-  if(id==="profile"){fillProfileForm();}
+  if(id==="profile"){
+    fillProfileForm();
+    renderBackupManager();
+  }
 }
 
 function workoutState(date,workout){
