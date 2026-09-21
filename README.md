@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**8.3.3 · Security & Consistency**
+**8.3.4 · Planner Alignment**
 
-Deze release bouwt voort op de stabilisatierondes en sluit de laatste gevonden punten rond privacy, wedstrijdhistorie, voltooid-/uploadstatus en weekplanning af voordat nieuwe features worden toegevoegd.
+Deze release rondt de stabilisatie af door alle weekplanners dezelfde taper-, race-, seizoens- en kalenderbescherming te laten gebruiken.
 
 ## Architectuur
 
@@ -106,3 +106,14 @@ de bestaande modules.
 - Uploadstatus gebruikt een workout-fingerprint, zodat een gewijzigde training niet onterecht als gesynchroniseerd wordt getoond.
 - Voltooide wedstrijden tellen mee in lokale loopbelasting en zware-sessiehistorie.
 - Automatische core/mobility wordt maximaal één keer per gegenereerde week toegevoegd.
+
+
+## 8.3.4 planner alignment
+
+- AI Week Planner, Adaptive Week en Plan mijn week gebruiken dezelfde centrale weekengine.
+- Taperweken krijgen een korte doeltempo-prikkel in plaats van een volledige zware intervaltraining.
+- Lange duurlopen krijgen in taper/raceweek geen snelle finish.
+- De raceplan-generator beschermt alle bestaande kalenderitems en overschrijft nooit een wedstrijddag.
+- Volledig Seizoensschema controleert racedagen opnieuw op het moment van toepassen.
+- Bij bewust vervangen van een training worden lokale voltooid- en uploadmarkers opgeschoond.
+- Workout-upload valideert kalenderdatums strikt en gebruikt alleen eigen properties uit de vaste workoutbibliotheek.
