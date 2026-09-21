@@ -66,7 +66,6 @@ document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
 document.getElementById("refreshLoadMonitor").onclick=()=>{
-  renderLoadMonitor();
   renderTodayCoach();
 };
 document.getElementById("coachDiaryForm").onsubmit=saveCoachDiary;
@@ -152,14 +151,12 @@ document.getElementById("refreshSeasonPlanner").onclick=()=>{
   renderSeasonPlanner();
   renderRaceCalendarOptimizer();
   renderTodayCoach();
-  renderAiWeekPlanner();
   renderSmartWeekCoach();
 };
 document.getElementById("refreshRaceCalendarOptimizer").onclick=()=>{
   renderRaceCalendarOptimizer();
   renderSeasonPlanner();
   renderTodayCoach();
-  renderAiWeekPlanner();
   renderSmartWeekCoach();
 };
 document.getElementById("simulateRace").onclick=renderRaceSimulator;
@@ -218,18 +215,10 @@ async function initializeJacoPerformance(){
   renderTodayCoach();
   renderCoachBrain();
   buildCoachHorizon();
-  renderPerformanceEngine();
-  renderAiTrainingGenerator();
-  renderAiWeekPlanner();
   renderCoachIntelligence();
   renderPerformanceTrend(7);
   renderSmartWeekCoach();
   renderRaceSimulator();
-  renderRaceCalendarOptimizer();
-  renderSeasonPlanner();
-  renderFullSeasonTargetOptions();
-  renderFullSeasonSchedulePreview();
-  renderLoadMonitor();
   renderCoachDiary(todayDateString());
 }
 
