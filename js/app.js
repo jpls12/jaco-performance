@@ -5845,27 +5845,6 @@ function renderRaceCalendarOptimizer(){
       :'<p class="help">Nog geen komende wedstrijden.</p>';
 }
 
-function raceMarkerWorkout(race){
-  return{
-    date:race.date,
-    type:"Race",
-    distanceKm:Number(race.distanceKm)||0,
-    durationMinutes:0,
-    name:race.name,
-    uploadName:race.name,
-    rpe:"10/10",
-    status:"planned",
-    priority:race.priority,
-    planType:"race",
-    raceMarker:true,
-    displaySteps:[
-      `${race.priority}-wedstrijd · ${formatRaceDistance(race.distanceKm)}`,
-      race.targetTime?`Streeftijd: ${race.targetTime}`:"Geen streeftijd ingevuld"
-    ],
-    intervalsDescription:""
-  };
-}
-
 function protectedEasyWorkout(workout,race,recovery=false){
   const originalKm=Number(workout?.distanceKm)||8;
   const km=Math.max(5,Math.min(recovery?7:9,originalKm));
@@ -6001,15 +5980,6 @@ function selectedRaceDistance(){
   return value==="other"
     ? Number(document.getElementById("customRaceDistance").value)
     : Number(value);
-}
-
-function resetRaceForm(){
-  document.getElementById("raceForm").reset();
-  document.getElementById("raceOriginalId").value="";
-  document.getElementById("raceDistance").value="5";
-  document.getElementById("customRaceDistanceLabel").hidden=true;
-  document.getElementById("racePriority").value="A";
-  document.getElementById("raceFormStatus").textContent="";
 }
 
 function saveRace(event){
@@ -6432,25 +6402,6 @@ function generateRacePlan(){
 function numberOrNull(value){
   return finiteNumberOrNull(value);
 }
-
-function latestValue(records,key){
-  for(let i=records.length-1;i>=0;i--){
-    const value=numberOrNull(records[i]?.[key]);
-    if(value!==null) return value;
-  }
-  return null;
-}
-
-function averageRecent(records,key,count=7){
-  const values=[];
-  for(let i=records.length-1;i>=0 && values.length<count;i--){
-    const value=numberOrNull(records[i]?.[key]);
-    if(value!==null) values.push(value);
-  }
-  if(!values.length) return null;
-  return values.reduce((a,b)=>a+b,0)/values.length;
-}
-
 
 function wellnessRecordDate(record){
   const raw=record?.id || record?.date || null;
@@ -10189,13 +10140,6 @@ function regenerateAiTraining(){
 
 function clampScore(value){
   return Math.max(0,Math.min(100,Math.round(Number(value)||0)));
-}
-
-function dateDaysAgo(days){
-  const value=new Date();
-  value.setHours(0,0,0,0);
-  value.setDate(value.getDate()-days);
-  return value;
 }
 
 function calculateConsistencyScore(){
