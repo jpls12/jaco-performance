@@ -3040,6 +3040,20 @@ function workoutUploadIsCurrent(date,workout){
   return String(record.name||"")===String(workout.name||"");
 }
 
+function clearDerivedStateForWorkout(date,workout){
+  if(completionMarkerMatches(doneWorkouts[date],workout)){
+    delete doneWorkouts[date];
+  }
+  if(workoutUploadIsCurrent(date,workout)){
+    delete uploadedWorkouts[date];
+  }
+}
+
+function resetWorkoutDerivedState(date){
+  delete doneWorkouts[date];
+  delete uploadedWorkouts[date];
+}
+
 function upgradeCompletionMarkers(){
   let changed=false;
 
@@ -6946,18 +6960,27 @@ function resetGeneratedPlannerPreviews(){
   selectedSmartWeekIndex=0;
 }
 
+function safeRenderView(label,render){
+  try{
+    return render();
+  }catch(error){
+    console.error(`${label} kon niet worden bijgewerkt:`,error);
+    return null;
+  }
+}
+
 function refreshDerivedCoachViews(){
-  renderLoadMonitor();
-  renderTodayCoach();
-  renderCoachBrain();
-  buildCoachHorizon();
-  renderPerformanceEngine();
-  renderAiTrainingGenerator();
-  renderAiWeekPlanner();
-  renderCoachIntelligence();
-  renderPerformanceTrend(activeTrendDays);
-  renderSmartWeekCoach();
-  renderRaceSimulator();
+  safeRenderView("Belastbaarheidsmonitor",renderLoadMonitor);
+  safeRenderView("Dagelijkse coach",renderTodayCoach);
+  safeRenderView("Coach Brain",renderCoachBrain);
+  safeRenderView("Coach Horizon",buildCoachHorizon);
+  safeRenderView("Performance Engine",renderPerformanceEngine);
+  safeRenderView("AI Training Generator",renderAiTrainingGenerator);
+  safeRenderView("AI Week Planner",renderAiWeekPlanner);
+  safeRenderView("Coach Intelligence",renderCoachIntelligence);
+  safeRenderView("Performance Trend",()=>renderPerformanceTrend(activeTrendDays));
+  safeRenderView("Slimme Weekcoach",renderSmartWeekCoach);
+  safeRenderView("Race Simulator",renderRaceSimulator);
 }
 
 function refreshAfterCalendarMutation({resetPlans=true}={}){
@@ -7117,8 +7140,6 @@ function renderWellnessDashboard(data){
   document.getElementById("dashboardUpdated").textContent=
     `Intervals.icu gecontroleerd t/m ${latest.id || latest.date || "onbekende datum"}.`;
 
-  refreshDerivedCoachViews();
-
   const history=records.slice(-7).reverse();
   document.getElementById("wellnessHistory").innerHTML=history.length
     ? history.map(record=>{
@@ -7132,8 +7153,8 @@ function renderWellnessDashboard(data){
         return `
           <div class="wellness-row">
             <div>
-              <strong>${record.id || record.date || "Datum onbekend"}</strong>
-              <small>HRV ${record.hrv ?? "—"} · RHR ${record.restingHR ?? "—"} · slaap ${formatSleep(record.sleepSecs)}</small>
+              <strong>${safe(record.id || record.date || "Datum onbekend")}</strong>
+              <small>HRV ${safe(record.hrv ?? "—")} · RHR ${safe(record.restingHR ?? "—")} · slaap ${safe(formatSleep(record.sleepSecs))}</small>
             </div>
             <div>
               <strong>${formatMetric(recordForm,1)}</strong>
@@ -7151,6 +7172,10 @@ function renderWellnessDashboard(data){
         ? "Actuele hersteldata geladen."
         : "Data geladen, maar onvoldoende actuele herstelmetingen voor een coachscore.";
   }
+
+  // Een fout in een afgeleid coachpaneel mag een succesvolle wellness-load
+  // niet als API-fout laten eindigen.
+  refreshDerivedCoachViews();
 }
 
 async function loadWellnessDashboard(){
@@ -11380,10 +11405,10 @@ function renderTodayCoach(){
           :"Plan advies voor vandaag";
 
   renderCurrentTodayWorkout(existing);
-  renderPerformanceEngine();
-  renderAiTrainingGenerator();
-  renderAiWeekPlanner();
-  renderLoadMonitor();
+  safeRenderView("Performance Engine",renderPerformanceEngine);
+  safeRenderView("AI Training Generator",renderAiTrainingGenerator);
+  safeRenderView("AI Week Planner",renderAiWeekPlanner);
+  safeRenderView("Belastbaarheidsmonitor",renderLoadMonitor);
 }
 
 function applyTodayRecommendation(){
