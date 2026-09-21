@@ -22,7 +22,11 @@ resterende randgevallen af:
   uploadmarkers opgeschoond;
 - verwijderen of opnieuw genereren van 8.2-schema's laat geen verborgen
   statusresten achter;
-- custom workout-uploads valideren nu ook of een kalenderdatum echt bestaat.
+- custom workout-uploads valideren nu ook of een kalenderdatum echt bestaat;
+- synthetische racefallbacks worden verwijderd zodra dezelfde dag al als echte
+  wedstrijd in de wedstrijdkalender bestaat;
+- Race Readiness wordt pas berekend met minimaal twee inhoudelijke signalen,
+  zodat één losse bron geen schijnprecisie geeft.
 
 ## Architectuur
 
