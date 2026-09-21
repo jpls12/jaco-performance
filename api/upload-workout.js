@@ -68,6 +68,20 @@ function intervalsEventType(type) {
   return mapping[type] || "Workout";
 }
 
+async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
 
@@ -118,13 +132,15 @@ export default async function handler(req, res) {
     return sendJson(res, 400, { error: error.message });
   }
 
+  const externalId = `jaco-performance-${workout.date}`;
+
   const event = [{
     category: "WORKOUT",
     start_date_local: `${workout.date}T00:00:00`,
     name: workout.uploadName || workout.name,
     description: workout.intervalsDescription,
     type: intervalsEventType(workout.type || "Run"),
-    external_id: `jaco-performance-${workout.date}-${Date.now()}`
+    external_id: externalId
   }];
 
   const authorization = Buffer
@@ -132,8 +148,8 @@ export default async function handler(req, res) {
     .toString("base64");
 
   try {
-    const response = await fetch(
-      "https://intervals.icu/api/v1/athlete/0/events/bulk",
+    const response = await fetchWithTimeout(
+      "https://intervals.icu/api/v1/athlete/0/events/bulk?upsert=true",
       {
         method: "POST",
         headers: {
@@ -166,17 +182,28 @@ export default async function handler(req, res) {
       });
     }
 
+    const updatedEvent = Array.isArray(responseBody)
+      ? responseBody[0] || null
+      : null;
+
     return sendJson(res, 200, {
       ok: true,
-      message: "Training toegevoegd aan Intervals.icu.",
+      message: "Training toegevoegd of bijgewerkt in Intervals.icu.",
+      externalId,
+      eventId: updatedEvent?.id ?? null,
       workout: {
         date: workout.date,
         name: workout.uploadName || workout.name
       }
     });
   } catch (error) {
+    const message =
+      error?.name === "AbortError"
+        ? "de aanvraag duurde te lang"
+        : error.message;
+
     return sendJson(res, 500, {
-      error: `De server kon Intervals.icu niet bereiken: ${error.message}`
+      error: `De server kon Intervals.icu niet bereiken: ${message}`
     });
   }
 }
