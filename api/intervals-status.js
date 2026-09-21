@@ -4,8 +4,36 @@ function sendJson(res, status, payload) {
   return res.end(JSON.stringify(payload));
 }
 
+const AMSTERDAM_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Amsterdam",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit"
+});
+
 function isoDate(date) {
-  return date.toISOString().slice(0, 10);
+  const parts = Object.fromEntries(
+    AMSTERDAM_DATE_FORMATTER
+      .formatToParts(date)
+      .filter(part => part.type !== "literal")
+      .map(part => [part.type, part.value])
+  );
+
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export default async function handler(req, res) {
@@ -60,7 +88,7 @@ export default async function handler(req, res) {
     .toString("base64");
 
   try {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
       `https://intervals.icu/api/v1/athlete/0/wellness?${params.toString()}`,
       {
         method: "GET",
@@ -105,8 +133,13 @@ export default async function handler(req, res) {
       records
     });
   } catch (error) {
+    const message =
+      error?.name === "AbortError"
+        ? "de aanvraag duurde te lang"
+        : error.message;
+
     return sendJson(res, 500, {
-      error: `De server kon Intervals.icu niet bereiken: ${error.message}`
+      error: `De server kon Intervals.icu niet bereiken: ${message}`
     });
   }
 }
