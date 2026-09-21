@@ -4397,7 +4397,7 @@ function updateRecoveryLabel(){
   const isTime=document.getElementById("recoveryType").value==="time";
   const input=document.getElementById("recoveryValue");
 
-  document.getElementById("recoveryValueLabel").firstChild.textContent=
+  document.getElementById("recoveryValueLabelText").textContent=
     isTime ? "Herstel (minuten)" : "Herstel (meter)";
 
   input.min=isTime ? "0.5" : "50";
