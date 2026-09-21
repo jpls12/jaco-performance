@@ -4,10 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**8.3.1 · Stability & Cleanup**
+**8.3.2 · Final Hardening**
 
-Deze release stabiliseert de bestaande coach-, wedstrijd-, seizoens-, kalender-,
-Intervals.icu- en backupfunctionaliteit voordat nieuwe features worden toegevoegd.
+Deze release bouwt voort op 8.3.1 en sluit resterende randgevallen rond lokale opslag,
+backup-herstel, kalenderconflicten, racedagen en bronherkenning af voordat nieuwe features worden toegevoegd.
 
 ## Architectuur
 
