@@ -3325,9 +3325,6 @@ async function uploadSelected(){
     return;
   }
 
-  const pin=readSessionAppPin() || promptForAppPin();
-  if(!pin) return;
-
   const status=document.getElementById("uploadStatus");
   if(!status) return;
 
