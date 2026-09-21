@@ -203,6 +203,7 @@ async function initializeJacoPerformance(){
 
   // Lokale trainingen en wedstrijden eerst tonen.
   await loadServer();
+  upgradeCompletionMarkers();
 
   // Daarna actuele wellnessdata ophalen. De wellness-loader herberekent
   // alle afhankelijke coachpanelen exact één keer, ook bij een fout.
