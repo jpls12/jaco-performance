@@ -8065,22 +8065,15 @@ function workoutWasCompleted(date,workout){
 }
 
 function completedWorkoutEntriesBetween(minDaysAgo,maxDaysAgo){
-  const todayValue=new Date();
-  todayValue.setHours(12,0,0,0);
-
   return Object.entries({...serverWorkouts,...customWorkouts})
-    .map(([date,workout])=>({
-      date,
-      workout,
-      parsed:new Date(date+"T12:00:00")
-    }))
+    .map(([date,workout])=>({date,workout}))
     .filter(item=>{
       if(!item.workout) return false;
       if(["Race","Rest"].includes(item.workout.type)) return false;
       if(!workoutWasCompleted(item.date,item.workout)) return false;
 
-      const age=Math.floor((todayValue-item.parsed)/86400000);
-      return age>=minDaysAgo && age<=maxDaysAgo;
+      const age=calendarDayDifference(todayDateString(),item.date);
+      return age!==null && age>=minDaysAgo && age<=maxDaysAgo;
     });
 }
 
@@ -8537,22 +8530,16 @@ function renderLoadMonitor(){
 }
 
 function historicalWorkoutEntries(days){
-  const cutoff=new Date();
-  cutoff.setHours(0,0,0,0);
-  cutoff.setDate(cutoff.getDate()-days+1);
-
-  const end=new Date();
-  end.setHours(23,59,59,999);
-
   return Object.entries({...serverWorkouts,...customWorkouts})
-    .map(([date,workout])=>({date,workout,parsed:new Date(date+"T12:00:00")}))
-    .filter(item=>
-      item.workout &&
-      item.parsed>=cutoff &&
-      item.parsed<=end &&
-      item.workout.type!=="Race" &&
-      item.workout.type!=="Rest"
-    );
+    .map(([date,workout])=>({date,workout}))
+    .filter(item=>{
+      if(!item.workout) return false;
+      if(["Race","Rest"].includes(item.workout.type)) return false;
+      if(!workoutWasCompleted(item.date,item.workout)) return false;
+
+      const age=calendarDayDifference(todayDateString(),item.date);
+      return age!==null && age>=0 && age<days;
+    });
 }
 
 function historySummary(days){
@@ -10110,15 +10097,12 @@ function dateDaysAgo(days){
 }
 
 function calculateConsistencyScore(){
-  const cutoff=dateDaysAgo(28);
-  const todayValue=new Date();
-  todayValue.setHours(23,59,59,999);
-
   const workouts=Object.entries({...serverWorkouts,...customWorkouts})
     .filter(([date,workout])=>{
       if(!workout || workout.type==="Race" || workout.type==="Rest") return false;
-      const parsed=new Date(date+"T12:00:00");
-      return parsed>=cutoff && parsed<=todayValue;
+
+      const age=calendarDayDifference(todayDateString(),date);
+      return age!==null && age>=0 && age<28;
     });
 
   if(!workouts.length){
