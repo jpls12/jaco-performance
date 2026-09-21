@@ -7787,11 +7787,19 @@ function recordPerformanceScore(record,index,records){
     recovery=clampScore(value);
   }
 
-  const performance=weightedAvailableScore([
+  const performanceInputs=[
     {value:fitness,weight:.40},
     {value:fatigue,weight:.22},
     {value:recovery,weight:.38}
-  ]);
+  ];
+  const availablePerformanceInputs=performanceInputs.filter(
+    item=>item.value!==null && item.value!==undefined
+  ).length;
+
+  const performance=
+    availablePerformanceInputs>=2
+      ?weightedAvailableScore(performanceInputs)
+      :null;
 
   return{
     date:record.id||record.date||"",
@@ -7832,9 +7840,18 @@ function renderTrendChart(points){
 
   if(!chart || !line || !dots || !grid) return;
 
-  if(points.length<2){
+  const validPoints=points.filter(point=>
+    point.performance!==null &&
+    point.performance!==undefined &&
+    Number.isFinite(Number(point.performance))
+  );
+
+  if(validPoints.length<2){
     chart.hidden=true;
     empty.hidden=false;
+    line.setAttribute("points","");
+    dots.innerHTML="";
+    grid.innerHTML="";
     return;
   }
 
@@ -7848,8 +7865,8 @@ function renderTrendChart(points){
   const width=right-left;
   const height=bottom-top;
 
-  const coordinates=points.map((point,index)=>{
-    const x=left+(index/(points.length-1))*width;
+  const coordinates=validPoints.map((point,index)=>{
+    const x=left+(index/(validPoints.length-1))*width;
     const y=bottom-(clampScore(point.performance)/100)*height;
     return{x,y,value:point.performance,date:point.date};
   });
@@ -10102,12 +10119,14 @@ function calculateConsistencyScore(){
       if(!workout || workout.type==="Race" || workout.type==="Rest") return false;
 
       const age=calendarDayDifference(todayDateString(),date);
-      return age!==null && age>=0 && age<28;
+      // Vandaag telt pas mee nadat de dag voorbij is; anders zou een nog
+      // uit te voeren training je consistentie al verlagen.
+      return age!==null && age>=1 && age<=28;
     });
 
   if(!workouts.length){
     return{
-      score:60,
+      score:null,
       completed:0,
       planned:0,
       explanation:"Nog onvoldoende lokale trainingshistorie"
@@ -10168,12 +10187,22 @@ function calculatePerformanceEngine(){
   if(phase.phase==="race-week") phaseScore=90;
   if(!race) phaseScore=null;
 
-  let raceReadiness=weightedAvailableScore([
+  const raceReadinessInputs=[
     {value:fitness,weight:.32},
     {value:recovery,weight:.30},
     {value:consistency.score,weight:.23},
     {value:phaseScore,weight:.15}
-  ]);
+  ];
+  const substantiveRaceInputs=[
+    fitness,
+    recovery,
+    consistency.score
+  ].filter(value=>value!==null && value!==undefined).length;
+
+  let raceReadiness=
+    race && substantiveRaceInputs>=1
+      ?weightedAvailableScore(raceReadinessInputs)
+      :null;
 
   if(
     race &&
@@ -10203,14 +10232,25 @@ function calculatePerformanceEngine(){
     20+(dataPoints/possibleDataPoints)*80
   );
 
-  const performance=weightedAvailableScore([
+  const performanceInputs=[
     {value:fitness,weight:.23},
     {value:fatigue,weight:.17},
     {value:recovery,weight:.27},
     {value:consistency.score,weight:.16},
     {value:raceReadiness,weight:.12},
     {value:confidence,weight:.05}
-  ]);
+  ];
+  const substantivePerformanceInputs=[
+    fitness,
+    fatigue,
+    recovery,
+    consistency.score
+  ].filter(value=>value!==null && value!==undefined).length;
+
+  const performance=
+    substantivePerformanceInputs>=2
+      ?weightedAvailableScore(performanceInputs)
+      :null;
 
   const signals=[];
 
@@ -10237,8 +10277,20 @@ function calculatePerformanceEngine(){
   });
 
   signals.push({
-    state:consistency.score>=75?"good":consistency.score>=55?"warn":"bad",
-    icon:consistency.score>=75?"✓":consistency.score>=55?"!":"×",
+    state:consistency.score===null
+      ?"warn"
+      :consistency.score>=75
+        ?"good"
+        :consistency.score>=55
+          ?"warn"
+          :"bad",
+    icon:consistency.score===null
+      ?"?"
+      :consistency.score>=75
+        ?"✓"
+        :consistency.score>=55
+          ?"!"
+          :"×",
     text:consistency.explanation
   });
 
