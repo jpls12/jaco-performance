@@ -2989,6 +2989,7 @@ function restoreLastSafetyBackup(){
 
 function workoutCompletionIdentity(workout){
   if(!workout) return "";
+  if(workout.raceId) return `race:${workout.raceId}`;
   return JSON.stringify([
     String(workout.type||""),
     String(workout.name||""),
@@ -3084,11 +3085,14 @@ function allWorkouts(){
     Object.values(races).map(race => [
       race.date,
       {
+        raceId: race.id,
         name: race.name,
         uploadName: race.name,
         date: race.date,
         type: "Race",
         distanceKm: race.distanceKm,
+        priority: race.priority,
+        targetTime: race.targetTime || "",
         rpe: "10/10",
         status: "planned",
         displaySteps: [
