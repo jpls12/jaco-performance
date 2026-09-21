@@ -436,10 +436,7 @@ function saveCompletedVisualWorkout(){
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
 
-  renderMonth();
-  renderSelected();
-  renderSaved();
-  renderTodayCoach();
+  refreshAfterCalendarMutation();
 
   closeVisualWorkoutPlayer();
   selectedDate=date;
@@ -1608,8 +1605,9 @@ function saveCoachDiary(event){
 
   saveObject(DIARY_KEY,coachDiary);
   renderCoachDiary(date);
-  renderTodayCoach();
-  renderCoachIntelligence();
+  resetGeneratedPlannerPreviews();
+  renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
 
   const status=document.getElementById("diaryStatus");
   status.className="status ok";
@@ -1624,8 +1622,9 @@ function deleteCoachDiaryEntry(){
   delete coachDiary[date];
   saveObject(DIARY_KEY,coachDiary);
   renderCoachDiary(date);
-  renderTodayCoach();
-  renderCoachIntelligence();
+  resetGeneratedPlannerPreviews();
+  renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
 
   const status=document.getElementById("diaryStatus");
   status.className="status ok";
@@ -1887,13 +1886,7 @@ function applyCoachChatWorkout(){
   customWorkouts[date]=saved;
   saveObject(STORAGE_KEY,customWorkouts);
 
-  renderMonth();
-  renderSelected();
-  renderSaved();
-  renderTodayCoach();
-  renderPerformanceEngine();
-  renderCoachIntelligence();
-  renderPerformanceTrend(activeTrendDays);
+  refreshAfterCalendarMutation();
 
   status.className="status ok";
   status.textContent=`${saved.name} is voor vandaag ingepland.`;
@@ -2334,11 +2327,7 @@ function applySmartWeekPlan(){
   }
 
   saveObject(STORAGE_KEY,customWorkouts);
-  renderMonth();
-  renderSaved();
-  renderTodayCoach();
-  renderPerformanceEngine();
-  renderCoachIntelligence();
+  refreshAfterCalendarMutation();
 
   status.className="status ok";
   status.textContent=`${added} trainingen toegepast${skipped?` · ${skipped} bestaande dagen behouden`:""}.`;
@@ -3309,7 +3298,7 @@ function toggleDone(){
   saveObject(DONE_KEY,doneWorkouts);
   renderMonth();
   renderSelected();
-  renderTodayCoach();
+  refreshDerivedCoachViews();
 
   if(isNowDone){
     openDiaryForDate(selectedDate);
@@ -4792,9 +4781,7 @@ function saveWorkout(event){
   document.getElementById("saveButton").textContent="Wijzigingen opslaan";
   document.getElementById("cancelEdit").hidden=false;
 
-  renderMonth();
-  renderSelected();
-  renderSaved();
+  refreshAfterCalendarMutation();
 }
 
 function openDuplicate(date){
@@ -4848,8 +4835,7 @@ function duplicateWorkout(){
 
   closeDuplicate();
   switchView("calendar");
-  renderMonth();
-  renderSelected();
+  refreshAfterCalendarMutation();
 }
 
 function deleteWorkout(date){
@@ -4864,9 +4850,7 @@ function deleteWorkout(date){
   saveObject(DONE_KEY,doneWorkouts);
   saveObject(UPLOAD_KEY,uploadedWorkouts);
 
-  renderMonth();
-  renderSelected();
-  renderSaved();
+  refreshAfterCalendarMutation();
 }
 
 function renderSaved(){
@@ -6942,14 +6926,46 @@ function buildCoachAdvice(latest,averages){
 }
 
 
+function resetGeneratedPlannerPreviews(){
+  pendingWeekPlan=[];
+  pendingAdaptiveWeek=[];
+  pendingFullSeasonSchedule=null;
+
+  aiWeekOptions=[];
+  selectedAiWeekIndex=0;
+
+  aiTrainingOptions=[];
+  selectedAiTrainingIndex=0;
+
+  smartWeekOptions=[];
+  selectedSmartWeekIndex=0;
+}
+
 function refreshDerivedCoachViews(){
+  renderLoadMonitor();
   renderTodayCoach();
   renderCoachBrain();
   buildCoachHorizon();
+  renderPerformanceEngine();
+  renderAiTrainingGenerator();
+  renderAiWeekPlanner();
   renderCoachIntelligence();
   renderPerformanceTrend(activeTrendDays);
   renderSmartWeekCoach();
   renderRaceSimulator();
+}
+
+function refreshAfterCalendarMutation({resetPlans=true}={}){
+  if(resetPlans){
+    resetGeneratedPlannerPreviews();
+  }
+
+  renderMonth();
+  renderSelected();
+  renderSaved();
+  renderFullSeasonTargetOptions();
+  renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
 }
 
 function renderWellnessDashboard(data){
@@ -10116,10 +10132,7 @@ function saveAiGeneratedWeek(){
   }
 
   saveObject(STORAGE_KEY,customWorkouts);
-  renderMonth();
-  renderSaved();
-  renderTodayCoach();
-  renderPerformanceEngine();
+  refreshAfterCalendarMutation();
 
   status.className="status ok";
   status.textContent=
@@ -10501,11 +10514,7 @@ function saveAiGeneratedTraining(){
   customWorkouts[date]=saved;
   saveObject(STORAGE_KEY,customWorkouts);
 
-  renderMonth();
-  renderSelected();
-  renderSaved();
-  renderTodayCoach();
-  renderPerformanceEngine();
+  refreshAfterCalendarMutation();
 
   status.className="status ok";
   status.textContent=`${saved.name} is toegevoegd aan vandaag.`;
@@ -11402,10 +11411,7 @@ function applyTodayRecommendation(){
   customWorkouts[date]=workout;
   saveObject(STORAGE_KEY,customWorkouts);
 
-  renderMonth();
-  renderSelected();
-  renderSaved();
-  renderTodayCoach();
+  refreshAfterCalendarMutation();
 
   status.className="status ok";
   status.textContent=`${workout.name} is toegevoegd aan vandaag.`;
@@ -11844,8 +11850,7 @@ function saveAdaptiveWeek(){
   }
 
   saveObject(STORAGE_KEY,customWorkouts);
-  renderMonth();
-  renderSaved();
+  refreshAfterCalendarMutation();
 
   const status=document.getElementById("adaptiveWeekStatus");
   status.className="status ok";
@@ -11902,8 +11907,11 @@ function savePlanning(event){
   document.getElementById("planningStatus").textContent=
     "Planning opgeslagen. Plan mijn week gebruikt vanaf nu deze dagen.";
 
+  resetGeneratedPlannerPreviews();
   renderPlanningPreview();
   renderProfileSummary();
+  renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
 }
 
 function renderPlanningPreview(){
@@ -11964,26 +11972,58 @@ function fillProfileForm(){
 }
 function saveProfile(e){
   e.preventDefault();
+
+  const weeklyKm=Number(document.getElementById("profileWeeklyKm").value);
+  const maxKm=Number(document.getElementById("profileMaxKm").value);
+  const maxHr=Number(document.getElementById("profileMaxHr").value);
+  const z2Hr=Number(document.getElementById("profileZ2Hr").value);
+  const status=document.getElementById("profileStatus");
+
+  if(
+    !Number.isFinite(weeklyKm) ||
+    !Number.isFinite(maxKm) ||
+    maxKm<weeklyKm
+  ){
+    status.className="status error";
+    status.textContent=
+      "Maximale weekomvang moet minimaal gelijk zijn aan je gewenste weekomvang.";
+    return;
+  }
+
+  if(
+    !Number.isFinite(maxHr) ||
+    !Number.isFinite(z2Hr) ||
+    z2Hr>=maxHr
+  ){
+    status.className="status error";
+    status.textContent=
+      "Zone 2-bovengrens moet lager zijn dan je maximale hartslag.";
+    return;
+  }
+
   const current=getProfile();
   profile={
     ...current,
     name:safe(document.getElementById("profileName").value).trim()||"Jaco",
     days:Number(document.getElementById("profileDays").value),
-    weeklyKm:Number(document.getElementById("profileWeeklyKm").value),
-    maxKm:Number(document.getElementById("profileMaxKm").value),
+    weeklyKm,
+    maxKm,
     fiveKPr:safe(document.getElementById("profileFiveKPr").value).trim(),
     fiveKGoal:safe(document.getElementById("profileFiveKGoal").value).trim(),
     tenKPr:safe(document.getElementById("profileTenKPr").value).trim(),
     halfGoal:safe(document.getElementById("profileHalfGoal").value).trim(),
-    maxHr:Number(document.getElementById("profileMaxHr").value),
-    z2Hr:Number(document.getElementById("profileZ2Hr").value)
+    maxHr,
+    z2Hr
   };
   saveObject(PROFILE_KEY,profile);
 
-  const status=document.getElementById("profileStatus");
-  status.className="status ok";
-  status.textContent="Profiel opgeslagen.";
+  resetGeneratedPlannerPreviews();
   renderProfileSummary();
+  renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
+
+  status.className="status ok";
+  status.textContent="Profiel opgeslagen en coach/planners bijgewerkt.";
 }
 function renderProfileSummary(){
   const p=getProfile();
@@ -12106,8 +12146,7 @@ function savePersonalWeek(){
   }
 
   saveObject(STORAGE_KEY,customWorkouts);
-  renderMonth();
-  renderSaved();
+  refreshAfterCalendarMutation();
 
   const status=document.getElementById("weekPlanStatus");
   status.className="status ok";
