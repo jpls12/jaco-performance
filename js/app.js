@@ -1626,12 +1626,25 @@ function coachChatContext(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
   const race=getRaceFocus();
-  const phase=classifyRacePhase(race);
+  const seasonBlock=seasonBlockForDate(todayDateString());
+  const phase=seasonPhaseToLegacyPhase(seasonBlock,race);
   const profileData=getProfile();
   const existing=currentTodayWorkout();
   const loadMonitor=buildLoadMonitor();
   const diary=buildDiaryContext();
-  return{availability,snapshot,readiness,race,phase,profile:profileData,existing,loadMonitor,diary};
+
+  return{
+    availability,
+    snapshot,
+    readiness,
+    race,
+    phase,
+    seasonBlock,
+    profile:profileData,
+    existing,
+    loadMonitor,
+    diary
+  };
 }
 
 function normalizeCoachMessage(message){
@@ -1678,6 +1691,13 @@ function coachChatResponse(message){
   const missed=/gemist|training overgeslagen|niet kunnen trainen/.test(text);
   const wantsLong=/lange duur|lange duurloop|long run/.test(text);
   const pain=/pijn|blessure|stekende|scherpe pijn|gezwollen/.test(text);
+
+  if(context.existing?.type==="Race"){
+    response=pain
+      ?"Vandaag staat je wedstrijd gepland. Omdat je pijn noemt, maak ik geen vervangende training of intensiteitsadvies. Beoordeel eerst of starten verantwoord is en laat duidelijke of aanhoudende klachten zo nodig professioneel beoordelen."
+      :"Vandaag is wedstrijddag. Coach Chat verandert je wedstrijd niet automatisch. Gebruik de chat alleen voor uitvoering, planning en hoe je je voelt; de wedstrijd blijft in de kalender staan.";
+    return{response,workout:null};
+  }
 
   if(pain){
     response="Bij pijn maak ik geen intensieve trainingsaanpassing. Kies vandaag voor rust of zeer lichte mobiliteit en beoordeel eerst of trainen verantwoord voelt. Bij aanhoudende of duidelijke pijn is professionele beoordeling verstandiger.";
@@ -7199,7 +7219,15 @@ function coachContext(){
   const availability=todayAvailabilityInfo();
   const existing=currentTodayWorkout();
 
-  return{snapshot,readiness,race,phase,availability,existing};
+  return{
+    snapshot,
+    readiness,
+    race,
+    phase,
+    seasonBlock:currentSeasonBlock,
+    availability,
+    existing
+  };
 }
 
 function scoreLibraryItem(item,context){
@@ -7401,9 +7429,57 @@ Easy
 }
 
 function renderCoachBrain(){
+  const context=coachContext();
+
+  if(context.existing?.type==="Race"){
+    const raceWorkout=context.existing;
+
+    document.getElementById("brainDecisionTitle").textContent=
+      raceWorkout.name;
+    document.getElementById("brainDecisionText").textContent=
+      "Wedstrijddag is beschermd. Coach Brain maakt vandaag geen vervangende trainingssessie.";
+
+    const factorRows=[
+      {
+        cls:"good",
+        icon:"🏁",
+        text:`Wedstrijd vandaag: ${raceWorkout.name}`
+      },
+      {
+        cls:context.readiness.level==="unknown"
+          ?"warn"
+          :context.readiness.level==="good"
+            ?"good"
+            :context.readiness.level==="moderate"
+              ?"warn"
+              :"bad",
+        icon:context.readiness.level==="unknown"?"?":"✓",
+        text:context.readiness.level==="unknown"
+          ?"Herstelstatus: onvoldoende actuele data"
+          :`Herstelstatus: ${context.readiness.level} (${context.readiness.score}/100)`
+      },
+      {
+        cls:"good",
+        icon:"↗",
+        text:context.seasonBlock
+          ?`Seizoensblok: ${context.seasonBlock.label}`
+          :"Wedstrijd blijft leidend"
+      }
+    ];
+
+    document.getElementById("brainFactors").innerHTML=
+      factorRows.map(row=>`
+        <div class="reason-item">
+          <div class="reason-icon ${row.cls}">${row.icon}</div>
+          <div>${safe(row.text)}</div>
+        </div>
+      `).join("");
+
+    return;
+  }
+
   const decision=chooseCoachBrainSession();
   const workout=buildLibraryWorkout(decision);
-  const context=decision.context;
   const choice=decision.choice;
 
   pendingTodayAdvice={
@@ -7515,27 +7591,60 @@ function buildCoachHorizon(){
   }
 
   const raceDays=daysUntil(race.date);
-  const baseKm=Math.min(Number(profileData.maxKm)||70,Number(profileData.weeklyKm)||60);
-  const readinessFactor=readiness.level==="low"?0.78:readiness.level==="moderate"?0.90:1;
+  const baseKm=Math.min(
+    Number(profileData.maxKm)||70,
+    Number(profileData.weeklyKm)||60
+  );
 
   const weeks=[0,1,2,3].map(offset=>{
-    const phase=horizonWeekPhase(raceDays,offset);
-    let phaseFactor=1;
-
-    if(phase==="Taper") phaseFactor=0.75;
-    if(phase==="Wedstrijdweek") phaseFactor=0.50;
-
-    const km=Math.max(20,Math.round(baseKm*readinessFactor*phaseFactor));
     const start=addDays(nextMonday(),offset*7);
     const end=addDays(start,6);
+    const block=seasonBlockForWeek(start);
+
+    const fallbackPhase=horizonWeekPhase(raceDays,offset);
+    const phaseLabelText=block?.label || fallbackPhase;
+
+    let phaseFactor=block?.volumeFactor ?? 1;
+    if(!block && fallbackPhase==="Taper") phaseFactor=.75;
+    if(!block && fallbackPhase==="Wedstrijdweek") phaseFactor=.50;
+
+    // Alleen de eerstvolgende week mag actuele hersteldata gebruiken.
+    // Voor toekomstige weken wordt herstel niet voorspeld.
+    const readinessFactor=
+      offset===0
+        ?readiness.level==="low"
+          ?.78
+          :readiness.level==="moderate"
+            ?.90
+            :1
+        :1;
+
+    const km=Math.max(
+      20,
+      Math.round(baseKm*readinessFactor*phaseFactor)
+    );
+
+    const focus=
+      block?.quality ||
+      horizonQualityFocus(race,fallbackPhase);
+
+    const color=
+      block?.phase==="race" || fallbackPhase==="Wedstrijdweek"
+        ?"red"
+        :block?.phase==="taper" || fallbackPhase==="Taper"
+          ?"orange"
+          :"green";
 
     return{
       offset,
       start,
       end,
-      phase,
+      phase:phaseLabelText,
       km,
-      focus:horizonQualityFocus(race,phase)
+      focus,
+      color,
+      targetRace:block?.targetRace || race,
+      usesCurrentRecovery:offset===0 && readiness.level!=="unknown"
     };
   });
 
@@ -7547,17 +7656,15 @@ function buildCoachHorizon(){
         – ${new Intl.DateTimeFormat("nl-NL",{day:"numeric",month:"short"}).format(new Date(week.end+"T12:00:00"))}</small>
       </div>
       <div>
-        <strong>${week.phase}</strong>
-        <small>${safe(week.focus)}</small>
+        <strong>${safe(week.phase)}</strong>
+        <small>${safe(week.focus)} · ${safe(week.targetRace.name)}${week.usesCurrentRecovery?" · actuele recovery meegewogen":""}</small>
       </div>
-      <span class="adaptive-tag ${week.phase==="Wedstrijdweek"?"red":week.phase==="Taper"?"orange":"green"}">
+      <span class="adaptive-tag ${week.color}">
         ± ${week.km} km
       </span>
     </div>
   `).join("");
 }
-
-
 
 
 
@@ -10020,7 +10127,8 @@ function calculatePerformanceEngine(){
   const snapshot=getWellnessSnapshot();
   const readiness=determineReadiness(snapshot);
   const race=getRaceFocus();
-  const phase=classifyRacePhase(race);
+  const seasonBlock=seasonBlockForDate(todayDateString());
+  const phase=seasonPhaseToLegacyPhase(seasonBlock,race);
   const consistency=calculateConsistencyScore();
 
   const ctl=snapshot.ctl;
