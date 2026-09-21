@@ -431,10 +431,15 @@ function saveCompletedVisualWorkout(){
     ].join("\n")
   };
 
+  if(existing){
+    resetWorkoutDerivedState(date);
+  }
+
   customWorkouts[date]=workout;
   markWorkoutCompleted(date,workout);
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   refreshAfterCalendarMutation();
 
@@ -1902,11 +1907,17 @@ function applyCoachChatWorkout(){
     if(!confirmed) return;
   }
 
+  if(existing){
+    resetWorkoutDerivedState(date);
+  }
+
   const saved=JSON.parse(JSON.stringify(pendingCoachChatWorkout));
   saved.date=date;
   saved.status="planned";
   customWorkouts[date]=saved;
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   refreshAfterCalendarMutation();
 
@@ -4788,12 +4799,16 @@ function saveWorkout(event){
       `Op ${workout.date} staat al "${targetExisting.name}". Deze vervangen door "${workout.name}"?`
     );
     if(!confirmed) return;
+
+    resetWorkoutDerivedState(workout.date);
   }
 
   if(originalDate && originalDate!==workout.date){
+    const originalWorkout=customWorkouts[originalDate]||null;
+    if(originalWorkout){
+      clearDerivedStateForWorkout(originalDate,originalWorkout);
+    }
     delete customWorkouts[originalDate];
-    delete doneWorkouts[originalDate];
-    delete uploadedWorkouts[originalDate];
   }
 
   customWorkouts[workout.date]=workout;
@@ -4878,9 +4893,9 @@ function deleteWorkout(date){
   if(!customWorkouts[date]) return;
   if(!confirm(`Training "${customWorkouts[date].name}" verwijderen?`)) return;
 
+  const deletedWorkout=customWorkouts[date];
+  clearDerivedStateForWorkout(date,deletedWorkout);
   delete customWorkouts[date];
-  delete doneWorkouts[date];
-  delete uploadedWorkouts[date];
 
   saveObject(STORAGE_KEY,customWorkouts);
   saveObject(DONE_KEY,doneWorkouts);
@@ -6822,8 +6837,7 @@ function generateRacePlan(){
       if(!workout) continue;
 
       if(existing && overwrite){
-        delete doneWorkouts[date];
-        delete uploadedWorkouts[date];
+        resetWorkoutDerivedState(date);
         replaced++;
       }
 
@@ -9421,6 +9435,9 @@ function replaceRaceWeekQualityWhenNeeded(context,workouts){
 }
 
 function existingNonSeasonWorkout(date){
+  const race=Object.values(races).find(item=>item.date===date)||null;
+  if(race) return raceMarkerWorkout(race);
+
   const custom=customWorkouts[date];
   if(custom && !custom.seasonGenerated) return custom;
   if(!custom && serverWorkouts[date]) return serverWorkouts[date];
@@ -9663,9 +9680,8 @@ function applyFullSeasonSchedule(){
       date>=plan.start &&
       date<=plan.end
     ){
+      clearDerivedStateForWorkout(date,workout);
       delete customWorkouts[date];
-      delete doneWorkouts[date];
-      delete uploadedWorkouts[date];
     }
   });
 
@@ -9696,8 +9712,7 @@ function applyFullSeasonSchedule(){
     }
 
     if(manualExisting && overwrite){
-      delete doneWorkouts[workout.date];
-      delete uploadedWorkouts[workout.date];
+      resetWorkoutDerivedState(workout.date);
       replaced++;
     }
 
@@ -9732,11 +9747,14 @@ function removeFullSeasonSchedule(){
   );
   if(!confirmed) return;
 
-  generated.forEach(([date])=>{
+  generated.forEach(([date,workout])=>{
+    clearDerivedStateForWorkout(date,workout);
     delete customWorkouts[date];
   });
 
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
   resetGeneratedPlannerPreviews();
   renderMonth();
   renderSelected();
@@ -10631,11 +10649,17 @@ function saveAiGeneratedTraining(){
     if(!confirmed) return;
   }
 
+  if(existing){
+    resetWorkoutDerivedState(date);
+  }
+
   const saved=JSON.parse(JSON.stringify(workout));
   saved.date=date;
   saved.status="planned";
   customWorkouts[date]=saved;
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   refreshAfterCalendarMutation();
 
@@ -10743,7 +10767,7 @@ function calculatePerformanceEngine(){
   ].filter(value=>value!==null && value!==undefined).length;
 
   let raceReadiness=
-    race && substantiveRaceInputs>=1
+    race && substantiveRaceInputs>=2
       ?weightedAvailableScore(raceReadinessInputs)
       :null;
 
@@ -11529,10 +11553,16 @@ function applyTodayRecommendation(){
     }
   }
 
+  if(existing){
+    resetWorkoutDerivedState(date);
+  }
+
   const workout=JSON.parse(JSON.stringify(pendingTodayAdvice.workout));
   workout.date=date;
   customWorkouts[date]=workout;
   saveObject(STORAGE_KEY,customWorkouts);
+  saveObject(DONE_KEY,doneWorkouts);
+  saveObject(UPLOAD_KEY,uploadedWorkouts);
 
   refreshAfterCalendarMutation();
 
