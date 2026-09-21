@@ -389,6 +389,29 @@ function saveCompletedVisualWorkout(){
   const exerciseNames=workoutDefinition.exercises
     .map(id=>VISUAL_EXERCISES[id].name);
 
+  const existing=currentTodayWorkout();
+  const sameVisualWorkout=
+    existing &&
+    existing.name===workoutDefinition.title &&
+    existing.type===workoutDefinition.type;
+
+  if(existing?.type==="Race"){
+    document.getElementById("playerFinishSummary").textContent=
+      `Niet opgeslagen: vandaag staat wedstrijd "${existing.name}" in je kalender.`;
+    return;
+  }
+
+  if(existing && !sameVisualWorkout){
+    const confirmed=confirm(
+      `Vandaag staat al "${existing.name}". Jaco Performance bewaart nu één hoofdtraining per dag. Deze vervangen door de voltooide ${workoutDefinition.title}?`
+    );
+    if(!confirmed){
+      document.getElementById("playerFinishSummary").textContent=
+        "Workout voltooid, maar niet in de kalender opgeslagen omdat daar al een andere training staat.";
+      return;
+    }
+  }
+
   const workout={
     date,
     type:workoutDefinition.type,
@@ -2330,7 +2353,19 @@ const fullDate = new Intl.DateTimeFormat("nl-NL",{
 const monthFmt = new Intl.DateTimeFormat("nl-NL",{month:"long",year:"numeric"});
 
 function loadObject(key){
-  try{return JSON.parse(localStorage.getItem(key) || "{}")}catch{return {}}
+  try{
+    const raw=localStorage.getItem(key);
+    if(!raw) return {};
+
+    const parsed=JSON.parse(raw);
+    if(isPlainBackupObject(parsed)) return parsed;
+
+    console.warn(`Lokale opslag voor ${key} had geen geldig object en is genegeerd.`);
+    return {};
+  }catch(error){
+    console.warn(`Lokale opslag voor ${key} kon niet worden gelezen:`,error);
+    return {};
+  }
 }
 function saveObject(key,value){
   localStorage.setItem(key,JSON.stringify(value));
@@ -2372,7 +2407,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"8.3.1",
+    appVersion:"8.3.2",
     createdAt:new Date().toISOString(),
     data
   };
@@ -2445,6 +2480,31 @@ function validateBackupPayload(input){
 
     if(typeof value!=="string"){
       throw new Error("De backup bevat een ongeldige gegevenswaarde.");
+    }
+
+    const objectValuedKeys=new Set([
+      STORAGE_KEY,
+      DONE_KEY,
+      UPLOAD_KEY,
+      RACES_KEY,
+      PROFILE_KEY,
+      DIARY_KEY,
+      HM_AMSTERDAM_BACKUP_KEY,
+      HM_AMSTERDAM_RACEWEEK_BACKUP_KEY,
+      "jp_race_simulations_v1"
+    ]);
+
+    if(objectValuedKeys.has(key)){
+      let parsedValue;
+      try{
+        parsedValue=JSON.parse(value);
+      }catch{
+        throw new Error(`De backup bevat ongeldige JSON voor ${key}.`);
+      }
+
+      if(!isPlainBackupObject(parsedValue)){
+        throw new Error(`De backup bevat een ongeldig object voor ${key}.`);
+      }
     }
 
     totalCharacters+=value.length;
@@ -2731,6 +2791,13 @@ function writeBackupData(payload,mode="merge"){
   });
 }
 
+function restoreManagedDataFromPayload(payload){
+  removeManagedLocalStorageData();
+  Object.entries(payload.data).forEach(([key,value])=>{
+    localStorage.setItem(key,value);
+  });
+}
+
 function applySelectedBackupImport(){
   const status=document.getElementById("backupStatus");
   if(!pendingBackupImport) return;
@@ -2747,8 +2814,9 @@ function applySelectedBackupImport(){
 
   if(!confirmed) return;
 
+  const safety=buildLocalBackupPayload();
+
   try{
-    const safety=buildLocalBackupPayload();
     localStorage.setItem(
       PREIMPORT_BACKUP_KEY,
       JSON.stringify(safety)
@@ -2762,8 +2830,19 @@ function applySelectedBackupImport(){
 
     setTimeout(()=>location.reload(),450);
   }catch(error){
+    try{
+      restoreManagedDataFromPayload(safety);
+      localStorage.setItem(
+        PREIMPORT_BACKUP_KEY,
+        JSON.stringify(safety)
+      );
+    }catch(rollbackError){
+      console.error("Rollback na mislukte import faalde:",rollbackError);
+    }
+
     status.className="status error";
-    status.textContent=`Import mislukt: ${error.message}`;
+    status.textContent=
+      `Import mislukt: ${error.message}. De vorige lokale toestand is zo goed mogelijk hersteld.`;
   }
 }
 
@@ -2792,13 +2871,10 @@ function restoreLastSafetyBackup(){
   );
   if(!confirmed) return;
 
-  try{
-    const current=buildLocalBackupPayload();
+  const current=buildLocalBackupPayload();
 
-    removeManagedLocalStorageData();
-    Object.entries(safety.data).forEach(([key,value])=>{
-      localStorage.setItem(key,value);
-    });
+  try{
+    restoreManagedDataFromPayload(safety);
 
     localStorage.setItem(
       PREIMPORT_BACKUP_KEY,
@@ -2811,8 +2887,19 @@ function restoreLastSafetyBackup(){
 
     setTimeout(()=>location.reload(),450);
   }catch(error){
+    try{
+      restoreManagedDataFromPayload(current);
+      localStorage.setItem(
+        PREIMPORT_BACKUP_KEY,
+        JSON.stringify(safety)
+      );
+    }catch(rollbackError){
+      console.error("Rollback na mislukte restore faalde:",rollbackError);
+    }
+
     status.className="status error";
-    status.textContent=`Herstellen mislukt: ${error.message}`;
+    status.textContent=
+      `Herstellen mislukt: ${error.message}. De toestand van vóór de herstelpoging is zo goed mogelijk teruggezet.`;
   }
 }
 
@@ -2856,9 +2943,19 @@ function calendarDayNumber(dateString){
   const year=Number(match[1]);
   const month=Number(match[2]);
   const day=Number(match[3]);
-  const value=Date.UTC(year,month-1,day)/86400000;
 
-  return Number.isFinite(value)?value:null;
+  if(month<1 || month>12 || day<1 || day>31) return null;
+
+  const date=new Date(Date.UTC(year,month-1,day));
+  if(
+    date.getUTCFullYear()!==year ||
+    date.getUTCMonth()!==month-1 ||
+    date.getUTCDate()!==day
+  ){
+    return null;
+  }
+
+  return date.getTime()/86400000;
 }
 function calendarDayDifference(laterDate,earlierDate){
   const later=calendarDayNumber(laterDate);
@@ -2946,7 +3043,12 @@ function renderSelected(){
     return;
   }
 
-  const isCustom=Boolean(customWorkouts[selectedDate]);
+  const raceOnDate=Object.values(races).find(
+    race=>race.date===selectedDate
+  )||null;
+  const isCalendarRace=Boolean(raceOnDate) && workout.type==="Race";
+  const isCustom=!isCalendarRace && Boolean(customWorkouts[selectedDate]);
+  const isServer=!isCalendarRace && !isCustom && Boolean(serverWorkouts[selectedDate]);
   const done=workoutState(selectedDate,workout)==="done";
   const uploaded=Boolean(uploadedWorkouts[selectedDate]);
 
@@ -2960,7 +3062,7 @@ function renderSelected(){
       </span>
       <span class="pill">${trainingVolumeLabel(workout)}</span>
       <span class="pill">RPE ${safe(workout.rpe)}</span>
-      <span class="pill">${done?"Voltooid":isCustom?"Eigen training":"Schema"}</span>
+      <span class="pill">${done?"Voltooid":isCalendarRace?"Wedstrijd":isCustom?"Eigen training":"Schema"}</span>
       ${uploaded?`<span class="pill">In Intervals ✓</span>`:""}
     </div>
 
@@ -2988,15 +3090,19 @@ function renderSelected(){
           : "Intervals-export volgt"}
       </button>
 
-      ${isCustom?`
+      ${isCalendarRace?`
+        <button class="secondary wide" type="button" onclick="editRace('${raceOnDate.id}')">
+          Bewerk wedstrijd
+        </button>
+      `:isCustom?`
         <button class="secondary" type="button" onclick="editWorkout('${selectedDate}')">Bewerken</button>
         <button class="secondary" type="button" onclick="openDuplicate('${selectedDate}')">Dupliceren</button>
         <button class="danger wide" type="button" onclick="deleteWorkout('${selectedDate}')">Verwijderen</button>
-      `:`
+      `:isServer?`
         <button class="secondary wide" type="button" onclick="copyServerWorkout('${selectedDate}')">
           Maak bewerkbare kopie
         </button>
-      `}
+      `:""}
     </div>
 
     <p id="uploadStatus" class="status"></p>`;
@@ -4450,6 +4556,26 @@ function saveWorkout(event){
     document.getElementById("formStatus").className="status error";
     document.getElementById("formStatus").textContent="Datum en naam zijn verplicht.";
     return;
+  }
+
+  const targetExisting=allWorkouts()[workout.date]||null;
+  const sameCustomDate=
+    Boolean(originalDate) &&
+    originalDate===workout.date &&
+    Boolean(customWorkouts[workout.date]);
+
+  if(targetExisting && !sameCustomDate){
+    if(targetExisting.type==="Race"){
+      document.getElementById("formStatus").className="status error";
+      document.getElementById("formStatus").textContent=
+        "Op deze datum staat een wedstrijd. Verplaats de training naar een andere dag.";
+      return;
+    }
+
+    const confirmed=confirm(
+      `Op ${workout.date} staat al "${targetExisting.name}". Deze vervangen door "${workout.name}"?`
+    );
+    if(!confirmed) return;
   }
 
   if(originalDate && originalDate!==workout.date){
@@ -10102,7 +10228,14 @@ function saveAiGeneratedTraining(){
   if(!workout) return;
 
   const date=todayDateString();
-  const existing=customWorkouts[date];
+  const existing=currentTodayWorkout();
+
+  if(existing?.type==="Race"){
+    status.className="status error";
+    status.textContent=
+      "De AI Training Generator vervangt een wedstrijd niet automatisch.";
+    return;
+  }
 
   if(existing){
     const confirmed=confirm(
