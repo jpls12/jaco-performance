@@ -165,24 +165,75 @@ document.getElementById("raceDistance").onchange=()=>{
     document.getElementById("raceDistance").value!=="other";
 };
 document.getElementById("generatePlan").onclick=generateRacePlan;
-document.getElementById("planStartDate").value=ymd(today);
+document.getElementById("planStartDate").value=todayDateString();
 document.getElementById("fullSeasonStart").value=nextMonday();
+
+let lastKnownAppDate=todayDateString();
+
+function refreshDayBoundaryIfNeeded(){
+  const current=todayDateString();
+  if(current===lastKnownAppDate) return;
+
+  const previous=lastKnownAppDate;
+  lastKnownAppDate=current;
+
+  if(selectedDate===previous){
+    selectedDate=current;
+  }
+
+  const currentDate=new Date(current+"T12:00:00");
+  const previousDate=new Date(previous+"T12:00:00");
+  if(
+    visibleMonth.getFullYear()===previousDate.getFullYear() &&
+    visibleMonth.getMonth()===previousDate.getMonth()
+  ){
+    visibleMonth=new Date(
+      currentDate.getFullYear(),
+      currentDate.getMonth(),
+      1
+    );
+  }
+
+  const greeting=document.getElementById("greeting");
+  const now=new Date();
+  if(greeting){
+    greeting.textContent=
+      (now.getHours()<12
+        ?"Goedemorgen"
+        :now.getHours()<18
+          ?"Goedemiddag"
+          :"Goedenavond")+" Jaco";
+  }
+
+  renderMonth();
+  renderSelected();
+  renderCoachDiary(current);
+  refreshDerivedCoachViews();
+}
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible"){
+    refreshDayBoundaryIfNeeded();
+  }
+});
+window.addEventListener("focus",refreshDayBoundaryIfNeeded);
 
 async function initializeJacoPerformance(){
   repairStoredWorkoutMismatches();
   installHmAmsterdamBlock2026();
   installHmAmsterdamRaceweek2026();
   const greeting=document.getElementById("greeting");
+  const now=new Date();
   if(greeting){
     greeting.textContent=
-      (today.getHours()<12
+      (now.getHours()<12
         ?"Goedemorgen"
-        :today.getHours()<18
+        :now.getHours()<18
           ?"Goedemiddag"
           :"Goedenavond")+" Jaco";
   }
 
-  setDefaultForm(ymd(today));
+  setDefaultForm(todayDateString());
   fillProfileForm();
   fillPlanningForm();
   renderProfileSummary();
