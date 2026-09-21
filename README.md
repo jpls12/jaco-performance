@@ -8,6 +8,22 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 Deze release rondt de stabilisatie af door alle weekplanners dezelfde taper-, race-, seizoens- en kalenderbescherming te laten gebruiken.
 
+### 8.3.6 final hardening
+
+Deze release voegt bewust geen nieuwe functie toe. De stabilisatieronde sluit
+de resterende randgevallen af:
+
+- een fout in één afgeleid coachpaneel kan het wellnessdashboard niet meer
+  ten onrechte als mislukte API-load laten eindigen;
+- wedstrijdregels worden gevalideerd voordat ze planners aansturen en een
+  tweede hoofdwedstrijd op dezelfde dag wordt geblokkeerd;
+- geïmporteerde racefallbacks worden verwijderd wanneer een echte race op
+  dezelfde datum bestaat;
+- vervangen en verwijderen van trainingen ruimt alleen de juiste voltooid- en
+  uploadstatus op;
+- racedagen worden ook in seizoenspreview en schematoepassing beschermd;
+- Race Readiness vereist minimaal twee inhoudelijke signalen.
+
 ## Architectuur
 
 De app is bewust licht opgebouwd:
