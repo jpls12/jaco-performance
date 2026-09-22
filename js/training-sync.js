@@ -372,6 +372,20 @@ function buildAdaptiveExecutionFeedback(){
     text=`De laatste zware training had een Intervals.icu-belasting van ${Math.round(load)}. Houd de volgende kwaliteit gecontroleerd.`;
   }
 
+  if(typeof latestTrainingQualityFeedback==="function"){
+    const quality=latestTrainingQualityFeedback(
+      latest.execution.actual?.id||null
+    );
+
+    if(quality?.level==="elevated"){
+      level="elevated";
+      text=quality.text;
+    }else if(quality?.level==="attention" && level==="stable"){
+      level="attention";
+      text=quality.text;
+    }
+  }
+
   return{
     level,
     text,
@@ -889,6 +903,13 @@ async function syncCompletedActivities({silent=false,render=true}={}){
       oldest:activitySyncMeta.oldest,
       newest:activitySyncMeta.newest
     });
+
+    if(typeof syncTrainingQualityLatest==="function"){
+      await syncTrainingQualityLatest({
+        silent:true,
+        render:false
+      });
+    }
 
     renderActivitySyncStatus();
 

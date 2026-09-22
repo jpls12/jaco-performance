@@ -305,6 +305,7 @@ document.getElementById("finishGuidedTraining").onclick=finishGuidedTrainingSess
 document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
 document.getElementById("refreshActivitySync").onclick=()=>syncCompletedActivities();
 document.getElementById("copyActivitySyncDiagnostics").onclick=copyActivitySyncDiagnostics;
+document.getElementById("refreshTrainingQuality").onclick=()=>syncTrainingQualityLatest({force:true});
 document.getElementById("applyTodayAdvice").onclick=applyTodayRecommendation;
 document.getElementById("refreshWeekReplan").onclick=refreshAdaptiveWeekReplanner;
 document.getElementById("applyWeekReplan").onclick=applyAdaptiveWeekReplan;

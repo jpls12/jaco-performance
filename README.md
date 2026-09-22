@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**9.5 · Adaptive Week Replanner**
+**9.6 · Training Quality Analyzer**
 
-9.5 beoordeelt na nieuwe herstel- of Training Sync-data automatisch de resterende kalenderweek. Gemiste sessies, afwijkende uitvoering, actuele belasting, beschikbaarheid en racevensters worden gecombineerd tot een transparant herschikkingsvoorstel dat pas na bevestiging wordt toegepast.
+9.6 analyseert de laatste betrouwbaar gekoppelde sleuteltraining blok voor blok. Gepland tempo, herhalingen, werkelijk intervaltempo, hartslag, volume, consistentie en RPE worden gecombineerd tot een trainingskwaliteitscore met expliciete betrouwbaarheid.
 
 ## Architectuur
 
@@ -16,6 +16,7 @@ De app is bewust licht opgebouwd:
 - `css/app.css` — responsive/mobile styling
 - `js/app.js` — state, planners, coachlogica en rendering
 - `js/training-sync.js` — koppeling uitgevoerd ↔ gepland en adaptieve feedback
+- `js/training-quality.js` — blok-voor-blok analyse van gekoppelde sleuteltrainingen
 - `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
 - `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
 - `js/adaptive-week-replanner.js` — herschikking van de resterende week na gemiste/afwijkende training of herstelwijziging
@@ -109,6 +110,16 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 9.6 Training Quality Analyzer
+
+- Haalt voor de laatste betrouwbaar gekoppelde kwaliteit- of lange duurtraining Intervals.icu-detaildata op via de server.
+- Gebruikt de activiteit-detailroute met `intervals=true`; API-key en app-pincode blijven buiten lokale opslag en clientcode.
+- Herkent geplande herhalingen, blokafstand en doeltempo uit de workoutbeschrijving.
+- Beoordeelt blokvoltooiing, tempodoel, tempo-consistentie, totaalvolume, hartslagbelasting en RPE wanneer die data beschikbaar is.
+- Geeft een 0–100 trainingskwaliteitscore plus Hoog/Goed/Redelijk/Laag vertrouwen afhankelijk van de beschikbare intervaldata.
+- Een duidelijke kwaliteitsafwijking wordt teruggegeven aan de adaptieve uitvoeringsfeedback, zodat Daily Decision en Week Replanner conservatiever kunnen reageren.
+- Alleen compacte analyseresultaten worden lokaal gecachet; ruwe streams worden niet opgeslagen.
 
 ## 9.5 Adaptive Week Replanner
 
