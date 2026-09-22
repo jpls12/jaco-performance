@@ -302,6 +302,18 @@ function performanceModelConfidence(targetDistance,estimates){
   }
 
   if(exactTrusted.length || trusted.length>=2){
+    const marathonDurabilityMissing=
+      targetDistance>=40 &&
+      !trusted.some(item=>item.evidence.distance>=30);
+
+    if(marathonDurabilityMissing){
+      return{
+        level:"Redelijk",
+        margin:.045,
+        score:68
+      };
+    }
+
     return{
       level:"Goed",
       margin:targetDistance>=40?.032:.02,
