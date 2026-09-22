@@ -77,11 +77,11 @@ function raceStrategySegmentTemplates(distance){
   }
 
   return[
-    {label:"Openen",from:0,to:5,offset:7,hr:[.76,.82],decision:"Na 5 km: alleen controleren of je níét te hard bent gestart."},
-    {label:"Settelen",from:5,to:20,offset:1,hr:[.80,.85],decision:"Rond 15 km: voeding, maag en pasritme moeten voorspelbaar aanvoelen."},
-    {label:"Midden",from:20,to:30,offset:0,hr:[.82,.87],decision:"Bij 25 km: geen kleine achterstand forceren; voeding en soepelheid prioriteit."},
-    {label:"Waarheid",from:30,to:37,offset:1,hr:[.84,.89],decision:"Bij 30–32 km: als hartslag stijgt maar tempo niet, niet versnellen; efficiëntie bewaken."},
-    {label:"Finish",from:37,to:d,offset:-2,hr:[.88,.94],decision:"Vanaf 37 km: alleen versnellen als benen, maag en energie nog stabiel zijn."}
+    {label:"Openen",from:0,to:5,offset:5,hr:[.76,.82],decision:"Na 5 km: alleen controleren of je níét te hard bent gestart."},
+    {label:"Settelen",from:5,to:20,offset:0,hr:[.80,.85],decision:"Rond 15 km: voeding, maag en pasritme moeten voorspelbaar aanvoelen."},
+    {label:"Midden",from:20,to:30,offset:-1,hr:[.82,.87],decision:"Bij 25 km: geen kleine achterstand forceren; voeding en soepelheid prioriteit."},
+    {label:"Waarheid",from:30,to:37,offset:0,hr:[.84,.89],decision:"Bij 30–32 km: als hartslag stijgt maar tempo niet, niet versnellen; efficiëntie bewaken."},
+    {label:"Finish",from:37,to:d,offset:-3,hr:[.88,.94],decision:"Vanaf 37 km: alleen versnellen als benen, maag en energie nog stabiel zijn."}
   ];
 }
 
