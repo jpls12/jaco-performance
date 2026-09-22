@@ -1160,3 +1160,126 @@
     @media(display-mode:standalone){
       .install-app-banner{display:none!important}
     }
+
+
+    /* 9.1 · Daily Training Experience */
+    .daily-training-card{
+      background:linear-gradient(150deg,rgba(18,43,60,.99),rgba(10,26,40,.99));
+      border-color:#39749a;overflow:hidden
+    }
+    .daily-training-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .daily-training-head h2{margin-bottom:0}
+    .daily-training-status{
+      flex:0 0 auto;padding:7px 10px;border-radius:999px;font-size:.72rem;font-weight:900;
+      border:1px solid #3e5872;background:#14263a;color:#b8c8d8
+    }
+    .daily-training-status.planned{border-color:#3c789d;color:#bfeaff;background:#133149}
+    .daily-training-status.done{border-color:#3e8c65;color:#c8f5da;background:#153627}
+    .daily-training-status.race{border-color:#b26565;color:#ffd7d7;background:#421e27}
+    .daily-training-status.rest{border-color:#647387;color:#d6dfeb;background:#202a37}
+    .today-week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:15px 0}
+    .today-week-day{
+      min-width:0;padding:8px 2px;border-radius:12px;border:1px solid #29415e;
+      background:#0c1a2a;color:#8da3b9;text-align:center
+    }
+    .today-week-day strong{display:block;font-size:.88rem;color:#dce9f5}
+    .today-week-day small{display:block;font-size:.62rem;text-transform:uppercase;margin-bottom:3px}
+    .today-week-day .week-dot{
+      display:block;width:6px;height:6px;border-radius:50%;margin:5px auto 0;background:#40556d
+    }
+    .today-week-day.has-workout .week-dot{background:#58aee0}
+    .today-week-day.done .week-dot{background:#3bc77b}
+    .today-week-day.race .week-dot{background:#e56868}
+    .today-week-day.today{
+      border-color:#69c4ff;background:#15334a;box-shadow:0 0 0 1px rgba(105,196,255,.15)
+    }
+    .daily-training-hero{
+      display:flex;gap:14px;align-items:center;padding:15px;border-radius:16px;
+      background:#0d1c2c;border:1px solid #294a67
+    }
+    .daily-training-icon{
+      width:58px;height:58px;flex:0 0 58px;border-radius:16px;
+      display:grid;place-items:center;font-size:1.8rem;background:#17344a
+    }
+    .daily-training-copy{min-width:0}
+    .daily-training-copy h2{margin:3px 0 4px;font-size:1.25rem}
+    .daily-training-type{
+      color:#75c9f5;font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em
+    }
+    .daily-training-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+    .daily-training-stats>div{
+      padding:10px;border-radius:12px;background:#101f30;border:1px solid #29415e
+    }
+    .daily-training-stats span{display:block;color:var(--muted);font-size:.7rem;margin-bottom:3px}
+    .daily-training-stats strong{font-size:.92rem}
+    .daily-training-steps{margin:12px 0 0;padding:0;list-style:none;display:grid;gap:7px}
+    .daily-training-steps li{
+      display:flex;gap:9px;align-items:flex-start;padding:9px 10px;border-radius:11px;
+      background:#0f1e2f;color:#dce8f3
+    }
+    .daily-training-steps .step-number{
+      flex:0 0 23px;height:23px;border-radius:50%;display:grid;place-items:center;
+      background:#1d3f58;color:#bfe8ff;font-size:.7rem;font-weight:900
+    }
+    .daily-training-actions{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:8px;margin-top:13px}
+
+    .guided-training-player{
+      position:fixed;inset:0;z-index:1900;background:#07111f;display:none;overflow:auto;
+      padding:calc(12px + env(safe-area-inset-top))
+        calc(12px + env(safe-area-inset-right))
+        calc(20px + env(safe-area-inset-bottom))
+        calc(12px + env(safe-area-inset-left))
+    }
+    .guided-training-player.active{display:block}
+    .guided-training-shell{
+      max-width:680px;margin:0 auto;min-height:calc(100vh - 32px);display:flex;flex-direction:column
+    }
+    .guided-training-topbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .guided-training-topbar h2{margin:7px 0 0}
+    .guided-close{width:auto}
+    .guided-training-clock{margin:26px 0 14px;text-align:center}
+    .guided-training-clock span{
+      display:block;color:var(--muted);font-size:.75rem;text-transform:uppercase;letter-spacing:.08em
+    }
+    .guided-training-clock strong{
+      display:block;font-size:3.2rem;line-height:1.1;margin-top:6px;font-variant-numeric:tabular-nums
+    }
+    .guided-progress{
+      height:8px;border-radius:999px;overflow:hidden;background:#17283a;margin-bottom:18px
+    }
+    .guided-progress>div{
+      height:100%;width:0;background:#69c4ff;transition:width .2s ease
+    }
+    .guided-current-step{
+      padding:18px;border-radius:18px;background:#10243a;border:1px solid #315775
+    }
+    .guided-current-step>span{
+      color:#69c4ff;font-size:.72rem;font-weight:900;text-transform:uppercase;letter-spacing:.08em
+    }
+    .guided-current-step h3{font-size:1.35rem;margin:8px 0}
+    .guided-step-list{display:grid;gap:7px;margin:14px 0}
+    .guided-step-row{
+      display:grid;grid-template-columns:30px 1fr;gap:9px;align-items:center;
+      padding:9px;border-radius:11px;background:#0d1a2a;border:1px solid #223b56;color:#8fa5bb
+    }
+    .guided-step-row.active{border-color:#4c8db7;background:#132c42;color:#edf7ff}
+    .guided-step-row.done{opacity:.58}
+    .guided-step-index{
+      width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+      background:#1b344b;font-size:.7rem;font-weight:900
+    }
+    .guided-training-controls{
+      display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:8px;margin-top:auto;padding-top:14px
+    }
+    .guided-finish{margin-top:10px;background:#1f8150}
+    .guided-training-note{text-align:center;margin:12px auto 0;max-width:520px}
+
+    @media(max-width:650px){
+      .daily-training-card{margin-top:7px;padding:14px}
+      .today-week-strip{gap:4px}
+      .today-week-day{padding:7px 1px}
+      .daily-training-actions{grid-template-columns:1fr 1fr}
+      .daily-training-actions button:first-child{grid-column:1/-1}
+      .guided-training-player{padding-top:calc(9px + env(safe-area-inset-top))}
+      .guided-training-clock strong{font-size:2.8rem}
+    }
