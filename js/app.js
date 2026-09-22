@@ -562,17 +562,27 @@ function trainingTypeInfo(type){
 }
 
 function trainingVolumeLabel(workout){
-  const info=trainingTypeInfo(workout?.type);
+  const type=workout?.type;
   if(workout?.distanceLabel) return workout.distanceLabel;
-  if(workout?.type==="Swim" && Number(workout?.distanceMeters)>0){
-    return `${workout.distanceMeters} m`;
+
+  if(type==="Swim"){
+    const meters=finiteNumberOrNull(workout?.distanceMeters);
+    if(meters!==null && meters>0) return `${meters} m`;
   }
-  if(["Strength","Core","Mobility"].includes(workout?.type)){
-    return `${Number(workout?.durationMinutes)||0} min`;
+
+  if(["Strength","Core","Mobility"].includes(type)){
+    const minutes=finiteNumberOrNull(workout?.durationMinutes);
+    return minutes!==null && minutes>0 ? `${minutes} min` : "—";
   }
-  if(workout?.type==="Rest") return "Rust";
-  if(Number(workout?.distanceKm)>0) return `${workout.distanceKm} km`;
-  if(Number(workout?.durationMinutes)>0) return `${workout.durationMinutes} min`;
+
+  if(type==="Rest") return "Rust";
+
+  const distanceKm=finiteNumberOrNull(workout?.distanceKm);
+  if(distanceKm!==null && distanceKm>0) return `${distanceKm} km`;
+
+  const durationMinutes=finiteNumberOrNull(workout?.durationMinutes);
+  if(durationMinutes!==null && durationMinutes>0) return `${durationMinutes} min`;
+
   return "—";
 }
 
@@ -2487,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"9.1",
+    appVersion:"9.1.1",
     createdAt:new Date().toISOString(),
     data
   };
@@ -2756,14 +2766,14 @@ function triggerBackupDownload(fileName,jsonText){
 
 async function exportLocalBackup(){
   const status=document.getElementById("backupStatus");
-  const payload=buildLocalBackupPayload();
-  const jsonText=JSON.stringify(payload,null,2);
-  const fileName=`jaco-performance-backup-${ymd(new Date())}.json`;
 
   status.className="status";
   status.textContent="Backup wordt voorbereid…";
 
   try{
+    const payload=buildLocalBackupPayload();
+    const jsonText=JSON.stringify(payload,null,2);
+    const fileName=`jaco-performance-backup-${ymd(new Date())}.json`;
     if(
       typeof File!=="undefined" &&
       navigator.share &&
@@ -7037,19 +7047,22 @@ function sourceFreshnessText(source,label){
 }
 
 function weightedAvailableScore(items){
-  const valid=items.filter(item=>
-    item &&
-    item.value!==null &&
-    item.value!==undefined &&
-    Number.isFinite(Number(item.value)) &&
-    Number(item.weight)>0
-  );
+  const valid=items
+    .map(item=>({
+      value:finiteNumberOrNull(item?.value),
+      weight:finiteNumberOrNull(item?.weight)
+    }))
+    .filter(item=>
+      item.value!==null &&
+      item.weight!==null &&
+      item.weight>0
+    );
 
   if(!valid.length) return null;
 
-  const weight=valid.reduce((sum,item)=>sum+Number(item.weight),0);
+  const weight=valid.reduce((sum,item)=>sum+item.weight,0);
   const total=valid.reduce(
-    (sum,item)=>sum+Number(item.value)*Number(item.weight),
+    (sum,item)=>sum+item.value*item.weight,
     0
   );
 
@@ -7057,7 +7070,8 @@ function weightedAvailableScore(items){
 }
 
 function formatMetric(value,digits=0){
-  return value===null || value===undefined ? "—" : Number(value).toFixed(digits);
+  const number=finiteNumberOrNull(value);
+  return number===null ? "—" : number.toFixed(digits);
 }
 
 function formatSleep(seconds){
@@ -7156,13 +7170,11 @@ function resetGeneratedPlannerPreviews(){
 }
 
 function refreshDerivedCoachViews(){
-  renderLoadMonitor();
+  // renderTodayCoach ververst ook Load Monitor, Performance Engine en AI-previews.
+  // Houd die keten op één plek om dubbele DOM-renders op mobiel te voorkomen.
   renderTodayCoach();
   renderCoachBrain();
   buildCoachHorizon();
-  renderPerformanceEngine();
-  renderAiTrainingGenerator();
-  renderAiWeekPlanner();
   renderCoachIntelligence();
   renderPerformanceTrend(activeTrendDays);
   renderSmartWeekCoach();
@@ -11760,10 +11772,25 @@ function completeTodayTrainingFromCard(){
 
 function finishGuidedTrainingSession(){
   const date=guidedTrainingSession.date;
-  const current=allWorkouts()[date];
-  if(!date || !current) return;
+  const sessionWorkout=guidedTrainingSession.workout;
+  const current=date ? allWorkouts()[date] : null;
 
-  const confirmed=confirm(`"${current.name}" afronden en als voltooid markeren?`);
+  if(!date || !sessionWorkout){
+    alert("Deze begeleide sessie heeft geen geldige trainingskoppeling meer. Niets is als voltooid gemarkeerd.");
+    return;
+  }
+
+  if(
+    !current ||
+    workoutCompletionIdentity(current)!==workoutCompletionIdentity(sessionWorkout)
+  ){
+    alert(
+      "De training in je kalender is intussen gewijzigd. Niets is als voltooid gemarkeerd. Sluit deze sessie en start de actuele training opnieuw."
+    );
+    return;
+  }
+
+  const confirmed=confirm(`"${sessionWorkout.name}" afronden en als voltooid markeren?`);
   if(!confirmed) return;
 
   const elapsedMinutes=Math.max(
