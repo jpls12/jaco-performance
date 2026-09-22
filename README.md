@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**9.1.1 · Stability & Cleanup**
+**9.2 · Training Sync & Adaptive Coach**
 
-Deze patch stabiliseert de bestaande 9.1-codebasis zonder nieuwe functies toe te voegen. De focus ligt op data-integriteit, consistente voltooidstatus, robuuste backupfoutafhandeling, mobiele/PWA-gedragingen en minder dubbel renderwerk.
+9.2 sluit de trainingslus: uitgevoerde Intervals.icu-activiteiten worden teruggelezen, veilig aan de planning gekoppeld en gebruikt voor voltooidstatus, werkelijk loopvolume en adaptieve coaching. Wedstrijden blijven beschermd.
 
 ## Architectuur
 
@@ -15,10 +15,12 @@ De app is bewust licht opgebouwd:
 - `index.html` — schermen en formulieren
 - `css/app.css` — responsive/mobile styling
 - `js/app.js` — state, planners, coachlogica en rendering
+- `js/training-sync.js` — koppeling uitgevoerd ↔ gepland en adaptieve feedback
 - `js/bootstrap.js` — event handlers en initialisatie
 - `api/workouts.js` — publieke vaste workouts
 - `api/upload-workout.js` — export naar Intervals.icu
 - `api/intervals-status.js` — wellnessdata uit Intervals.icu
+- `api/intervals-activities.js` — uitgevoerde activiteiten uit Intervals.icu
 - `lib/workouts.js` — vaste server-workouts
 
 Vercel serveert de statische app en de API-routes.
@@ -54,6 +56,12 @@ bijwerken in plaats van bewust een nieuwe app-identiteit te gebruiken.
 
 Wellnessdata wordt server-side opgehaald en in de app alleen gebruikt wanneer
 de benodigde meetwaarde aanwezig en voldoende recent is.
+
+Vanaf 9.2 haalt Training Sync recente uitgevoerde activiteiten server-side op.
+Alleen benodigde samenvattingsvelden worden naar de browser gestuurd. Een
+passende activiteit kan een geplande niet-racetraining automatisch als voltooid
+markeren. Werkelijk uitgevoerd loopvolume krijgt vervolgens voorrang in de
+belastbaarheidsmonitor.
 
 ## Data-integriteitsregels
 
@@ -97,6 +105,18 @@ gecontroleerd en daarna naar `main` gemerged. Vercel deployt vervolgens vanuit
 Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
+
+
+## 9.2 Training Sync & Adaptive Coach
+
+- Recente uitgevoerde Intervals.icu-activiteiten worden via een beveiligde API-route opgehaald.
+- Matching gebeurt op lokale kalenderdatum en sporttype, met afstand en duur als extra matchsignalen.
+- Niet-racetrainingen kunnen door een echte activiteit automatisch als voltooid worden gemarkeerd.
+- Wedstrijden blijven handmatig beschermd en worden niet automatisch door sync afgevinkt.
+- De belastbaarheidsmonitor gebruikt werkelijk uitgevoerd loopvolume als dat beschikbaar is.
+- De Dagelijkse Coach vergelijkt gepland en werkelijk uitgevoerd volume.
+- Een duidelijk zwaarder uitgevoerde zware of lange sessie kan een volgende zware prikkel laten vervangen door herstel.
+- Syncdata wordt lokaal gecachet zodat eerder opgehaalde informatie offline bruikbaar blijft.
 
 ## 8.3.3 hardening
 
