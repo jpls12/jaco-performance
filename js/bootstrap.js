@@ -425,11 +425,36 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 document.addEventListener("keydown",event=>{
-  if(
-    event.key==="Escape" &&
-    document.getElementById("guidedTrainingPlayer")?.classList.contains("active")
-  ){
+  const player=document.getElementById("guidedTrainingPlayer");
+  const active=player?.classList.contains("active");
+  if(!active) return;
+
+  if(event.key==="Escape"){
     closeGuidedTrainingSession();
+    return;
+  }
+
+  if(event.key!=="Tab") return;
+
+  const focusable=[...player.querySelectorAll(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )].filter(element=>
+    element.getClientRects().length>0 &&
+    element.getAttribute("aria-hidden")!=="true"
+  );
+
+  if(!focusable.length) return;
+
+  const first=focusable[0];
+  const last=focusable[focusable.length-1];
+  const current=document.activeElement;
+
+  if(event.shiftKey && current===first){
+    event.preventDefault();
+    last.focus();
+  }else if(!event.shiftKey && current===last){
+    event.preventDefault();
+    first.focus();
   }
 });
 window.addEventListener("focus",refreshDayBoundaryIfNeeded);
