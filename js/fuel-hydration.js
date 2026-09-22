@@ -2,8 +2,8 @@ function defaultFuelHydrationProfile(){
   return{
     carbTargetGPerHour:null,
     carbMaxGPerHour:null,
-    gelCarbsG:30,
-    drinkCarbsGPerHour:0,
+    gelCarbsG:null,
+    drinkCarbsGPerHour:null,
     sweatRateMlPerHour:null,
     fluidTargetMlPerHour:null,
     sweatSodiumMgPerL:null,
@@ -95,8 +95,8 @@ function saveFuelHydrationProfile(event){
   const next={
     carbTargetGPerHour:read("fuelCarbTarget"),
     carbMaxGPerHour:read("fuelCarbMax"),
-    gelCarbsG:read("fuelGelCarbs")??30,
-    drinkCarbsGPerHour:read("fuelDrinkCarbs")??0,
+    gelCarbsG:read("fuelGelCarbs"),
+    drinkCarbsGPerHour:read("fuelDrinkCarbs"),
     sweatRateMlPerHour:read("fuelSweatRate"),
     fluidTargetMlPerHour:read("fuelFluidTarget"),
     sweatSodiumMgPerL:read("fuelSweatSodium"),
@@ -454,7 +454,7 @@ function buildPersonalFuelHydrationPlan(
   }
 
   const gelCarbs=
-    fuelHydrationOptionalNumber(p.gelCarbsG)??30;
+    fuelHydrationOptionalNumber(p.gelCarbsG);
   const drinkCarbs=
     fuelHydrationOptionalNumber(
       p.drinkCarbsGPerHour
