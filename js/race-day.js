@@ -452,7 +452,19 @@ function startRaceDayClock(){
   const id=raceDayRaceId(strategy.race);
 
   const existing=raceDaySession(strategy);
-  if(existing?.startedAt&&!existing.finishedAt){
+  if(existing?.startedAt){
+    return;
+  }
+
+  const days=daysUntil(strategy.race.date);
+  if(
+    days!==0 &&
+    !confirm(
+      days>0
+        ?`Deze wedstrijd is pas over ${days} dag${days===1?"":"en"}. Raceklok toch starten voor een test?`
+        :"Deze wedstrijddatum is al voorbij. Raceklok toch starten?"
+    )
+  ){
     return;
   }
 
@@ -563,12 +575,12 @@ function renderRaceDayLiveMode(){
 
   const startButton=document.getElementById("startRaceDayClock");
   const finishButton=document.getElementById("finishRaceDayClock");
-  startButton.disabled=started&&!finished;
+  startButton.disabled=started;
   startButton.textContent=
     started&&!finished
       ?"Raceklok loopt"
       :finished
-        ?"Race afgerond"
+        ?"Reset voor nieuwe start"
         :"Start raceklok";
 
   finishButton.disabled=!started||finished;
