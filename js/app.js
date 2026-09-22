@@ -2551,6 +2551,8 @@ function validateDateKeyedBackupObject(value,label,{requireWorkoutObject=false}=
 }
 
 function validateRaceBackupObject(value){
+  const raceDates=new Map();
+
   for(const [id,race] of Object.entries(value)){
     if(!/^[A-Za-z0-9_-]{1,100}$/.test(id)){
       throw new Error("De backup bevat een ongeldige wedstrijd-ID.");
@@ -2564,9 +2566,17 @@ function validateRaceBackupObject(value){
       throw new Error(`Wedstrijd ${id} heeft een afwijkende interne ID.`);
     }
 
-    if(calendarDayNumber(String(race.date||""))===null){
+    const date=String(race.date||"");
+    if(calendarDayNumber(date)===null){
       throw new Error(`Wedstrijd ${id} heeft een ongeldige datum.`);
     }
+
+    if(raceDates.has(date)){
+      throw new Error(
+        `De backup bevat meerdere wedstrijden op ${date}. Jaco Performance bewaart één hoofdwedstrijd per dag.`
+      );
+    }
+    raceDates.set(date,id);
 
     const distance=finiteNumberOrNull(race.distanceKm);
     if(distance===null || distance<=0 || distance>1000){
@@ -2952,7 +2962,84 @@ function removeManagedLocalStorageData(){
   keys.forEach(key=>localStorage.removeItem(key));
 }
 
+function prospectiveBackupStorage(payload,mode="merge"){
+  const values={};
+
+  if(mode==="merge"){
+    managedLocalStorageKeys().forEach(key=>{
+      const current=localStorage.getItem(key);
+      if(current!==null) values[key]=current;
+    });
+  }
+
+  Object.entries(payload.data).forEach(([key,incomingRaw])=>{
+    values[key]=
+      mode==="merge"
+        ?mergedBackupStorageValue(values[key]??null,incomingRaw)
+        :incomingRaw;
+  });
+
+  return values;
+}
+
+function parsedBackupStorageObject(values,key){
+  const raw=values[key];
+  if(raw===undefined) return {};
+
+  try{
+    const parsed=JSON.parse(raw);
+    if(isPlainBackupObject(parsed)) return parsed;
+  }catch{
+    // Onderstaande fout geeft de gebruiker een duidelijke importsituatie.
+  }
+
+  throw new Error(`De samengevoegde data voor ${key} is ongeldig.`);
+}
+
+function validateProspectiveBackupCalendar(values){
+  const workoutData=parsedBackupStorageObject(values,STORAGE_KEY);
+  const raceData=parsedBackupStorageObject(values,RACES_KEY);
+
+  validateDateKeyedBackupObject(
+    workoutData,
+    "Samengevoegde trainingen",
+    {requireWorkoutObject:true}
+  );
+  validateRaceBackupObject(raceData);
+
+  const racesByDate=new Map(
+    Object.values(raceData).map(race=>[String(race.date),race])
+  );
+
+  for(const [date,workout] of Object.entries(workoutData)){
+    const race=racesByDate.get(date);
+    if(!race) continue;
+
+    const allowedImportedRaceFallback=
+      workout?.type==="Race" &&
+      workout?.importedPlan;
+
+    if(!allowedImportedRaceFallback){
+      throw new Error(
+        `Backupconflict op ${date}: wedstrijd "${race.name||"Wedstrijd"}" en training "${workout.name||"Training"}" kunnen niet op dezelfde kalenderdag staan.`
+      );
+    }
+  }
+
+  for(const race of Object.values(raceData)){
+    const fixed=serverWorkouts[String(race.date)];
+    if(fixed){
+      throw new Error(
+        `Backupconflict op ${race.date}: wedstrijd "${race.name||"Wedstrijd"}" botst met vaste training "${fixed.name}".`
+      );
+    }
+  }
+}
+
 function writeBackupData(payload,mode="merge"){
+  const prospective=prospectiveBackupStorage(payload,mode);
+  validateProspectiveBackupCalendar(prospective);
+
   if(mode==="replace"){
     removeManagedLocalStorageData();
   }
@@ -2990,9 +3077,11 @@ function applySelectedBackupImport(){
 
   if(!confirmed) return;
 
-  const safety=buildLocalBackupPayload();
+  let safety=null;
 
   try{
+    safety=buildLocalBackupPayload();
+
     localStorage.setItem(
       PREIMPORT_BACKUP_KEY,
       JSON.stringify(safety)
@@ -3006,14 +3095,16 @@ function applySelectedBackupImport(){
 
     setTimeout(()=>location.reload(),450);
   }catch(error){
-    try{
-      restoreManagedDataFromPayload(safety);
-      localStorage.setItem(
-        PREIMPORT_BACKUP_KEY,
-        JSON.stringify(safety)
-      );
-    }catch(rollbackError){
-      console.error("Rollback na mislukte import faalde:",rollbackError);
+    if(safety){
+      try{
+        restoreManagedDataFromPayload(safety);
+        localStorage.setItem(
+          PREIMPORT_BACKUP_KEY,
+          JSON.stringify(safety)
+        );
+      }catch(rollbackError){
+        console.error("Rollback na mislukte import faalde:",rollbackError);
+      }
     }
 
     status.className="status error";
