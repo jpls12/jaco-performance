@@ -2549,3 +2549,96 @@
   .key-session-progression-head{display:grid}
   .key-session-progression-models{grid-template-columns:1fr}
 }
+
+
+/* Performance 10.8 · Adaptive Training Block Planner */
+.adaptive-block-card{border-color:#3d5c79}
+.adaptive-block-card.ready{border-color:#3b6f54}
+.adaptive-block-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+.adaptive-block-head h2{margin:4px 0 6px}
+.adaptive-block-head>strong{
+  padding:6px 9px;
+  border-radius:999px;
+  border:1px solid #355574;
+  background:#112a42;
+  white-space:nowrap;
+  font-size:.75rem;
+}
+.adaptive-block-metrics{
+  display:grid;
+  grid-template-columns:1fr 1.3fr 1fr;
+  gap:8px;
+  margin:14px 0;
+}
+.adaptive-block-metrics>div{
+  padding:10px;
+  border:1px solid #29415e;
+  border-radius:12px;
+  background:#091725;
+}
+.adaptive-block-metrics span,
+.adaptive-block-week-grid span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+  margin-bottom:4px;
+}
+.adaptive-block-weeks{
+  display:grid;
+  gap:10px;
+  margin:12px 0;
+}
+.adaptive-block-week{
+  padding:12px;
+  border:1px solid #29415e;
+  border-radius:14px;
+  background:#0a1727;
+}
+.adaptive-block-week.taper,
+.adaptive-block-week.race-week,
+.adaptive-block-week.race{border-color:#765b39}
+.adaptive-block-week.recovery{border-color:#3d6654}
+.adaptive-block-week-head{
+  display:flex;
+  justify-content:space-between;
+  gap:10px;
+  padding-bottom:9px;
+  border-bottom:1px solid #20364f;
+}
+.adaptive-block-week-head>div{display:grid;gap:3px}
+.adaptive-block-week-head span,
+.adaptive-block-week-head small{
+  color:var(--muted);
+  font-size:.72rem;
+}
+.adaptive-block-week-grid{
+  display:grid;
+  grid-template-columns:.8fr 1fr 1.5fr .8fr;
+  gap:8px;
+  margin-top:10px;
+}
+.adaptive-block-week-grid>div{min-width:0}
+.adaptive-block-week-grid strong{
+  display:block;
+  font-size:.82rem;
+  line-height:1.35;
+}
+.adaptive-block-week-note{
+  display:block;
+  margin-top:9px;
+  color:#8da5bb;
+  line-height:1.35;
+}
+@media(max-width:720px){
+  .adaptive-block-head{display:grid}
+  .adaptive-block-metrics{grid-template-columns:1fr}
+  .adaptive-block-week-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:480px){
+  .adaptive-block-week-grid{grid-template-columns:1fr}
+}

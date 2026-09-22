@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.7.0",
+    appVersion:"10.8.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -10371,7 +10371,8 @@ function createUnscheduledAiWeek(context,variant=0){
     variant
   );
   const quality=
-    typeof applyKeySessionProgressionToWorkout==="function"
+    typeof applyKeySessionProgressionToWorkout==="function" &&
+    context.allowKeySessionProgression!==false
       ?applyKeySessionProgressionToWorkout(
         rawQuality,
         context
