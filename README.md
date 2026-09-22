@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.4 · Race Day Checklist & Live Race Card**
+**10.5 · Race Debrief & Model Calibration**
 
-10.4 maakt van de Race Strategy een praktische racedagweergave: een afvinkbare checklist en een fullscreen Race Mode met startklok, huidige geplande fase, tempo/HR-guardrail, volgende gel, volgende drankpost en volgend beslismoment.
+10.5 sluit de wedstrijdcyclus na de finish: een afgelopen race wordt gekoppeld aan de echte Intervals.icu-run, vergeleken met het vooraf bewaarde raceplan en na bevestiging zwaarder meegewogen als prestatiebewijs zonder de activiteit dubbel toe te voegen.
 
 ## Architectuur
 
@@ -22,6 +22,7 @@ De app is bewust licht opgebouwd:
 - `js/fuel-hydration.js` — persoonlijk voedings-/zweetprofiel en exacte race-innameplanning
 - `js/race-strategy.js` — pacingfasen, HR-guardrails, voeding en racedagbeslismomenten
 - `js/race-day.js` — afvinkbare racedagchecklist, persistente raceklok en fullscreen live racekaart
+- `js/race-debrief.js` — post-race koppeling, subjectieve debrief en gecontroleerde modelkalibratie
 - `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
 - `js/adaptive-week-replanner.js` — herschikking van de resterende week na gemiste/afwijkende training of herstelwijziging
 - `js/fully-adaptive-coach.js` — centrale 10.0-coachstaat, prioriteit, veranderlog en doelontwikkeling
@@ -115,6 +116,18 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 10.5 Race Debrief & Model Calibration
+
+- Aparte selectie voor afgelopen wedstrijden; de toekomstgerichte Race Simulator blijft ongewijzigd.
+- Koppelt een race aan de beste hardloopactiviteit op dezelfde datum met afstandscontrole en ambiguïteitswaarschuwing.
+- Vergelijkt werkelijke Intervals-tijd met het vooraf bewaarde raceplan; als geen raceplan is bewaard wordt alleen de ingestelde streeftijd gebruikt.
+- Toont werkelijke tijd, GPS-afstand/tempo, gemiddelde/maximale hartslag en training load.
+- Laat RPE, uitvoering van het voedingsplan, maag-/darmklachten en vrije notities opslaan.
+- Bevestigen markeert exact dezelfde raceactiviteit als extra sterk bewijs; er wordt geen tweede evidence-record gemaakt.
+- Performance Model verhoogt de weightBase van een bevestigde race van 1.35 naar 1.58.
+- Slaat modelprognoses vóór en na bevestiging op zodat materiële kalibratie per afstand zichtbaar kan worden gemaakt.
+- Debriefs worden opgeslagen onder `jp_race_debrief_v1` en gaan daardoor automatisch mee met Backup & Herstel.
 
 ## 10.4 Race Day Checklist & Live Race Card
 

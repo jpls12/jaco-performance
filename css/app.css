@@ -2292,3 +2292,52 @@
     font-size:2.55rem;
   }
 }
+
+
+/* Performance 10.5 · Race Debrief & Model Calibration */
+.race-debrief-card{
+  border-color:#42617e;
+}
+.race-debrief-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:14px 0;
+}
+.race-debrief-grid>div,
+.race-debrief-model{
+  padding:10px;
+  border:1px solid #29415e;
+  border-radius:12px;
+  background:#091725;
+}
+.race-debrief-grid span,
+.race-debrief-model>span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+  margin-bottom:4px;
+}
+.race-debrief-grid strong{
+  font-size:.86rem;
+  line-height:1.35;
+}
+.race-debrief-form-grid{
+  margin-top:12px;
+}
+.race-debrief-model{
+  margin-top:12px;
+}
+.race-debrief-model p{
+  margin:3px 0 0;
+}
+@media(max-width:700px){
+  .race-debrief-grid{
+    grid-template-columns:1fr 1fr;
+  }
+}
+@media(max-width:480px){
+  .race-debrief-grid{
+    grid-template-columns:1fr;
+  }
+}

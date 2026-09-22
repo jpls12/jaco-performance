@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.4.0",
+    appVersion:"10.5.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -6852,6 +6852,10 @@ function renderRaceOptions(){
       const focus=getRaceFocus();
       if(focus) simulatorSelect.value=focus.id;
     }
+  }
+
+  if(typeof renderRaceDebriefOptions==="function"){
+    renderRaceDebriefOptions();
   }
 }
 
