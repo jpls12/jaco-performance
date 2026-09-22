@@ -570,6 +570,18 @@ function analyzeTrainingQuality(candidate,detail){
   };
 }
 
+function trainingQualityHistory({limit=12}={}){
+  return Object.values(trainingQualityCache.results||{})
+    .filter(result=>result&&typeof result==="object")
+    .sort((a,b)=>
+      String(b.activityDate||b.analyzedAt||"")
+        .localeCompare(
+          String(a.activityDate||a.analyzedAt||"")
+        )
+    )
+    .slice(0,Math.max(1,Number(limit)||12));
+}
+
 function latestTrainingQualityResult(){
   const id=trainingQualityCache.latestActivityId;
   return id?trainingQualityCache.results[id]||null:null;
