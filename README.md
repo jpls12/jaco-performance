@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**9.3 · Daily Decision Engine**
+**9.4 · Performance Model**
 
-9.3 maakt van het Vandaag-scherm een centrale coachbeslissing. Herstel, werkelijke uitvoering, belastbaarheid, beschikbaarheid, wedstrijdfase en bestaande planning worden samengebracht in één status met doelbelasting, zekerheid en een korte vooruitblik.
+9.4 voegt een actueel prestatiemodel toe voor 5 km, 10 km, halve marathon en marathon. Echte gesynchroniseerde wedstrijdactiviteiten krijgen voorrang, profiel-PR’s blijven sterke referenties en elke prognose toont bron, tempo, bandbreedte en betrouwbaarheid.
 
 ## Architectuur
 
@@ -16,6 +16,7 @@ De app is bewust licht opgebouwd:
 - `css/app.css` — responsive/mobile styling
 - `js/app.js` — state, planners, coachlogica en rendering
 - `js/training-sync.js` — koppeling uitgevoerd ↔ gepland en adaptieve feedback
+- `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
 - `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
 - `js/bootstrap.js` — event handlers en initialisatie
 - `api/workouts.js` — publieke vaste workouts
@@ -107,6 +108,15 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 9.4 Performance Model
+
+- Prognoses voor 5 km, 10 km, halve marathon en marathon met tempo en onzekerheidsband.
+- Echte Intervals.icu-loopactiviteiten die aan een racedag zijn gekoppeld gelden als sterkste actuele bewijs.
+- Profiel-PR’s blijven sterke benchmarks wanneer recente racedata ontbreekt.
+- Alleen performance-achtige trainingen (bijv. TT/parkrun, hoge HR of hoge RPE) mogen als lage-confidence fallback dienen; rustige duurlopen worden niet als prestatietest behandeld.
+- Marathonextrapolatie krijgt extra duurzaamheidsmarge wanneer alleen kortere benchmarks beschikbaar zijn.
+- De Race Simulator gebruikt voortaan het Performance Model als primaire onafhankelijke prognose en valt terug op het oude profielmodel als 9.4 onvoldoende data heeft.
 
 ## 9.3 Daily Decision Engine
 

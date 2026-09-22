@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"9.3.0",
+    appVersion:"9.4.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -5598,7 +5598,18 @@ function raceSimulationSignals(race,prediction,goal,readiness){
 }
 
 function buildRaceSimulation(race){
-  const base=bestProfilePrediction(race,getProfile());
+  const modelPrediction=
+    typeof performanceModelPredictionForDistance==="function"
+      ?performanceModelPredictionForDistance(
+        Number(race?.distanceKm||0)
+      )
+      :null;
+
+  const base=
+    modelPrediction?.seconds
+      ?modelPrediction
+      :bestProfilePrediction(race,getProfile());
+
   const prediction=adjustedRacePrediction(race,base);
   const goal=raceGoalComparison(race,prediction);
   const readiness=customRaceReadiness(race);
@@ -12161,6 +12172,7 @@ function renderTodayCoach(){
   renderCurrentTodayWorkout(existing);
   renderActivitySyncStatus();
   renderPerformanceEngine();
+  renderPerformanceModel();
   renderAiTrainingGenerator();
   renderAiWeekPlanner();
   renderLoadMonitor(loadMonitor);
