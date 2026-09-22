@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.1 · Race Readiness & Goal Optimizer**
+**10.2 · Race Strategy Engine**
 
-10.1 koppelt het Performance Model, trainingskwaliteit, belastbaarheid en raceweekherstel aan de actieve wedstrijd. De app toont race readiness, een geloofwaardige finishtijdband en een trainingsreferentiepace die een te agressieve streeftijd niet blind volgt.
+10.2 vertaalt de geoptimaliseerde 10.1-racereferentie naar een uitvoerbaar wedstrijdplan: segmenttempo, HR-guardrails, RPE-opbouw, koolhydraat- en drinkrange en concrete beslismomenten per 5 km, 10 km, halve marathon en marathon.
 
 ## Architectuur
 
@@ -19,6 +19,7 @@ De app is bewust licht opgebouwd:
 - `js/training-quality.js` — blok-voor-blok analyse van gekoppelde sleuteltrainingen
 - `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
 - `js/race-readiness.js` — race readiness, geloofwaardige raceband en doeltempo-optimalisatie
+- `js/race-strategy.js` — pacingfasen, HR-guardrails, voeding en racedagbeslismomenten
 - `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
 - `js/adaptive-week-replanner.js` — herschikking van de resterende week na gemiste/afwijkende training of herstelwijziging
 - `js/fully-adaptive-coach.js` — centrale 10.0-coachstaat, prioriteit, veranderlog en doelontwikkeling
@@ -112,6 +113,16 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 10.2 Race Strategy Engine
+
+- Gebruikt dezelfde 10.1-racereferentie voor pacing; een agressief doel kan dus niet via de strategie alsnog te snel worden.
+- Bouwt per afstand een negatieve/gelijke splitstrategie met bewust behoudende openingsfase en late versnelling.
+- Maakt persoonlijke HR-guardrails uit HFmax wanneer die beschikbaar is; HR is plafond/controle, niet de primaire pace-target.
+- Geeft RPE-opbouw per raceafstand zodat tempo, hartslag en gevoel samen gelezen kunnen worden.
+- Voegt koolhydraat-, vocht- en natriumranges toe zonder ontbrekende zweet- of darmtolerantiedata te verzinnen.
+- Geeft concrete racedagbeslismomenten: wanneer tempo vasthouden, terugschakelen of pas laat versnellen.
+- Race Simulator gebruikt de nieuwe strategie direct voor pacing- en voedingssecties.
 
 ## 10.1 Race Readiness & Goal Optimizer
 

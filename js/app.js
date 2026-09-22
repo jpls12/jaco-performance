@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.1.0",
+    appVersion:"10.2.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -5626,9 +5626,15 @@ function buildRaceSimulation(race){
     null;
 
   const expectedSeconds=
+    optimizer?.referenceSeconds ||
     goal.target ||
     prediction.seconds ||
     null;
+
+  const strategy=
+    typeof buildRaceStrategyEngine==="function"
+      ?buildRaceStrategyEngine(race,optimizer)
+      :null;
 
   return{
     race,
@@ -5636,10 +5642,15 @@ function buildRaceSimulation(race){
     goal,
     readiness,
     optimizer,
+    strategy,
     pacingSeconds,
-    pacing:racePacingPlan(race,pacingSeconds),
+    pacing:strategy
+      ?raceStrategyPacingRows(strategy)
+      :racePacingPlan(race,pacingSeconds),
     taper:raceTaperPlan(race),
-    fuel:raceFuelPlan(race,expectedSeconds),
+    fuel:strategy
+      ?raceStrategyFuelRows(strategy)
+      :raceFuelPlan(race,expectedSeconds),
     createdAt:new Date().toISOString()
   };
 }
@@ -5667,6 +5678,9 @@ function renderRaceSimulator(){
     if(typeof renderRaceReadinessGoalOptimizer==="function"){
       renderRaceReadinessGoalOptimizer(null);
     }
+    if(typeof renderRaceStrategyEngine==="function"){
+      renderRaceStrategyEngine(null);
+    }
     document.getElementById("raceSimPrediction").textContent="—";
     document.getElementById("raceSimPredictionSource").textContent="Voeg eerst een toekomstige wedstrijd toe";
     document.getElementById("raceSimTarget").textContent="—";
@@ -5691,6 +5705,9 @@ function renderRaceSimulator(){
 
   if(typeof renderRaceReadinessGoalOptimizer==="function"){
     renderRaceReadinessGoalOptimizer(race);
+  }
+  if(typeof renderRaceStrategyEngine==="function"){
+    renderRaceStrategyEngine(simulation.strategy);
   }
 
   document.getElementById("raceSimPrediction").textContent=
@@ -5750,8 +5767,9 @@ function renderRaceSimulator(){
   renderRaceSimulationPlan("raceSimTaper",simulation.taper);
   renderRaceSimulationPlan("raceSimFuel",simulation.fuel);
 
-  let headline="Raceplan is bruikbaar";
+  let headline=simulation.strategy?.headline || "Raceplan is bruikbaar";
   let conclusion=
+    simulation.strategy?.summary ||
     `Gebruik ${race.targetTime?"je ingestelde streeftijd":"de profielprognose"} als uitgangspunt en pas op racedag alleen aan op omstandigheden en gevoel.`;
 
   if(
