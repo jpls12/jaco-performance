@@ -11766,6 +11766,11 @@ function finishGuidedTrainingSession(){
   const confirmed=confirm(`"${current.name}" afronden en als voltooid markeren?`);
   if(!confirmed) return;
 
+  const elapsedMinutes=Math.max(
+    1,
+    Math.round(guidedSessionElapsedSeconds()/60)
+  );
+
   markWorkoutCompleted(date,current);
   saveObject(DONE_KEY,doneWorkouts);
   closeGuidedTrainingSession(true);
@@ -11773,6 +11778,11 @@ function finishGuidedTrainingSession(){
 
   selectedDate=date;
   openDiaryForDate(date);
+
+  const durationField=document.getElementById("diaryActualDuration");
+  if(durationField && !durationField.value){
+    durationField.value=String(elapsedMinutes);
+  }
 }
 
 function openTodayTrainingCalendar(){
