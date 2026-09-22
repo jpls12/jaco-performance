@@ -1,10 +1,194 @@
-document.querySelectorAll(".tab").forEach(tab=>{
-  tab.onclick=()=>{
-    if(tab.dataset.view==="editor"){
-      setDefaultForm(selectedDate);
+
+let deferredPwaInstallPrompt=null;
+
+function appRunsStandalone(){
+  return window.matchMedia?.("(display-mode: standalone)")?.matches ||
+    window.navigator.standalone===true;
+}
+
+function isIosWebBrowser(){
+  return /iphone|ipad|ipod/i.test(navigator.userAgent||"") &&
+    !appRunsStandalone();
+}
+
+function navigateAppView(id){
+  if(id==="editor"){
+    setDefaultForm(selectedDate);
+  }
+  switchView(id);
+  window.scrollTo({top:0,behavior:"auto"});
+}
+
+function syncMobileNavigation(id){
+  const primaryViews=["today","calendar","races","planning"];
+  document.querySelectorAll(".mobile-nav-button[data-mobile-view]").forEach(button=>{
+    const active=button.dataset.mobileView===id;
+    button.classList.toggle("active",active);
+    if(active) button.setAttribute("aria-current","page");
+    else button.removeAttribute("aria-current");
+  });
+
+  const more=document.getElementById("openAppMenu");
+  if(more){
+    const active=!primaryViews.includes(id);
+    more.classList.toggle("active",active);
+    if(active) more.setAttribute("aria-current","page");
+    else more.removeAttribute("aria-current");
+  }
+}
+window.syncMobileNavigation=syncMobileNavigation;
+
+function openAppMenu(){
+  const backdrop=document.getElementById("appMenuBackdrop");
+  if(!backdrop) return;
+  backdrop.hidden=false;
+  backdrop.classList.add("open");
+  document.body.classList.add("app-menu-open");
+}
+window.openAppMenu=openAppMenu;
+
+function closeAppMenu(){
+  const backdrop=document.getElementById("appMenuBackdrop");
+  if(!backdrop) return;
+  backdrop.classList.remove("open");
+  backdrop.hidden=true;
+  document.body.classList.remove("app-menu-open");
+}
+window.closeAppMenu=closeAppMenu;
+
+function hideInstallExperience(){
+  const banner=document.getElementById("installAppBanner");
+  const menuInstall=document.getElementById("menuInstallApp");
+  if(banner) banner.hidden=true;
+  if(menuInstall) menuInstall.hidden=true;
+}
+
+function showInstallExperience(){
+  if(appRunsStandalone()){
+    hideInstallExperience();
+    return;
+  }
+
+  let dismissed=false;
+  try{
+    dismissed=sessionStorage.getItem("jp_install_banner_dismissed")==="1";
+  }catch{
+    dismissed=false;
+  }
+
+  const banner=document.getElementById("installAppBanner");
+  if(banner && !dismissed){
+    banner.hidden=false;
+  }
+
+  const menuInstall=document.getElementById("menuInstallApp");
+  if(menuInstall) menuInstall.hidden=false;
+}
+
+async function handleInstallApp(){
+  if(appRunsStandalone()){
+    hideInstallExperience();
+    return;
+  }
+
+  if(deferredPwaInstallPrompt){
+    deferredPwaInstallPrompt.prompt();
+    const choice=await deferredPwaInstallPrompt.userChoice;
+    if(choice?.outcome==="accepted"){
+      hideInstallExperience();
     }
-    switchView(tab.dataset.view);
+    deferredPwaInstallPrompt=null;
+    return;
+  }
+
+  const instructions=document.getElementById("installAppInstructions");
+  const text=document.getElementById("installAppText");
+  const banner=document.getElementById("installAppBanner");
+
+  if(banner) banner.hidden=false;
+  if(instructions) instructions.hidden=false;
+
+  if(text){
+    text.textContent=isIosWebBrowser()
+      ?"Gebruik Safari om Jaco Performance aan je beginscherm toe te voegen."
+      :"Open het browsermenu en kies ‘Installeren’ of ‘Toevoegen aan beginscherm’.";
+  }
+
+  closeAppMenu();
+  banner?.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+function setupPwaExperience(){
+  syncMobileNavigation(
+    document.querySelector(".view.active")?.id || "today"
+  );
+
+  document.querySelectorAll(".mobile-nav-button[data-mobile-view]").forEach(button=>{
+    button.onclick=()=>navigateAppView(button.dataset.mobileView);
+  });
+
+  document.querySelectorAll(".app-menu-item[data-menu-view]").forEach(button=>{
+    button.onclick=()=>navigateAppView(button.dataset.menuView);
+  });
+
+  document.getElementById("openAppMenu").onclick=openAppMenu;
+  document.getElementById("closeAppMenu").onclick=closeAppMenu;
+  document.getElementById("appMenuBackdrop").onclick=event=>{
+    if(event.target.id==="appMenuBackdrop") closeAppMenu();
   };
+
+  document.getElementById("installAppButton").onclick=handleInstallApp;
+  document.getElementById("menuInstallApp").onclick=handleInstallApp;
+  document.getElementById("dismissInstallApp").onclick=()=>{
+    document.getElementById("installAppBanner").hidden=true;
+    try{
+      sessionStorage.setItem("jp_install_banner_dismissed","1");
+    }catch{
+      // Geen probleem als tijdelijke opslag niet beschikbaar is.
+    }
+  };
+
+  document.addEventListener("keydown",event=>{
+    if(event.key==="Escape") closeAppMenu();
+  });
+
+  window.addEventListener("beforeinstallprompt",event=>{
+    event.preventDefault();
+    deferredPwaInstallPrompt=event;
+    showInstallExperience();
+  });
+
+  window.addEventListener("appinstalled",()=>{
+    deferredPwaInstallPrompt=null;
+    hideInstallExperience();
+  });
+
+  window.addEventListener("online",()=>{
+    const status=document.getElementById("todayStatus");
+    if(status && /offline/i.test(status.textContent||"")){
+      status.className="status";
+      status.textContent="Verbinding hersteld. Vernieuw de coach voor actuele hersteldata.";
+    }
+  });
+
+  if(!appRunsStandalone()){
+    showInstallExperience();
+  }else{
+    hideInstallExperience();
+  }
+
+  if("serviceWorker" in navigator){
+    window.addEventListener("load",()=>{
+      navigator.serviceWorker
+        .register("/sw.js",{updateViaCache:"none"})
+        .catch(error=>console.warn("Service worker kon niet worden geregistreerd:",error));
+    });
+  }
+}
+
+
+document.querySelectorAll(".tab").forEach(tab=>{
+  tab.onclick=()=>navigateAppView(tab.dataset.view);
 });
 
 document.getElementById("prevMonth").onclick=()=>{
@@ -219,6 +403,7 @@ document.addEventListener("visibilitychange",()=>{
 window.addEventListener("focus",refreshDayBoundaryIfNeeded);
 
 async function initializeJacoPerformance(){
+  setupPwaExperience();
   repairStoredWorkoutMismatches();
   installHmAmsterdamBlock2026();
   installHmAmsterdamRaceweek2026();
