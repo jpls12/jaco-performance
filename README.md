@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**9.2.1 · Live Sync Validation & Calibration**
+**9.2.2 · Sync Calibration**
 
-9.2.1 kalibreert de live Training Sync voordat de coach verder wordt geautomatiseerd. Alleen sterke, niet-ambigue matches worden automatisch afgevinkt; twijfelgevallen blijven zichtbaar als 'controleren'. De app toont daarnaast API-dekking, extra activiteiten en een kopieerbare syncdiagnose.
+9.2.2 verwerkt de eerste echte syncdiagnose: racedagen kiezen de meest waarschijnlijke wedstrijdactiviteit in plaats van een warming-up, de lopende dag vervuilt de historische kalibratie niet en handmatig voltooide twijfelgevallen worden correct als handmatig weergegeven.
 
 ## Architectuur
 
@@ -106,6 +106,12 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 9.2.2 Sync Calibration
+
+- Racedagen selecteren voor diagnose de run die qua afstand het beste bij de wedstrijd past; warming-ups blijven als extra activiteit zichtbaar.
+- De huidige kalenderdag telt niet meer als gemiste training in de 21-daagse historische kalibratie.
+- Handmatig voltooide review/unmatched-trainingen worden in de diagnose als handmatig voltooid getoond.
 
 ## 9.2.1 Live Sync Validation & Calibration
 
