@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.7 · Adaptive Key Session Progression**
+**10.8 · Adaptive Training Block Planner**
 
-10.7 bouwt voort op 10.6 en leert niet alleen welk tempo past, maar ook hoeveel kwaliteitswerk de volgende sleuteltraining mag bevatten. Alleen bij minimaal drie consistente sterke uitvoeringen, goed herstel en stabiele belasting kan een nieuw gegenereerde drempel- of VO₂-sessie één kleine volumestap krijgen.
+10.8 trekt de adaptieve logica door van één week naar een blok van vier weken. De planner combineert seizoensfase, wedstrijdkalender, beschikbaarheid en 10.6/10.7-leerbewijs, maar gebruikt actuele readiness alleen voor week 1 en voorspelt geen toekomstig herstel.
 
 ## Architectuur
 
@@ -19,6 +19,7 @@ De app is bewust licht opgebouwd:
 - `js/training-quality.js` — blok-voor-blok analyse van gekoppelde sleuteltrainingen
 - `js/training-response.js` — leert uit meerdere sleuteltrainingen en kalibreert toekomstige trainingspaces conservatief
 - `js/session-progression.js` — leert trainingsdosis en past alleen nieuwe drempel-/VO₂-sessies conservatief aan
+- `js/adaptive-block-planner.js` — bouwt een veilige 4-wekenmicrocyclus uit seizoen, races, beschikbaarheid en geleerd trainingsbewijs
 - `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
 - `js/race-readiness.js` — race readiness, geloofwaardige raceband en doeltempo-optimalisatie
 - `js/fuel-hydration.js` — persoonlijk voedings-/zweetprofiel en exacte race-innameplanning
@@ -118,6 +119,17 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 10.8 Adaptive Training Block Planner
+
+- Genereert vier weken vanaf de eerstvolgende maandag met dezelfde beschikbaarheids- en racebescherming als de AI Week Planner.
+- Week 1 gebruikt actuele readiness en Coach Dagboek; week 2–4 voorspellen geen herstel en gebruiken alleen stabiele planningsdata.
+- Normale base/build/specific-blokken gebruiken een kleine microcyclus van ongeveer 96% → 100% → 104% → 90%; taper/race/herstel houden hun eigen seizoensfactor.
+- Seizoensfase en wedstrijden worden per week opnieuw bepaald zodat het blok veilig door taper, race en herstel kan lopen.
+- 10.6-pacelearning blijft gelden voor toekomstige gegenereerde sessies.
+- Een actieve 10.7-dosisstap mag alleen in de eerste toekomstige geschikte sleuteltraining worden toegepast; week 2–4 kopiëren die progressie niet vooruit zonder nieuw bewijs.
+- Toepassen is expliciet; bestaande kalenderdagen en racedagen worden overgeslagen en nooit overschreven.
+- Het blok toont per week fase, focus, doelvolume, sleutelsessie, lange duur en de gebruikte adaptieve aannames.
 
 ## 10.7 Adaptive Key Session Progression
 
