@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.0.0",
+    appVersion:"10.1.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -5598,6 +5598,11 @@ function raceSimulationSignals(race,prediction,goal,readiness){
 }
 
 function buildRaceSimulation(race){
+  const optimizer=
+    typeof buildRaceReadinessGoalOptimizer==="function"
+      ?buildRaceReadinessGoalOptimizer(race)
+      :null;
+
   const modelPrediction=
     typeof performanceModelPredictionForDistance==="function"
       ?performanceModelPredictionForDistance(
@@ -5615,6 +5620,7 @@ function buildRaceSimulation(race){
   const readiness=customRaceReadiness(race);
 
   const pacingSeconds=
+    optimizer?.referenceSeconds ||
     goal.target ||
     prediction.seconds ||
     null;
@@ -5629,6 +5635,7 @@ function buildRaceSimulation(race){
     prediction,
     goal,
     readiness,
+    optimizer,
     pacingSeconds,
     pacing:racePacingPlan(race,pacingSeconds),
     taper:raceTaperPlan(race),
@@ -5657,6 +5664,9 @@ function renderRaceSimulator(){
 
   if(!race){
     activeRaceSimulation=null;
+    if(typeof renderRaceReadinessGoalOptimizer==="function"){
+      renderRaceReadinessGoalOptimizer(null);
+    }
     document.getElementById("raceSimPrediction").textContent="—";
     document.getElementById("raceSimPredictionSource").textContent="Voeg eerst een toekomstige wedstrijd toe";
     document.getElementById("raceSimTarget").textContent="—";
@@ -5678,6 +5688,10 @@ function renderRaceSimulator(){
 
   const simulation=buildRaceSimulation(race);
   activeRaceSimulation=simulation;
+
+  if(typeof renderRaceReadinessGoalOptimizer==="function"){
+    renderRaceReadinessGoalOptimizer(race);
+  }
 
   document.getElementById("raceSimPrediction").textContent=
     simulation.prediction.seconds
@@ -5701,11 +5715,13 @@ function renderRaceSimulator(){
       :"—";
 
   document.getElementById("raceSimPaceSource").textContent=
-    simulation.goal.target
-      ?"Gebaseerd op streeftijd"
-      :simulation.prediction.seconds
-        ?"Gebaseerd op prognose"
-        :"Geen tempo beschikbaar";
+    simulation.optimizer?.referenceSeconds
+      ?"10.1 geoptimaliseerde race-referentie"
+      :simulation.goal.target
+        ?"Gebaseerd op streeftijd"
+        :simulation.prediction.seconds
+          ?"Gebaseerd op prognose"
+          :"Geen tempo beschikbaar";
 
   document.getElementById("raceSimReadiness").textContent=
     simulation.readiness.score===null
@@ -12396,7 +12412,18 @@ function targetPacesForRace(race,profileData){
   const p=profileData || getProfile();
   let racePace=null;
 
-  if(race?.targetTime){
+  const optimizedReference=
+    typeof optimizedRaceReferenceSeconds==="function"
+      ?optimizedRaceReferenceSeconds(race)
+      :null;
+
+  if(
+    optimizedReference!==null &&
+    Number(race?.distanceKm)>0
+  ){
+    racePace=
+      optimizedReference/Number(race.distanceKm);
+  }else if(race?.targetTime){
     racePace=racePaceSeconds(race);
   }
 
