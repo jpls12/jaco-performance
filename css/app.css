@@ -1867,3 +1867,56 @@
 @media(max-width:480px){
   .fully-adaptive-signals{grid-template-columns:1fr}
 }
+
+
+/* Performance 10.1 · Race Readiness & Goal Optimizer */
+.race-readiness-optimizer{
+  margin:16px 0;
+  padding:16px;
+  border:1px solid #36516f;
+  border-radius:18px;
+  background:#0d1b2d;
+}
+.race-readiness-optimizer.execute{border-color:#347a50}
+.race-readiness-optimizer.control{border-color:#6b6040}
+.race-readiness-optimizer.adjust{border-color:#8a5948}
+.race-readiness-head{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:flex-start;
+}
+.race-readiness-head h3{margin:4px 0 0}
+.race-readiness-score{
+  min-width:120px;
+  padding:10px;
+  border-radius:13px;
+  background:#0a1727;
+  border:1px solid #29415e;
+  text-align:right;
+}
+.race-readiness-score span,
+.race-readiness-grid span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+  margin-bottom:4px;
+}
+.race-readiness-score strong{font-size:1.3rem}
+.race-readiness-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:12px 0;
+}
+.race-readiness-grid>div{
+  padding:10px;
+  border-radius:12px;
+  background:#0a1727;
+  border:1px solid #29415e;
+}
+@media(max-width:650px){
+  .race-readiness-head{display:grid}
+  .race-readiness-score{text-align:left}
+  .race-readiness-grid{grid-template-columns:1fr}
+}

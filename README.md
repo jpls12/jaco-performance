@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.0 · Fully Adaptive Coach**
+**10.1 · Race Readiness & Goal Optimizer**
 
-10.0 voegt alle adaptieve lagen samen tot één centrale coachstaat. Herstel, werkelijke uitvoering, trainingskwaliteit, belastbaarheid, weekplanning, prestatiemodel en wedstrijdfase bepalen samen wat vandaag prioriteit heeft, of de week moet wijzigen en hoe het wedstrijddoel zich ontwikkelt.
+10.1 koppelt het Performance Model, trainingskwaliteit, belastbaarheid en raceweekherstel aan de actieve wedstrijd. De app toont race readiness, een geloofwaardige finishtijdband en een trainingsreferentiepace die een te agressieve streeftijd niet blind volgt.
 
 ## Architectuur
 
@@ -18,6 +18,7 @@ De app is bewust licht opgebouwd:
 - `js/training-sync.js` — koppeling uitgevoerd ↔ gepland en adaptieve feedback
 - `js/training-quality.js` — blok-voor-blok analyse van gekoppelde sleuteltrainingen
 - `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
+- `js/race-readiness.js` — race readiness, geloofwaardige raceband en doeltempo-optimalisatie
 - `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
 - `js/adaptive-week-replanner.js` — herschikking van de resterende week na gemiste/afwijkende training of herstelwijziging
 - `js/fully-adaptive-coach.js` — centrale 10.0-coachstaat, prioriteit, veranderlog en doelontwikkeling
@@ -111,6 +112,17 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 10.1 Race Readiness & Goal Optimizer
+
+- Combineert Performance Model, recente trainingskwaliteit, belastbaarheid, uitvoering en actuele raceweek-hersteldata.
+- Geeft per geselecteerde wedstrijd een race-readinessscore 0–100 en optimizervertrouwen.
+- Toont een geloofwaardige finishtijdband in plaats van één schijnpreciese racedagvoorspelling.
+- Beoordeelt de ingestelde streeftijd als passend, agressief, conservatief of nog onvoldoende onderbouwd.
+- Een agressief doel verandert de opgeslagen wedstrijd niet, maar trainingspaces worden begrensd op de snelste geloofwaardige modelrand.
+- Een conservatiever doel blijft volledig gerespecteerd.
+- De Race Simulator gebruikt de geoptimaliseerde race-referentie voor pacing.
+- In de laatste racedagen kan laag actueel herstel de referentie conservatiever maken.
 
 ## 10.0 Fully Adaptive Coach
 
