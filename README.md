@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.8 · Adaptive Training Block Planner**
+**10.8.1 · Stability & UX Hardening**
 
-10.8 trekt de adaptieve logica door van één week naar een blok van vier weken. De planner combineert seizoensfase, wedstrijdkalender, beschikbaarheid en 10.6/10.7-leerbewijs, maar gebruikt actuele readiness alleen voor week 1 en voorspelt geen toekomstig herstel.
+10.8.1 hardent de actuele 10.8-basis zonder coachlogica te wijzigen. De patch verbetert focusbeheer in de trainingsdialoog, voorkomt Wake Lock-races, ontsnapt dynamische aria-labels veilig en houdt backup- en cachemetadata consistent.
 
 ## Architectuur
 
@@ -117,6 +117,15 @@ gecontroleerd en daarna naar `main` gemerged. Vercel deployt vervolgens vanuit
 
 Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
+
+## 10.8.1 Stability & UX Hardening
+
+- Fullscreen trainingssessies verplaatsen focus naar de dialoog en herstellen de oorspronkelijke focus na sluiten.
+- Tab- en Shift+Tab-focus blijven binnen de actieve trainingsdialoog, ook als focus onverwacht buiten de dialoog terechtkomt.
+- Wake Lock serialiseert aanvragen en ruimt een laat voltooide aanvraag op wanneer de sessie intussen is gepauzeerd of gesloten.
+- Dynamische aria-labels in de weekstrip worden veilig als HTML-attribuut ontsnapt.
+- Backupmetadata gebruikt één centrale actieve appversie.
+- De bestaande completion-identity-check en alle 10.8-planner- en data-integriteitsregels blijven behouden.
 
 
 
