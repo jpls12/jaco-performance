@@ -412,11 +412,13 @@ function fullyAdaptiveCoachSignalRows({
   rows.push({
     key:"performance",
     state:
-      goal?.state==="ahead"
+      goal?.state==="ahead" || goal?.state==="close"
         ?"good"
         :goal?.state==="gap"
           ?"warn"
-          :"good",
+          :Number(performance?.overallConfidence||0)>=55
+            ?"good"
+            :"warn",
     label:"Doelontwikkeling",
     value:goal?.detail||
       `Modelvertrouwen ${performance?.overallConfidence||0}/100`
@@ -461,16 +463,21 @@ function buildFullyAdaptiveCoachState(){
     pendingWeekReplan ||
     buildAdaptiveWeekReplan();
 
-  const quality=latestTrainingQualityResult();
+  const storedQuality=latestTrainingQualityResult();
   const qualityCandidate=
     typeof qualityRecentCandidate==="function"
       ?qualityRecentCandidate()
       :null;
+  const candidateActivityId=
+    qualityCandidate?.execution?.actual?.id||null;
+  const quality=
+    candidateActivityId &&
+    storedQuality?.activityId!==candidateActivityId
+      ?null
+      :storedQuality;
   const qualityFeedback=
     typeof latestTrainingQualityFeedback==="function"
-      ?latestTrainingQualityFeedback(
-        qualityCandidate?.execution?.actual?.id||null
-      )
+      ?latestTrainingQualityFeedback(candidateActivityId)
       :{level:"unknown",text:"Geen kwaliteitsfeedback."};
 
   const performance=buildPerformanceModel();
