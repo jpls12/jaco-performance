@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**9.4 · Performance Model**
+**9.5 · Adaptive Week Replanner**
 
-9.4 voegt een actueel prestatiemodel toe voor 5 km, 10 km, halve marathon en marathon. Echte gesynchroniseerde wedstrijdactiviteiten krijgen voorrang, profiel-PR’s blijven sterke referenties en elke prognose toont bron, tempo, bandbreedte en betrouwbaarheid.
+9.5 beoordeelt na nieuwe herstel- of Training Sync-data automatisch de resterende kalenderweek. Gemiste sessies, afwijkende uitvoering, actuele belasting, beschikbaarheid en racevensters worden gecombineerd tot een transparant herschikkingsvoorstel dat pas na bevestiging wordt toegepast.
 
 ## Architectuur
 
@@ -18,6 +18,7 @@ De app is bewust licht opgebouwd:
 - `js/training-sync.js` — koppeling uitgevoerd ↔ gepland en adaptieve feedback
 - `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
 - `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
+- `js/adaptive-week-replanner.js` — herschikking van de resterende week na gemiste/afwijkende training of herstelwijziging
 - `js/bootstrap.js` — event handlers en initialisatie
 - `api/workouts.js` — publieke vaste workouts
 - `api/upload-workout.js` — export naar Intervals.icu
@@ -108,6 +109,16 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 9.5 Adaptive Week Replanner
+
+- Analyseert automatisch de resterende kalenderweek na herstel- en Training Sync-updates.
+- Gemiste rustige trainingen en gemiste lange duurlopen worden niet automatisch ingehaald.
+- Gemiste kwaliteit mag alleen een toekomstige rustige training vervangen wanneer herstel goed, belasting stabiel en de wedstrijdfase veilig is.
+- Bij verhoogde belasting wordt een nabije zware sessie verplaatst naar een veiligere dag of afgezwakt naar herstel.
+- Zware/lange trainingen worden niet in taper- of herstelvensters geplaatst en wedstrijddagen blijven volledig beschermd.
+- Beschikbaarheidsconflicten worden waar mogelijk binnen dezelfde week opgelost.
+- Alle voorgestelde wijzigingen worden vooraf getoond; kalenderwijzigingen gebeuren alleen na expliciete bevestiging.
 
 ## 9.4 Performance Model
 
