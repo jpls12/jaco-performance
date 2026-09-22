@@ -442,7 +442,9 @@ function buildAdaptiveWeekReplan(){
 
   if(missedEasy.length){
     notes.push(
-      `${missedEasy.length} gemiste rustige training${missedEasy.length===1?"":"en"} worden niet ingehaald.`
+      missedEasy.length===1
+      ?"1 gemiste rustige training wordt niet ingehaald."
+      :`${missedEasy.length} gemiste rustige trainingen worden niet ingehaald.`
     );
     triggers.push("gemiste rustige training");
   }
@@ -519,7 +521,7 @@ function buildAdaptiveWeekReplan(){
             schedule,
             date,
             swap.targetDate,
-            `Meer herstelruimte door ${stress.level==="elevated"?"verhoogde":"aandachts"}belasting`
+            `Meer herstelruimte door ${stress.level==="elevated"?"verhoogde belasting":"een belastingssignaal met aandacht"}`
           );
         }else if(stress.level==="elevated"){
           schedule[date]=weekReplanRecoveryWorkout(
@@ -566,6 +568,7 @@ function buildAdaptiveWeekReplan(){
       notes.push(
         `${workout.name} past niet in je ingestelde beschikbaarheid op ${date}; geen veilige lege plek gevonden.`
       );
+      triggers.push("beschikbaarheidsconflict");
     }
   });
 
@@ -671,7 +674,7 @@ function weekReplanStatusMeta(proposal){
   }
 
   if(proposal.triggers.length){
-    return{label:"Plan behouden",cls:"control"};
+    return{label:"Aandacht · plan behouden",cls:"control"};
   }
 
   return{label:"Week staat goed",cls:"execute"};
