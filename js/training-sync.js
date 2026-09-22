@@ -269,9 +269,13 @@ function reconcileSyncedCompletions({oldest=null,newest=null}={}){
     if(!inCoverage) return;
 
     const actual=primarySyncedActivityForWorkout(date,workout);
+    const ratio=executionVolumeRatio(workout,actual);
+    const confidentMatch=
+      Boolean(actual) &&
+      (ratio===null || ratio>=0.35);
     const marker=doneWorkouts[date];
 
-    if(actual){
+    if(confidentMatch){
       if(
         !marker ||
         (

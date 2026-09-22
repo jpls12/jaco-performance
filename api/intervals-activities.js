@@ -110,7 +110,6 @@ export default async function handler(req,res){
       "average_speed",
       "average_heartrate",
       "max_heartrate",
-      "icu_average_watts",
       "icu_weighted_avg_watts",
       "icu_training_load",
       "icu_intensity",
