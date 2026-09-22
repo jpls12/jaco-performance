@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.2 · Race Strategy Engine**
+**10.3 · Personal Fuel & Hydration Profile**
 
-10.2 vertaalt de geoptimaliseerde 10.1-racereferentie naar een uitvoerbaar wedstrijdplan: segmenttempo, HR-guardrails, RPE-opbouw, koolhydraat- en drinkrange en concrete beslismomenten per 5 km, 10 km, halve marathon en marathon.
+10.3 personaliseert het 10.2-raceplan met eigen koolhydraattolerantie, gelgrootte, zweetverlies, drinkdoel, natrium en drankpostafstand. De app rekent daar exacte gelminuten, ml per post en natriumtotalen uit en valt per ontbrekend veld terug op de bestaande veilige basisrange.
 
 ## Architectuur
 
@@ -19,6 +19,7 @@ De app is bewust licht opgebouwd:
 - `js/training-quality.js` — blok-voor-blok analyse van gekoppelde sleuteltrainingen
 - `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
 - `js/race-readiness.js` — race readiness, geloofwaardige raceband en doeltempo-optimalisatie
+- `js/fuel-hydration.js` — persoonlijk voedings-/zweetprofiel en exacte race-innameplanning
 - `js/race-strategy.js` — pacingfasen, HR-guardrails, voeding en racedagbeslismomenten
 - `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
 - `js/adaptive-week-replanner.js` — herschikking van de resterende week na gemiste/afwijkende training of herstelwijziging
@@ -113,6 +114,18 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 10.3 Personal Fuel & Hydration Profile
+
+- Nieuw profielblok voor race-koolhydraten/uur, maximale geteste tolerantie, gelgrootte en koolhydraten uit drank.
+- Persoonlijke zweet- en vochtvelden: zweetverlies ml/uur, drinkdoel ml/uur en afstand tussen drankposten.
+- Natrium kan expliciet als mg/uur worden ingesteld of uit ingevoerde zweetnatriumconcentratie + drinkdoel worden afgeleid.
+- Berekent exact aantal gels en gelminuten op basis van raceduur en gekozen producten.
+- Berekent totaal vocht en, wanneer drankpostafstand bekend is, ml per post plus geschatte passage-minuten.
+- Berekent natrium totaal en optioneel het capsule-equivalent wanneer capsule/tabletgrootte is ingevuld.
+- Als drinkdoel hoger is dan gemeten zweetverlies wordt de race-aanbeveling conservatief begrensd op het gemeten verlies en wordt dit zichtbaar gemeld.
+- Profiel wordt genest opgeslagen in `jp_profile_v1` en reist daardoor automatisch mee met de bestaande Backup & Herstel-functie.
+- Ontbrekende velden veroorzaken geen verzonnen precisie: alleen het betreffende onderdeel valt terug op 10.2-basisranges.
 
 ## 10.2 Race Strategy Engine
 

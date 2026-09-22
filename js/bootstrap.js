@@ -338,6 +338,7 @@ document.getElementById("applyBackupImport").onclick=applySelectedBackupImport;
 document.getElementById("cancelBackupImport").onclick=cancelBackupImport;
 document.getElementById("restoreSafetyBackup").onclick=restoreLastSafetyBackup;
 document.getElementById("profileForm").onsubmit=saveProfile;
+document.getElementById("fuelHydrationForm").onsubmit=saveFuelHydrationProfile;
 document.getElementById("planningForm").onsubmit=savePlanning;
 document.getElementById("buildFullSeasonSchedule").onclick=buildFullSeasonSchedulePreview;
 document.getElementById("applyFullSeasonSchedule").onclick=applyFullSeasonSchedule;
@@ -459,6 +460,7 @@ async function initializeJacoPerformance(){
 
   setDefaultForm(todayDateString());
   fillProfileForm();
+  fillFuelHydrationForm();
   fillPlanningForm();
   renderProfileSummary();
   renderBackupManager();

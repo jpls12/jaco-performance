@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1020">
+  <link rel="manifest" href="/manifest.webmanifest?v=1030">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/app-icon.svg">
-  <link rel="stylesheet" href="/css/app.css?v=1020">
+  <link rel="stylesheet" href="/css/app.css?v=1030">
 </head>
 <body>
 <main>
@@ -100,7 +100,7 @@
     </article>
 
     <article class="card">
-      <span class="v2-badge">Jaco Performance 10.2 · Race Strategy Engine</span>
+      <span class="v2-badge">Jaco Performance 10.3 · Personal Fuel & Hydration</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -1783,6 +1783,36 @@
           <div id="raceStrategyDecisions" class="race-strategy-decisions"></div>
         </div>
 
+        <div class="race-strategy-section race-personal-fuel">
+          <div class="race-personal-fuel-head">
+            <div>
+              <p class="label">Performance 10.3 · Persoonlijk racevoedingsplan</p>
+              <h3 id="raceFuelPersonalStatus">Basis</h3>
+              <p id="raceFuelPersonalSummary" class="help">
+                Voedingsprofiel wordt gekoppeld aan deze race.
+              </p>
+            </div>
+          </div>
+
+          <div class="race-fuel-columns">
+            <div>
+              <strong>Gels</strong>
+              <div id="raceFuelGelSchedule" class="race-fuel-events"></div>
+            </div>
+            <div>
+              <strong>Drankposten</strong>
+              <div id="raceFuelDrinkSchedule" class="race-fuel-events"></div>
+            </div>
+          </div>
+
+          <div class="race-fuel-sodium">
+            <span>Natriumplan</span>
+            <strong id="raceFuelSodiumPlan">—</strong>
+          </div>
+
+          <div id="raceFuelWarnings" class="reason-list"></div>
+        </div>
+
         <p class="engine-disclaimer">
           Hartslag is een guardrail, geen exacte target. Warmte, hoogte, cafeïne,
           hydratatie en vermoeidheid kunnen HR verschuiven; tempo en RPE blijven leidend.
@@ -2072,6 +2102,80 @@
         <button type="submit">Profiel opslaan</button><p id="profileStatus" class="status"></p>
       </form>
     </article>
+
+    <article class="card fuel-hydration-profile-card">
+      <div class="fuel-profile-head">
+        <div>
+          <p class="label">Performance 10.3 · Personal Fuel & Hydration</p>
+          <h2>Voedings- en hydratatieprofiel</h2>
+          <p class="help">
+            Vul alleen waarden in die je uit training, zweetmeting of je vaste producten kent.
+            Lege velden blijven bewust generieke race-ranges gebruiken.
+          </p>
+        </div>
+        <div class="fuel-profile-completeness">
+          <span>Personalisatie</span>
+          <strong id="fuelProfileCompleteness">Basis · 0%</strong>
+        </div>
+      </div>
+
+      <div id="fuelProfileSummary" class="fuel-profile-summary">
+        <div><span>Koolhydraten</span><strong id="fuelProfileCarbs">—</strong></div>
+        <div><span>Drinken</span><strong id="fuelProfileFluid">—</strong></div>
+        <div><span>Natrium</span><strong id="fuelProfileSodium">—</strong></div>
+      </div>
+
+      <form id="fuelHydrationForm">
+        <p class="label">Koolhydraten</p>
+        <div class="grid2">
+          <label>Race-doel (g/uur)
+            <input id="fuelCarbTarget" type="number" min="0" max="150" step="1" placeholder="bijv. 90">
+          </label>
+          <label>Max. geteste tolerantie (g/uur)
+            <input id="fuelCarbMax" type="number" min="0" max="160" step="1" placeholder="bijv. 100">
+          </label>
+        </div>
+        <div class="grid2">
+          <label>Koolhydraten per gel (g)
+            <input id="fuelGelCarbs" type="number" min="5" max="80" step="1" value="30">
+          </label>
+          <label>Koolhydraten uit drank (g/uur)
+            <input id="fuelDrinkCarbs" type="number" min="0" max="120" step="1" value="0">
+          </label>
+        </div>
+
+        <p class="label fuel-profile-section-label">Vocht</p>
+        <div class="grid2">
+          <label>Gemeten zweetverlies (ml/uur)
+            <input id="fuelSweatRate" type="number" min="100" max="2500" step="10" placeholder="optioneel">
+          </label>
+          <label>Drinkdoel (ml/uur)
+            <input id="fuelFluidTarget" type="number" min="100" max="1500" step="10" placeholder="bijv. 600">
+          </label>
+        </div>
+        <div class="grid2">
+          <label>Afstand tussen drankposten (km)
+            <input id="fuelAidStationKm" type="number" min="0.5" max="15" step="0.5" placeholder="bijv. 5">
+          </label>
+          <label>Zweetnatrium (mg/l)
+            <input id="fuelSweatSodium" type="number" min="100" max="2500" step="10" placeholder="optioneel">
+          </label>
+        </div>
+
+        <p class="label fuel-profile-section-label">Natrium</p>
+        <div class="grid2">
+          <label>Natriumdoel (mg/uur)
+            <input id="fuelSodiumTarget" type="number" min="0" max="2000" step="10" placeholder="optioneel; overschrijft berekening">
+          </label>
+          <label>Natrium per capsule/tablet (mg)
+            <input id="fuelSodiumCapsule" type="number" min="50" max="1500" step="10" placeholder="optioneel">
+          </label>
+        </div>
+
+        <button type="submit">Voedingsprofiel opslaan</button>
+        <p id="fuelHydrationStatus" class="status"></p>
+      </form>
+    </article>
   
 
     <article class="card data-sync-card">
@@ -2293,16 +2397,17 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=1020" defer></script>
-<script src="/js/training-sync.js?v=1020" defer></script>
-<script src="/js/training-quality.js?v=1020" defer></script>
-<script src="/js/performance-model.js?v=1020" defer></script>
-<script src="/js/race-readiness.js?v=1020" defer></script>
-<script src="/js/race-strategy.js?v=1020" defer></script>
-<script src="/js/daily-decision.js?v=1020" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1020" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1020" defer></script>
-<script src="/js/bootstrap.js?v=1020" defer></script>
+<script src="/js/app.js?v=1030" defer></script>
+<script src="/js/training-sync.js?v=1030" defer></script>
+<script src="/js/training-quality.js?v=1030" defer></script>
+<script src="/js/performance-model.js?v=1030" defer></script>
+<script src="/js/race-readiness.js?v=1030" defer></script>
+<script src="/js/fuel-hydration.js?v=1030" defer></script>
+<script src="/js/race-strategy.js?v=1030" defer></script>
+<script src="/js/daily-decision.js?v=1030" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1030" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1030" defer></script>
+<script src="/js/bootstrap.js?v=1030" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

@@ -1,19 +1,20 @@
-const CACHE_NAME="jaco-performance-shell-v1020";
+const CACHE_NAME="jaco-performance-shell-v1030";
 const APP_SHELL=[
   "/",
   "/index.html",
-  "/css/app.css?v=1020",
-  "/js/app.js?v=1020",
-  "/js/training-sync.js?v=1020",
-  "/js/training-quality.js?v=1020",
-  "/js/performance-model.js?v=1020",
-  "/js/race-readiness.js?v=1020",
-  "/js/race-strategy.js?v=1020",
-  "/js/daily-decision.js?v=1020",
-  "/js/adaptive-week-replanner.js?v=1020",
-  "/js/fully-adaptive-coach.js?v=1020",
-  "/js/bootstrap.js?v=1020",
-  "/manifest.webmanifest?v=1020",
+  "/css/app.css?v=1030",
+  "/js/app.js?v=1030",
+  "/js/training-sync.js?v=1030",
+  "/js/training-quality.js?v=1030",
+  "/js/performance-model.js?v=1030",
+  "/js/race-readiness.js?v=1030",
+  "/js/fuel-hydration.js?v=1030",
+  "/js/race-strategy.js?v=1030",
+  "/js/daily-decision.js?v=1030",
+  "/js/adaptive-week-replanner.js?v=1030",
+  "/js/fully-adaptive-coach.js?v=1030",
+  "/js/bootstrap.js?v=1030",
+  "/manifest.webmanifest?v=1030",
   "/icons/app-icon.svg"
 ];
 
