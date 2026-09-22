@@ -2476,3 +2476,76 @@
     grid-template-columns:82px 1fr;
   }
 }
+
+
+/* Performance 10.7 · Adaptive Key Session Progression */
+.key-session-progression-card{
+  margin:16px 0;
+  padding:16px;
+  border:1px solid #36516f;
+  border-radius:18px;
+  background:#0d1b2d;
+}
+.key-session-progression-card.progress{border-color:#347a50}
+.key-session-progression-card.protect{border-color:#8a5948}
+.key-session-progression-card.consolidate{border-color:#6b6040}
+.key-session-progression-card.learning{border-color:#36516f}
+.key-session-progression-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+.key-session-progression-head h3{margin:4px 0 0}
+.key-session-progression-head>strong{
+  padding:6px 9px;
+  border-radius:999px;
+  background:#132840;
+  border:1px solid #315172;
+  font-size:.76rem;
+  white-space:nowrap;
+}
+.key-session-progression-models{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:12px 0;
+}
+.key-session-progression-model{
+  padding:11px;
+  border-radius:13px;
+  border:1px solid #29415e;
+  background:#0a1727;
+}
+.key-session-progression-model.progress{border-color:#347a50}
+.key-session-progression-model.deload{border-color:#8a5948}
+.key-session-progression-model.consolidate{border-color:#6b6040}
+.key-session-progression-model-head{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+}
+.key-session-progression-model-head span{
+  color:#b8d8f4;
+  font-size:.72rem;
+}
+.key-session-progression-model p{
+  margin:9px 0 5px;
+  font-weight:800;
+  line-height:1.35;
+}
+.key-session-progression-model>small{
+  color:var(--muted);
+  line-height:1.4;
+}
+.key-session-progression-mini{
+  display:grid;
+  gap:3px;
+  margin-top:9px;
+  color:#8ca8c1;
+  font-size:.7rem;
+}
+@media(max-width:760px){
+  .key-session-progression-head{display:grid}
+  .key-session-progression-models{grid-template-columns:1fr}
+}
