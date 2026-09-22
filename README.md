@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**9.6 · Training Quality Analyzer**
+**10.0 · Fully Adaptive Coach**
 
-9.6 analyseert de laatste betrouwbaar gekoppelde sleuteltraining blok voor blok. Gepland tempo, herhalingen, werkelijk intervaltempo, hartslag, volume, consistentie en RPE worden gecombineerd tot een trainingskwaliteitscore met expliciete betrouwbaarheid.
+10.0 voegt alle adaptieve lagen samen tot één centrale coachstaat. Herstel, werkelijke uitvoering, trainingskwaliteit, belastbaarheid, weekplanning, prestatiemodel en wedstrijdfase bepalen samen wat vandaag prioriteit heeft, of de week moet wijzigen en hoe het wedstrijddoel zich ontwikkelt.
 
 ## Architectuur
 
@@ -20,6 +20,7 @@ De app is bewust licht opgebouwd:
 - `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
 - `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
 - `js/adaptive-week-replanner.js` — herschikking van de resterende week na gemiste/afwijkende training of herstelwijziging
+- `js/fully-adaptive-coach.js` — centrale 10.0-coachstaat, prioriteit, veranderlog en doelontwikkeling
 - `js/bootstrap.js` — event handlers en initialisatie
 - `api/workouts.js` — publieke vaste workouts
 - `api/upload-workout.js` — export naar Intervals.icu
@@ -110,6 +111,17 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 10.0 Fully Adaptive Coach
+
+- Eén centrale coachstaat boven Daily Decision, Week Replanner, Training Quality en Performance Model.
+- Prioriteit wordt automatisch bepaald als Race, Herstel, Aanpassen, Week bijsturen, Gecontroleerd of Op schema.
+- Combineert herstel, load monitor, Training Sync, trainingskwaliteit, weekwijzigingen en doelprognose in één beslislaag.
+- Toont Coachvertrouwen 0–100 op basis van actuele datadekking; ontbrekende data verlaagt zekerheid in plaats van aannames te vullen.
+- Volgt wat sinds de vorige coachcheck betekenisvol veranderde: dagstatus, herstel, belasting, trainingskwaliteit, weekvoorstel en doelprognose.
+- Vergelijkt de actuele Performance Model-prognose met de streeftijd van de actieve wedstrijd wanneer die beschikbaar is.
+- Geeft één primaire actie: vandaag aanpassen, weekvoorstel toepassen, sleuteltraining analyseren of niets wijzigen.
+- Kalenderwijzigingen blijven expliciet bevestigd en bestaande racebescherming blijft intact.
 
 ## 9.6 Training Quality Analyzer
 

@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"9.6.0",
+    appVersion:"10.0.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -7296,6 +7296,7 @@ function refreshDerivedCoachViews(){
   renderTrainingQualityAnalyzer();
   renderTodayCoach();
   renderAdaptiveWeekReplanner();
+  renderFullyAdaptiveCoach();
   renderCoachBrain();
   buildCoachHorizon();
   renderCoachIntelligence();

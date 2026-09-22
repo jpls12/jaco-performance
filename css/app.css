@@ -1684,3 +1684,186 @@
     font-size:.78rem;
   }
 }
+
+
+/* Performance 10.0 · Fully Adaptive Coach */
+.fully-adaptive-coach-card{
+  margin:16px 0;
+  padding:17px;
+  border:1px solid #36516f;
+  border-radius:20px;
+  background:
+    radial-gradient(circle at top right,rgba(71,120,166,.16),transparent 42%),
+    linear-gradient(180deg,#0f2238,#0c192a);
+}
+.fully-adaptive-coach-card.execute{border-color:#347a50}
+.fully-adaptive-coach-card.control{border-color:#6b6040}
+.fully-adaptive-coach-card.adjust{border-color:#4d76a1}
+.fully-adaptive-coach-card.recover{border-color:#8a5948}
+.fully-adaptive-coach-card.race{border-color:#8d4b59}
+.fully-adaptive-coach-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+}
+.fully-adaptive-coach-head h2{
+  margin:9px 0 0;
+  line-height:1.2;
+}
+.fully-adaptive-coach-state{
+  display:inline-flex;
+  padding:6px 9px;
+  border-radius:999px;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.07em;
+  border:1px solid #3a5878;
+  background:#132b46;
+}
+.fully-adaptive-coach-state.execute{
+  color:#9ce7b5;
+  border-color:#2f6d49;
+  background:#173d2a;
+}
+.fully-adaptive-coach-state.control{
+  color:#ffe09b;
+  border-color:#6f5d2c;
+  background:#41391f;
+}
+.fully-adaptive-coach-state.adjust{
+  color:#a9d5ff;
+  border-color:#37658c;
+  background:#173553;
+}
+.fully-adaptive-coach-state.recover{
+  color:#ffc0ad;
+  border-color:#794b3d;
+  background:#4a2c25;
+}
+.fully-adaptive-coach-state.race{
+  color:#ffc0cb;
+  border-color:#81404f;
+  background:#4b2630;
+}
+.fully-adaptive-confidence{
+  min-width:150px;
+  padding:11px;
+  border-radius:14px;
+  background:#091725;
+  border:1px solid #294866;
+  text-align:right;
+}
+.fully-adaptive-confidence span,
+.fully-adaptive-main-grid>div>span,
+.fully-adaptive-action-box span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+  margin-bottom:4px;
+}
+.fully-adaptive-confidence small{
+  display:block;
+  margin-top:4px;
+  color:#7890aa;
+}
+.fully-adaptive-summary{
+  margin:14px 0 6px;
+  line-height:1.5;
+}
+.fully-adaptive-main-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1.25fr;
+  gap:8px;
+  margin:14px 0;
+}
+.fully-adaptive-main-grid>div{
+  padding:11px;
+  border-radius:13px;
+  background:#091725;
+  border:1px solid #263f5b;
+}
+.fully-adaptive-main-value{
+  display:grid;
+  gap:4px;
+}
+.fully-adaptive-main-value span{
+  color:var(--muted);
+  font-size:.78rem;
+  line-height:1.35;
+}
+.fully-adaptive-signals{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+  margin:12px 0;
+}
+.fully-adaptive-signal{
+  display:grid;
+  gap:4px;
+  padding:9px 10px;
+  border-radius:12px;
+  background:#0a1727;
+  border:1px solid #29415e;
+}
+.fully-adaptive-signal span{
+  font-size:.7rem;
+  color:var(--muted);
+}
+.fully-adaptive-signal strong{
+  font-size:.82rem;
+  line-height:1.35;
+}
+.fully-adaptive-signal.good{border-color:#2d6446}
+.fully-adaptive-signal.warn{border-color:#6b5b31}
+.fully-adaptive-signal.bad{border-color:#74493e}
+.fully-adaptive-changes{
+  margin:13px 0;
+  border-top:1px solid #263f5b;
+  padding-top:11px;
+}
+.fully-adaptive-changes summary{
+  cursor:pointer;
+  color:#bad7f4;
+  font-weight:800;
+}
+#fullyAdaptiveChanges{
+  display:grid;
+  gap:7px;
+  margin-top:9px;
+}
+.fully-adaptive-change{
+  display:grid;
+  grid-template-columns:18px 1fr;
+  gap:6px;
+  font-size:.84rem;
+  color:#c9d8ea;
+  line-height:1.4;
+}
+.fully-adaptive-change>span{
+  color:var(--blue);
+  font-weight:900;
+}
+.fully-adaptive-action-box{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  padding:12px;
+  border-radius:14px;
+  background:#0a1727;
+  border:1px solid #29415e;
+}
+.fully-adaptive-action-box p{margin:2px 0 0}
+.fully-adaptive-action-box button{width:auto}
+@media(max-width:720px){
+  .fully-adaptive-coach-head{display:grid}
+  .fully-adaptive-confidence{text-align:left}
+  .fully-adaptive-main-grid{grid-template-columns:1fr}
+  .fully-adaptive-signals{grid-template-columns:1fr 1fr}
+  .fully-adaptive-action-box{display:grid}
+  .fully-adaptive-action-box button{width:100%}
+}
+@media(max-width:480px){
+  .fully-adaptive-signals{grid-template-columns:1fr}
+}
