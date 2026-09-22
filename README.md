@@ -114,7 +114,7 @@ de bestaande modules.
 - Prognoses voor 5 km, 10 km, halve marathon en marathon met tempo en onzekerheidsband.
 - Echte Intervals.icu-loopactiviteiten die aan een racedag zijn gekoppeld gelden als sterkste actuele bewijs.
 - Profiel-PR’s blijven sterke benchmarks wanneer recente racedata ontbreekt.
-- Gewone trainingen worden alleen als lage-confidence fallback gebruikt, zodat een rustige duurloop het model niet onterecht naar beneden trekt.
+- Alleen performance-achtige trainingen (bijv. TT/parkrun, hoge HR of hoge RPE) mogen als lage-confidence fallback dienen; rustige duurlopen worden niet als prestatietest behandeld.
 - Marathonextrapolatie krijgt extra duurzaamheidsmarge wanneer alleen kortere benchmarks beschikbaar zijn.
 - De Race Simulator gebruikt voortaan het Performance Model als primaire onafhankelijke prognose en valt terug op het oude profielmodel als 9.4 onvoldoende data heeft.
 

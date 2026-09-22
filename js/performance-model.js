@@ -85,6 +85,18 @@ function performanceModelSyncedRunEvidence(){
       const pace=distance>0?seconds/distance:null;
       const ageDays=calendarDayDifference(today,activity.date);
       const race=performanceModelRaceForActivity(activity);
+      const profileData=getProfile();
+      const maxHr=finiteNumberOrNull(profileData.maxHr);
+      const averageHr=finiteNumberOrNull(activity.averageHeartRate);
+      const rpe=finiteNumberOrNull(activity.perceivedExertion);
+      const name=String(activity.name||"").toLowerCase();
+      const namedEffort=
+        /race|wedstrijd|parkrun|time trial|\btt\b|5\s?k|10\s?k|halve|half marathon|marathon/.test(name);
+      const highHr=
+        maxHr!==null &&
+        averageHr!==null &&
+        averageHr>=maxHr*.86;
+      const hardRpe=rpe!==null && rpe>=8;
 
       return{
         activity,
@@ -92,7 +104,8 @@ function performanceModelSyncedRunEvidence(){
         seconds,
         pace,
         ageDays,
-        race
+        race,
+        performanceLike:Boolean(race||namedEffort||highHr||hardRpe)
       };
     })
     .filter(item=>
@@ -133,6 +146,7 @@ function performanceModelSyncedRunEvidence(){
     const candidates=all
       .filter(item=>
         !item.race &&
+        item.performanceLike &&
         Math.abs(item.distance-target.distance)<=tolerance
       )
       .sort((a,b)=>{
