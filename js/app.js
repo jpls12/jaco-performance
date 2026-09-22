@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.6.0",
+    appVersion:"10.7.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -7339,6 +7339,7 @@ function refreshDerivedCoachViews(){
   // Houd die keten op één plek om dubbele DOM-renders op mobiel te voorkomen.
   renderTrainingQualityAnalyzer();
   renderTrainingResponseLearner();
+  renderKeySessionProgression();
   renderTodayCoach();
   renderAdaptiveWeekReplanner();
   renderFullyAdaptiveCoach();
@@ -10364,7 +10365,18 @@ function createUnscheduledAiWeek(context,variant=0){
     return{targetKm,workouts:[]};
   }
 
-  const quality=makeWeekQualitySession(context,context.start,variant);
+  const rawQuality=makeWeekQualitySession(
+    context,
+    context.start,
+    variant
+  );
+  const quality=
+    typeof applyKeySessionProgressionToWorkout==="function"
+      ?applyKeySessionProgressionToWorkout(
+        rawQuality,
+        context
+      )
+      :rawQuality;
   const qualityKm=Number(quality.distanceKm)||0;
 
   let longRatio=Number(context.race?.distanceKm||5)>=21?.30:.24;
@@ -10815,9 +10827,25 @@ function generateAiTrainingOptions(){
   const context=generatorContext();
   const kinds=chooseGeneratorKinds(context);
 
-  aiTrainingOptions=kinds.map((kind,index)=>
-    fitGeneratedWorkout(createGeneratorWorkout(kind,context,index===1?1:0),context)
-  );
+  aiTrainingOptions=kinds.map((kind,index)=>{
+    const generated=createGeneratorWorkout(
+      kind,
+      context,
+      index===1?1:0
+    );
+    const progressed=
+      typeof applyKeySessionProgressionToWorkout==="function"
+        ?applyKeySessionProgressionToWorkout(
+          generated,
+          context
+        )
+        :generated;
+
+    return fitGeneratedWorkout(
+      progressed,
+      context
+    );
+  });
 
   selectedAiTrainingIndex=0;
   renderAiTrainingGenerator(context);

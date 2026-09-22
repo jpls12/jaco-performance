@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.6 · Training Response Learner**
+**10.7 · Adaptive Key Session Progression**
 
-10.6 leert uit meerdere vergelijkbare sleuteltrainingen of drempel-, VO₂- en HM-specifieke doeltempo’s structureel te scherp, te conservatief of stabiel zijn. Alleen na voldoende consistent bewijs worden toekomstige gegenereerde drempel- en VO₂-paces maximaal enkele seconden per kilometer bijgesteld.
+10.7 bouwt voort op 10.6 en leert niet alleen welk tempo past, maar ook hoeveel kwaliteitswerk de volgende sleuteltraining mag bevatten. Alleen bij minimaal drie consistente sterke uitvoeringen, goed herstel en stabiele belasting kan een nieuw gegenereerde drempel- of VO₂-sessie één kleine volumestap krijgen.
 
 ## Architectuur
 
@@ -18,6 +18,7 @@ De app is bewust licht opgebouwd:
 - `js/training-sync.js` — koppeling uitgevoerd ↔ gepland en adaptieve feedback
 - `js/training-quality.js` — blok-voor-blok analyse van gekoppelde sleuteltrainingen
 - `js/training-response.js` — leert uit meerdere sleuteltrainingen en kalibreert toekomstige trainingspaces conservatief
+- `js/session-progression.js` — leert trainingsdosis en past alleen nieuwe drempel-/VO₂-sessies conservatief aan
 - `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
 - `js/race-readiness.js` — race readiness, geloofwaardige raceband en doeltempo-optimalisatie
 - `js/fuel-hydration.js` — persoonlijk voedings-/zweetprofiel en exacte race-innameplanning
@@ -117,6 +118,19 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 10.7 Adaptive Key Session Progression
+
+- Gebruikt 10.6-bewijs, recente kwaliteitsscores, voltooiingsratio, readiness, belastbaarheid en wedstrijdfase.
+- Minimaal drie vergelijkbare sessies nodig voordat automatische dosisopbouw mogelijk is.
+- Automatische opbouw geldt alleen voor nieuw gegenereerde drempel- en VO₂-sessies.
+- Drempelwerk wordt maximaal tot 10 km kwaliteit opgebouwd; VO₂-werk maximaal tot 6 km.
+- Eén stap betekent doorgaans +1 herhaling; bij korte 400 m-VO₂-blokken maximaal +2 herhalingen.
+- Bij verhoogde belasting, lage readiness of zwakke recente kwaliteit kan de volgende gegenereerde sessie één dosisstap worden teruggebracht.
+- Tempo en dosis worden nooit tegelijk automatisch opgehoogd: als 10.6 een pacecorrectie actief heeft, consolideert 10.7 eerst de hoeveelheid werk.
+- Taper, race-week en herstelblokken blokkeren automatische dosisopbouw.
+- HM-specifieke trainingsdosis wordt wel geleerd en getoond, maar nog niet automatisch verhoogd.
+- Bestaande kalendertrainingen worden nooit achteraf aangepast.
 
 ## 10.6 Training Response Learner
 
