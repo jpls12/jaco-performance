@@ -3,12 +3,12 @@ const ACTIVITY_SYNC_KEY="jp_intervals_activity_sync_v1";
 let activitySyncCache=loadObject(ACTIVITY_SYNC_KEY);
 let syncedActivities=
   isPlainBackupObject(activitySyncCache?.activities)
-    ? activitySyncCache.activities
-    : {};
+    ?activitySyncCache.activities
+    :{};
 let activitySyncMeta=
   isPlainBackupObject(activitySyncCache?.meta)
-    ? activitySyncCache.meta
-    : {};
+    ?activitySyncCache.meta
+    :{};
 
 function saveActivitySyncCache(){
   activitySyncCache={
@@ -119,20 +119,6 @@ function activityMatchScore(activity,workout){
   return score;
 }
 
-function primarySyncedActivityForWorkout(date,workout){
-  if(!workout || ["Rest","Race"].includes(workout.type)) return null;
-
-  const candidates=syncedActivitiesForDate(date)
-    .map(activity=>({
-      activity,
-      score:activityMatchScore(activity,workout)
-    }))
-    .filter(item=>Number.isFinite(item.score))
-    .sort((a,b)=>b.score-a.score);
-
-  return candidates[0]?.activity || null;
-}
-
 function executionVolumeRatio(workout,activity){
   if(!workout || !activity) return null;
 
@@ -151,21 +137,175 @@ function executionVolumeRatio(workout,activity){
   return null;
 }
 
+function activityMatchCandidates(date,workout){
+  if(!workout || ["Rest","Race"].includes(workout.type)) return [];
+
+  return syncedActivitiesForDate(date)
+    .map(activity=>({
+      activity,
+      score:activityMatchScore(activity,workout),
+      ratio:executionVolumeRatio(workout,activity)
+    }))
+    .filter(item=>Number.isFinite(item.score))
+    .sort((a,b)=>b.score-a.score);
+}
+
+function assessActivityMatch(date,workout){
+  if(!workout){
+    return{
+      status:"unmatched",
+      reason:"Geen geplande training.",
+      activity:null,
+      ratio:null,
+      score:null,
+      scoreGap:null,
+      candidates:[]
+    };
+  }
+
+  if(workout.type==="Race"){
+    return{
+      status:"protected",
+      reason:"Wedstrijden blijven handmatig beschermd.",
+      activity:null,
+      ratio:null,
+      score:null,
+      scoreGap:null,
+      candidates:[]
+    };
+  }
+
+  if(workout.type==="Rest"){
+    return{
+      status:"unmatched",
+      reason:"Rustdagen worden niet automatisch gekoppeld.",
+      activity:null,
+      ratio:null,
+      score:null,
+      scoreGap:null,
+      candidates:[]
+    };
+  }
+
+  const candidates=activityMatchCandidates(date,workout);
+  const best=candidates[0]||null;
+  const second=candidates[1]||null;
+
+  if(!best){
+    return{
+      status:"unmatched",
+      reason:"Geen activiteit met hetzelfde sporttype gevonden.",
+      activity:null,
+      ratio:null,
+      score:null,
+      scoreGap:null,
+      candidates
+    };
+  }
+
+  const ratio=best.ratio;
+  const scoreGap=
+    second && Number.isFinite(second.score)
+      ?best.score-second.score
+      :null;
+
+  if(ratio===null){
+    return{
+      status:"review",
+      reason:"Afstand/duur ontbreekt; sporttype alleen is onvoldoende voor automatisch afvinken.",
+      activity:best.activity,
+      ratio,
+      score:best.score,
+      scoreGap,
+      candidates
+    };
+  }
+
+  if(ratio<0.70){
+    return{
+      status:"review",
+      reason:`Uitgevoerd volume is slechts ${Math.round(ratio*100)}% van gepland.`,
+      activity:best.activity,
+      ratio,
+      score:best.score,
+      scoreGap,
+      candidates
+    };
+  }
+
+  if(ratio>1.60){
+    return{
+      status:"review",
+      reason:`Uitgevoerd volume is ${Math.round(ratio*100)}% van gepland; dit wijkt te sterk af voor automatisch koppelen.`,
+      activity:best.activity,
+      ratio,
+      score:best.score,
+      scoreGap,
+      candidates
+    };
+  }
+
+  if(second && scoreGap!==null && scoreGap<8){
+    return{
+      status:"review",
+      reason:"Meerdere activiteiten op dezelfde dag passen bijna even goed; handmatige controle is veiliger.",
+      activity:best.activity,
+      ratio,
+      score:best.score,
+      scoreGap,
+      candidates
+    };
+  }
+
+  return{
+    status:"auto",
+    reason:
+      ratio>=0.85 && ratio<=1.20
+        ?"Sterke overeenkomst tussen gepland en uitgevoerd."
+        :"Sporttype en volume passen voldoende voor automatische koppeling.",
+    activity:best.activity,
+    ratio,
+    score:best.score,
+    scoreGap,
+    candidates
+  };
+}
+
+function primarySyncedActivityForWorkout(date,workout){
+  return assessActivityMatch(date,workout).activity;
+}
+
 function trainingExecutionForDate(date,workout=allWorkouts()[date]||null){
-  const actual=primarySyncedActivityForWorkout(date,workout);
+  const assessment=assessActivityMatch(date,workout);
   return{
     date,
     workout,
-    actual,
-    ratio:executionVolumeRatio(workout,actual),
-    matched:Boolean(actual)
+    actual:assessment.activity,
+    ratio:assessment.ratio,
+    matched:assessment.status==="auto",
+    status:assessment.status,
+    reason:assessment.reason,
+    score:assessment.score,
+    scoreGap:assessment.scoreGap
   };
 }
 
 function completedEntryRunDistanceKm(item){
-  const actual=trainingExecutionForDate(item.date,item.workout).actual;
-  const syncedDistance=finiteNumberOrNull(actual?.distanceKm);
-  if(syncedDistance!==null) return syncedDistance;
+  const execution=trainingExecutionForDate(item.date,item.workout);
+  const marker=doneWorkouts[item.date];
+  const trusted=
+    execution.matched ||
+    (
+      marker?.source==="intervals" &&
+      marker.activityId &&
+      marker.activityId===execution.actual?.id
+    );
+
+  if(trusted){
+    const syncedDistance=finiteNumberOrNull(execution.actual?.distanceKm);
+    if(syncedDistance!==null) return syncedDistance;
+  }
+
   return finiteNumberOrNull(item.workout?.distanceKm) || 0;
 }
 
@@ -198,19 +338,19 @@ function buildAdaptiveExecutionFeedback(){
       ...item,
       execution:trainingExecutionForDate(item.date,item.workout)
     }))
-    .filter(item=>item.execution.actual);
+    .filter(item=>item.execution.matched);
 
   if(!executed.length){
     return{
       level:"unknown",
-      text:"Geen recente geplande training met een passende Intervals.icu-activiteit gevonden.",
+      text:"Geen recente, betrouwbaar gekoppelde training gevonden.",
       execution:null
     };
   }
 
   const latest=executed[0];
   const ratio=latest.execution.ratio;
-  const load=finiteNumberOrNull(latest.execution.actual.trainingLoad);
+  const load=finiteNumberOrNull(latest.execution.actual?.trainingLoad);
   let level="stable";
   let text="De laatste uitgevoerde training sluit goed aan op de planning.";
 
@@ -268,11 +408,9 @@ function reconcileSyncedCompletions({oldest=null,newest=null}={}){
 
     if(!inCoverage) return;
 
-    const actual=primarySyncedActivityForWorkout(date,workout);
-    const ratio=executionVolumeRatio(workout,actual);
-    const confidentMatch=
-      Boolean(actual) &&
-      (ratio===null || ratio>=0.35);
+    const assessment=assessActivityMatch(date,workout);
+    const actual=assessment.activity;
+    const confidentMatch=assessment.status==="auto";
     const marker=doneWorkouts[date];
 
     if(confidentMatch){
@@ -328,6 +466,251 @@ function formatSyncedActivitySummary(activity){
   return parts.join(" · ");
 }
 
+function buildActivitySyncDiagnostics(days=21){
+  const workouts=allWorkouts();
+  const rows=[];
+  const consumedActivityIds=new Set();
+
+  Object.entries(workouts)
+    .map(([date,workout])=>({
+      date,
+      workout,
+      age:calendarDayDifference(todayDateString(),date)
+    }))
+    .filter(item=>
+      item.workout &&
+      item.workout.type!=="Rest" &&
+      item.age!==null &&
+      item.age>=0 &&
+      item.age<days
+    )
+    .sort((a,b)=>b.date.localeCompare(a.date))
+    .forEach(item=>{
+      if(item.workout.type==="Race"){
+        const raceActivities=syncedActivitiesForDate(item.date);
+        raceActivities.forEach(activity=>consumedActivityIds.add(activity.id));
+
+        rows.push({
+          date:item.date,
+          workout:item.workout,
+          status:"protected",
+          reason:"Wedstrijd beschermd; geen automatische voltooiing.",
+          activity:raceActivities[0]||null,
+          ratio:raceActivities[0]
+            ?executionVolumeRatio(item.workout,raceActivities[0])
+            :null
+        });
+        return;
+      }
+
+      const assessment=assessActivityMatch(item.date,item.workout);
+      if(assessment.activity){
+        consumedActivityIds.add(assessment.activity.id);
+      }
+
+      let status=assessment.status;
+      let reason=assessment.reason;
+      const marker=doneWorkouts[item.date];
+
+      if(
+        status==="unmatched" &&
+        marker &&
+        marker.source!=="intervals" &&
+        completionMarkerMatches(marker,item.workout)
+      ){
+        status="manual";
+        reason="Handmatig voltooid; geen Intervals.icu-match gevonden.";
+      }
+
+      rows.push({
+        date:item.date,
+        workout:item.workout,
+        status,
+        reason,
+        activity:assessment.activity,
+        ratio:assessment.ratio,
+        scoreGap:assessment.scoreGap
+      });
+    });
+
+  const extras=Object.values(syncedActivities)
+    .filter(activity=>{
+      const age=calendarDayDifference(todayDateString(),activity.date);
+      return(
+        age!==null &&
+        age>=0 &&
+        age<days &&
+        !consumedActivityIds.has(activity.id)
+      );
+    })
+    .sort((a,b)=>
+      String(b.startDateLocal||b.date)
+        .localeCompare(String(a.startDateLocal||a.date))
+    );
+
+  const counts={
+    auto:rows.filter(row=>row.status==="auto").length,
+    review:rows.filter(row=>row.status==="review").length,
+    unmatched:rows.filter(row=>row.status==="unmatched").length,
+    manual:rows.filter(row=>row.status==="manual").length,
+    protected:rows.filter(row=>row.status==="protected").length,
+    extras:extras.length
+  };
+
+  return{days,rows,extras,counts};
+}
+
+function diagnosticStatusMeta(status){
+  if(status==="auto"){
+    return{cls:"good",icon:"✓",label:"Automatisch gekoppeld"};
+  }
+  if(status==="review"){
+    return{cls:"warn",icon:"!",label:"Controleren"};
+  }
+  if(status==="manual"){
+    return{cls:"good",icon:"✓",label:"Handmatig voltooid"};
+  }
+  if(status==="protected"){
+    return{cls:"good",icon:"🏁",label:"Race beschermd"};
+  }
+  return{cls:"warn",icon:"?",label:"Niet gekoppeld"};
+}
+
+function renderActivitySyncDiagnostics(){
+  const summary=document.getElementById("activitySyncCalibrationSummary");
+  const list=document.getElementById("activitySyncDiagnostics");
+  const api=document.getElementById("activitySyncApiCoverage");
+  if(!summary || !list || !api) return;
+
+  const diagnostics=buildActivitySyncDiagnostics(21);
+  const {counts}=diagnostics;
+
+  summary.textContent=
+    `${counts.auto} auto · ${counts.review} controleren · ${counts.unmatched} open`+
+    (counts.manual?` · ${counts.manual} handmatig`:"");
+
+  const raw=finiteNumberOrNull(activitySyncMeta?.rawCount);
+  const normalized=finiteNumberOrNull(activitySyncMeta?.normalizedCount);
+  const dropped=finiteNumberOrNull(activitySyncMeta?.droppedCount);
+  const coverage=activitySyncMeta?.metricsCoverage||{};
+  const typeCounts=activitySyncMeta?.typeCounts||{};
+
+  const typeText=Object.entries(typeCounts)
+    .sort((a,b)=>b[1]-a[1])
+    .map(([type,count])=>`${type} ${count}`)
+    .join(" · ");
+
+  const coverageParts=[
+    ["afstand",coverage.distanceKm],
+    ["duur",coverage.durationMinutes],
+    ["HR",coverage.averageHeartRate],
+    ["load",coverage.trainingLoad],
+    ["vermogen",coverage.weightedAverageWatts]
+  ]
+    .filter(([,value])=>finiteNumberOrNull(value)!==null)
+    .map(([label,value])=>`${label} ${value}/${normalized??"—"}`);
+
+  const apiRows=[];
+  if(raw!==null){
+    let text=`API: ${raw} ontvangen · ${normalized??"—"} bruikbaar`;
+    if(dropped) text+=` · ${dropped} overgeslagen`;
+    apiRows.push(text);
+  }else{
+    apiRows.push("API-validatie verschijnt na de volgende sync.");
+  }
+  if(typeText) apiRows.push(`Sporttypen: ${typeText}`);
+  if(coverageParts.length){
+    apiRows.push(`Meetdekking: ${coverageParts.join(" · ")}`);
+  }
+
+  api.innerHTML=apiRows
+    .map(text=>`<div>${safe(text)}</div>`)
+    .join("");
+
+  const rowHtml=diagnostics.rows.slice(0,10).map(row=>{
+    const meta=diagnosticStatusMeta(row.status);
+    const actual=row.activity
+      ?formatSyncedActivitySummary(row.activity)
+      :"Geen passende activiteit";
+    const ratio=row.ratio===null
+      ?""
+      :` · ${Math.round(row.ratio*100)}% van gepland`;
+
+    return `
+      <div class="reason-item">
+        <div class="reason-icon ${meta.cls}">${meta.icon}</div>
+        <div>
+          <strong>${safe(row.date)} · ${safe(meta.label)}</strong>
+          <div>${safe(row.workout?.name||"Training")}</div>
+          <small>${safe(actual)}${safe(ratio)} · ${safe(row.reason)}</small>
+        </div>
+      </div>
+    `;
+  });
+
+  const extraHtml=diagnostics.extras.slice(0,5).map(activity=>`
+    <div class="reason-item">
+      <div class="reason-icon warn">+</div>
+      <div>
+        <strong>${safe(activity.date)} · Extra activiteit</strong>
+        <div>${safe(formatSyncedActivitySummary(activity))}</div>
+        <small>Niet gebruikt voor een geplande training; dit kan een warming-up, extra sessie of ongeplande training zijn.</small>
+      </div>
+    </div>
+  `);
+
+  list.innerHTML=[...rowHtml,...extraHtml].join("") ||
+    '<div class="reason-item"><div class="reason-icon warn">…</div><div>Nog geen recente syncdata om te kalibreren.</div></div>';
+}
+
+function buildActivitySyncDiagnosticText(){
+  const diagnostics=buildActivitySyncDiagnostics(21);
+  const lines=[
+    "Jaco Performance 9.2.1 · Training Sync diagnose",
+    `Laatste sync: ${activitySyncMeta?.fetchedAt||"nog niet"}`,
+    `Bereik: ${activitySyncMeta?.oldest||"—"} t/m ${activitySyncMeta?.newest||"—"}`,
+    `API ontvangen/bruikbaar/overgeslagen: ${activitySyncMeta?.rawCount??"—"}/${activitySyncMeta?.normalizedCount??"—"}/${activitySyncMeta?.droppedCount??"—"}`,
+    `Kalibratie: ${diagnostics.counts.auto} automatisch, ${diagnostics.counts.review} controleren, ${diagnostics.counts.unmatched} niet gekoppeld, ${diagnostics.counts.manual} handmatig, ${diagnostics.counts.protected} races beschermd, ${diagnostics.counts.extras} extra activiteiten`,
+    ""
+  ];
+
+  diagnostics.rows.slice(0,12).forEach(row=>{
+    lines.push(
+      `${row.date} | ${row.status} | ${row.workout?.name||"Training"} | `+
+      `${row.activity?formatSyncedActivitySummary(row.activity):"geen activiteit"} | `+
+      `${row.ratio===null?"ratio —":`ratio ${Math.round(row.ratio*100)}%`} | ${row.reason}`
+    );
+  });
+
+  diagnostics.extras.slice(0,8).forEach(activity=>{
+    lines.push(
+      `${activity.date} | extra | ${formatSyncedActivitySummary(activity)}`
+    );
+  });
+
+  return lines.join("\n");
+}
+
+async function copyActivitySyncDiagnostics(){
+  const status=document.getElementById("activitySyncStatus");
+  try{
+    if(!navigator.clipboard?.writeText){
+      throw new Error("klembord is niet beschikbaar in deze browser");
+    }
+
+    await navigator.clipboard.writeText(buildActivitySyncDiagnosticText());
+    if(status){
+      status.className="status ok";
+      status.textContent="Syncdiagnose gekopieerd. Je kunt deze hier plakken voor verdere kalibratie.";
+    }
+  }catch(error){
+    if(status){
+      status.className="status error";
+      status.textContent=`Kopiëren van syncdiagnose mislukt: ${error.message}`;
+    }
+  }
+}
+
 function renderActivitySyncStatus(){
   const quality=document.getElementById("activitySyncQuality");
   const summary=document.getElementById("todayExecutionSummary");
@@ -352,11 +735,15 @@ function renderActivitySyncStatus(){
   const rows=[];
 
   if(workout && !["Rest","Race"].includes(workout.type)){
-    rows.push(
-      execution.actual
-        ?`Vandaag uitgevoerd: ${formatSyncedActivitySummary(execution.actual)}`
-        :`Vandaag gepland: ${workout.name} · nog geen passende activiteit gevonden`
-    );
+    if(execution.matched){
+      rows.push(`Vandaag uitgevoerd: ${formatSyncedActivitySummary(execution.actual)}`);
+    }else if(execution.status==="review" && execution.actual){
+      rows.push(
+        `Vandaag kandidaat gevonden, maar controle nodig: ${formatSyncedActivitySummary(execution.actual)} · ${execution.reason}`
+      );
+    }else{
+      rows.push(`Vandaag gepland: ${workout.name} · nog geen betrouwbare koppeling gevonden`);
+    }
   }else if(workout?.type==="Race"){
     const raceActivities=syncedActivitiesForDate(today);
     rows.push(
@@ -377,6 +764,8 @@ function renderActivitySyncStatus(){
   summary.innerHTML=rows
     .map(text=>`<div>${safe(text)}</div>`)
     .join("");
+
+  renderActivitySyncDiagnostics();
 }
 
 async function syncCompletedActivities({silent=false,render=true}={}){
@@ -433,7 +822,12 @@ async function syncCompletedActivities({silent=false,render=true}={}){
       fetchedAt:data.fetchedAt || new Date().toISOString(),
       oldest:data.oldest || null,
       newest:data.newest || null,
-      count:Array.isArray(data.activities)?data.activities.length:0
+      count:Array.isArray(data.activities)?data.activities.length:0,
+      rawCount:finiteNumberOrNull(data.rawCount),
+      normalizedCount:finiteNumberOrNull(data.normalizedCount),
+      droppedCount:finiteNumberOrNull(data.droppedCount),
+      typeCounts:isPlainBackupObject(data.typeCounts)?data.typeCounts:{},
+      metricsCoverage:isPlainBackupObject(data.metricsCoverage)?data.metricsCoverage:{}
     };
 
     saveActivitySyncCache();
@@ -455,8 +849,13 @@ async function syncCompletedActivities({silent=false,render=true}={}){
     }
 
     if(status && !silent){
-      status.className="status ok";
-      status.textContent=`${activitySyncMeta.count} activiteit(en) gecontroleerd en gekoppeld aan je planning.`;
+      const diagnostics=buildActivitySyncDiagnostics(21);
+      status.className=diagnostics.counts.review?"status":"status ok";
+      status.textContent=
+        `${activitySyncMeta.count} activiteit(en) geladen · `+
+        `${diagnostics.counts.auto} automatisch gekoppeld · `+
+        `${diagnostics.counts.review} controleren · `+
+        `${diagnostics.counts.extras} extra.`;
     }
 
     return{

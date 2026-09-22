@@ -97,24 +97,7 @@ export default async function handler(req,res){
   const params=new URLSearchParams({
     oldest:isoDate(oldest),
     newest:isoDate(newest),
-    limit:"300",
-    fields:[
-      "id",
-      "name",
-      "type",
-      "start_date_local",
-      "distance",
-      "moving_time",
-      "elapsed_time",
-      "total_elevation_gain",
-      "average_speed",
-      "average_heartrate",
-      "max_heartrate",
-      "icu_weighted_avg_watts",
-      "icu_training_load",
-      "icu_intensity",
-      "perceived_exertion"
-    ].join(",")
+    limit:"300"
   });
 
   const authorization=Buffer
@@ -152,10 +135,26 @@ export default async function handler(req,res){
       });
     }
 
-    const activities=(Array.isArray(body)?body:[])
-      .map(normalizeActivity)
+    if(response.status!==204 && !Array.isArray(body)){
+      return sendJson(res,502,{
+        error:"Intervals.icu gaf een onverwacht activiteitenformaat terug."
+      });
+    }
+
+    const rawActivities=Array.isArray(body)?body:[];
+    const normalized=rawActivities.map(normalizeActivity);
+    const activities=normalized
       .filter(Boolean)
       .sort((a,b)=>a.startDateLocal.localeCompare(b.startDateLocal));
+
+    const typeCounts=activities.reduce((acc,activity)=>{
+      const type=activity.type||"Unknown";
+      acc[type]=(acc[type]||0)+1;
+      return acc;
+    },{});
+
+    const coverage=key=>
+      activities.filter(activity=>activity[key]!==null).length;
 
     return sendJson(res,200,{
       ok:true,
@@ -163,6 +162,17 @@ export default async function handler(req,res){
       oldest:isoDate(oldest),
       newest:isoDate(newest),
       count:activities.length,
+      rawCount:rawActivities.length,
+      normalizedCount:activities.length,
+      droppedCount:normalized.filter(activity=>!activity).length,
+      typeCounts,
+      metricsCoverage:{
+        distanceKm:coverage("distanceKm"),
+        durationMinutes:coverage("durationMinutes"),
+        averageHeartRate:coverage("averageHeartRate"),
+        trainingLoad:coverage("trainingLoad"),
+        weightedAverageWatts:coverage("weightedAverageWatts")
+      },
       activities
     });
   }catch(error){

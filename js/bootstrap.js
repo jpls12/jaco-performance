@@ -304,6 +304,7 @@ document.getElementById("guidedTrainingNext").onclick=nextGuidedTrainingStep;
 document.getElementById("finishGuidedTraining").onclick=finishGuidedTrainingSession;
 document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
 document.getElementById("refreshActivitySync").onclick=()=>syncCompletedActivities();
+document.getElementById("copyActivitySyncDiagnostics").onclick=copyActivitySyncDiagnostics;
 document.getElementById("applyTodayAdvice").onclick=applyTodayRecommendation;
 document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
 document.getElementById("buildAdaptiveWeek").onclick=()=>{

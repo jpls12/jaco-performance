@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=920">
+  <link rel="manifest" href="/manifest.webmanifest?v=921">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/app-icon.svg">
-  <link rel="stylesheet" href="/css/app.css?v=920">
+  <link rel="stylesheet" href="/css/app.css?v=921">
 </head>
 <body>
 <main>
@@ -100,7 +100,7 @@
     </article>
 
     <article class="card">
-      <span class="v2-badge">Jaco Performance 9.2 · Training Sync & Adaptive Coach</span>
+      <span class="v2-badge">Jaco Performance 9.2.1 · Live Sync Validation</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -160,8 +160,24 @@
         <div id="todayExecutionSummary" class="data-source-list">
           <div>Uitgevoerde trainingen worden gekoppeld aan je planning.</div>
         </div>
+
+        <div class="data-integrity-head" style="margin-top:14px">
+          <span>Kalibratie · laatste 21 dagen</span>
+          <strong id="activitySyncCalibrationSummary">Nog geen diagnose</strong>
+        </div>
+        <div id="activitySyncApiCoverage" class="data-source-list">
+          <div>API-validatie verschijnt na de volgende sync.</div>
+        </div>
+        <div id="activitySyncDiagnostics" class="reason-list" style="margin-top:10px">
+          <div class="reason-item">
+            <div class="reason-icon warn">…</div>
+            <div>Nog geen recente syncdata om te kalibreren.</div>
+          </div>
+        </div>
+
         <div class="today-actions" style="margin-top:12px">
           <button id="refreshActivitySync" class="secondary" type="button">Sync trainingen</button>
+          <button id="copyActivitySyncDiagnostics" class="secondary" type="button">Kopieer diagnose</button>
         </div>
         <p id="activitySyncStatus" class="status"></p>
       </div>
@@ -1962,9 +1978,9 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=920" defer></script>
-<script src="/js/training-sync.js?v=920" defer></script>
-<script src="/js/bootstrap.js?v=920" defer></script>
+<script src="/js/app.js?v=921" defer></script>
+<script src="/js/training-sync.js?v=921" defer></script>
+<script src="/js/bootstrap.js?v=921" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
