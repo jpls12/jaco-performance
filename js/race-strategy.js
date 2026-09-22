@@ -247,14 +247,26 @@ function buildRaceStrategyEngine(race,optimizer=null){
   const expectedSeconds=
     reference.seconds ||
     finiteNumberOrNull(parseTimeToSeconds(race.targetTime));
-  const fuel=raceStrategyCarbs(
+  const genericFuel=raceStrategyCarbs(
     race.distanceKm,
     expectedSeconds
   );
-  const hydration=raceStrategyHydration(
+  const genericHydration=raceStrategyHydration(
     race.distanceKm,
     expectedSeconds
   );
+
+  const personalFuel=
+    typeof buildPersonalFuelHydrationPlan==="function"
+      ?buildPersonalFuelHydrationPlan(
+        race,
+        expectedSeconds,
+        reference.paceSeconds
+      )
+      :null;
+
+  const fuel=personalFuel?.fuel||genericFuel;
+  const hydration=personalFuel?.hydration||genericHydration;
 
   let headline="Voer gecontroleerd uit";
   let summary="Gebruik de race-referentie als anker en verdien versnelling pas in het laatste deel.";
@@ -276,6 +288,7 @@ function buildRaceStrategyEngine(race,optimizer=null){
     segments,
     fuel,
     hydration,
+    personalFuel,
     decisions:raceStrategyDecisionGates(segments),
     rpe:raceStrategyRpePlan(race.distanceKm),
     headline,
@@ -293,13 +306,15 @@ function raceStrategyPacingRows(strategy){
 function raceStrategyFuelRows(strategy){
   if(!strategy?.fuel||!strategy?.hydration) return[];
 
+  const plan=strategy.personalFuel;
+
   return[
     {
       label:"Koolhydraten",
       text:strategy.fuel.text
     },
     {
-      label:"Timing",
+      label:"Gels",
       text:strategy.fuel.timing
     },
     {
@@ -308,7 +323,11 @@ function raceStrategyFuelRows(strategy){
     },
     {
       label:"Natrium",
-      text:strategy.hydration.sodium
+      text:
+        plan?.totalSodiumMg!==null &&
+        plan?.totalSodiumMg!==undefined
+          ?`${strategy.hydration.sodium} · totaal ca. ${Math.round(plan.totalSodiumMg)} mg`
+          :strategy.hydration.sodium
     }
   ];
 }
@@ -327,6 +346,15 @@ function renderRaceStrategyEngine(strategy){
     document.getElementById("raceStrategyRpe").textContent="—";
     document.getElementById("raceStrategySplits").innerHTML="";
     document.getElementById("raceStrategyDecisions").innerHTML="";
+    if(document.getElementById("raceFuelPersonalStatus")){
+      document.getElementById("raceFuelPersonalStatus").textContent="—";
+      document.getElementById("raceFuelPersonalSummary").textContent=
+        "Vul eerst je voedingsprofiel en selecteer een wedstrijd.";
+      document.getElementById("raceFuelGelSchedule").innerHTML="";
+      document.getElementById("raceFuelDrinkSchedule").innerHTML="";
+      document.getElementById("raceFuelSodiumPlan").textContent="—";
+      document.getElementById("raceFuelWarnings").innerHTML="";
+    }
     return null;
   }
 
@@ -363,6 +391,61 @@ function renderRaceStrategyEngine(strategy){
         <span>${safe(item.text)}</span>
       </div>
     `).join("");
+
+  const plan=strategy.personalFuel;
+  if(document.getElementById("raceFuelPersonalStatus")){
+    document.getElementById("raceFuelPersonalStatus").textContent=
+      plan
+        ?plan.level==="persoonlijk"
+          ?"Persoonlijk"
+          :plan.level==="hybride"
+            ?"Hybride"
+            :"Basis"
+        :"Basis";
+
+    document.getElementById("raceFuelPersonalSummary").textContent=
+      typeof fuelHydrationPlanSummary==="function"
+        ?fuelHydrationPlanSummary(plan)
+        :"Persoonlijk profiel niet beschikbaar.";
+
+    document.getElementById("raceFuelGelSchedule").innerHTML=
+      plan?.gelSchedule?.length
+        ?plan.gelSchedule.map(gel=>`
+          <div class="race-fuel-event">
+            <strong>Gel ${gel.index}</strong>
+            <span>min ${gel.minute}</span>
+            <small>${Math.round(gel.carbs)} g koolhydraten</small>
+          </div>
+        `).join("")
+        :'<div class="race-fuel-event"><strong>Geen gels</strong><span>—</span><small>Volgens huidig profiel niet nodig of onvoldoende ingevuld.</small></div>';
+
+    document.getElementById("raceFuelDrinkSchedule").innerHTML=
+      plan?.stationSchedule?.length
+        ?plan.stationSchedule.map(station=>`
+          <div class="race-fuel-event">
+            <strong>${station.km} km</strong>
+            <span>${station.minute===null?"—":`min ${station.minute}`}</span>
+            <small>${station.ml===null?"—":`${station.ml} ml`}</small>
+          </div>
+        `).join("")
+        :'<div class="race-fuel-event"><strong>Drinkposten</strong><span>—</span><small>Vul drinkdoel en afstand tussen posten in voor een exact schema.</small></div>';
+
+    document.getElementById("raceFuelSodiumPlan").textContent=
+      plan?.sodiumMgPerHour!==null &&
+      plan?.sodiumMgPerHour!==undefined
+        ?`${Math.round(plan.sodiumMgPerHour)} mg/uur · totaal ca. ${Math.round(plan.totalSodiumMg||0)} mg${plan.capsuleEquivalent!==null&&plan.capsuleEquivalent!==undefined?` · equivalent ${plan.capsuleEquivalent} capsule${plan.capsuleEquivalent===1?"":"s"}`:""}`
+        :"Persoonlijk natriumdoel nog niet ingesteld";
+
+    document.getElementById("raceFuelWarnings").innerHTML=
+      plan?.warnings?.length
+        ?plan.warnings.map(warning=>`
+          <div class="reason-item">
+            <div class="reason-icon warn">!</div>
+            <div>${safe(warning)}</div>
+          </div>
+        `).join("")
+        :"";
+  }
 
   return strategy;
 }

@@ -2001,3 +2001,92 @@
   }
   .race-strategy-split small{grid-column:2}
 }
+
+
+/* Performance 10.3 · Personal Fuel & Hydration */
+.fuel-hydration-profile-card{
+  border-color:#3a5a69;
+}
+.fuel-profile-head{
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:flex-start;
+}
+.fuel-profile-completeness{
+  min-width:130px;
+  padding:10px;
+  border-radius:13px;
+  border:1px solid #31506f;
+  background:#0a1727;
+  text-align:right;
+}
+.fuel-profile-completeness span,
+.fuel-profile-summary span,
+.race-fuel-sodium span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+  margin-bottom:4px;
+}
+.fuel-profile-summary{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:14px 0;
+}
+.fuel-profile-summary>div{
+  padding:10px;
+  border:1px solid #29415e;
+  border-radius:12px;
+  background:#091725;
+}
+.fuel-profile-section-label{
+  margin-top:18px;
+}
+.race-personal-fuel{
+  border:1px solid #31506f;
+  border-radius:14px;
+  padding:12px;
+  background:#0a1727;
+}
+.race-personal-fuel-head h3{
+  margin:3px 0 5px;
+}
+.race-fuel-columns{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  margin-top:10px;
+}
+.race-fuel-events{
+  display:grid;
+  gap:6px;
+  margin-top:7px;
+}
+.race-fuel-event{
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:3px 8px;
+  padding:8px 9px;
+  border:1px solid #263f5b;
+  border-radius:10px;
+  background:#081522;
+}
+.race-fuel-event small{
+  grid-column:1 / -1;
+  color:var(--muted);
+}
+.race-fuel-sodium{
+  margin-top:10px;
+  padding:10px;
+  border-radius:11px;
+  border:1px solid #263f5b;
+  background:#081522;
+}
+@media(max-width:650px){
+  .fuel-profile-head{display:grid}
+  .fuel-profile-completeness{text-align:left}
+  .fuel-profile-summary{grid-template-columns:1fr}
+  .race-fuel-columns{grid-template-columns:1fr}
+}
