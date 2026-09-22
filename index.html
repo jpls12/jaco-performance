@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=950">
+  <link rel="manifest" href="/manifest.webmanifest?v=960">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/app-icon.svg">
-  <link rel="stylesheet" href="/css/app.css?v=950">
+  <link rel="stylesheet" href="/css/app.css?v=960">
 </head>
 <body>
 <main>
@@ -100,7 +100,7 @@
     </article>
 
     <article class="card">
-      <span class="v2-badge">Jaco Performance 9.5 · Adaptive Week Replanner</span>
+      <span class="v2-badge">Jaco Performance 9.6 · Training Quality Analyzer</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -255,6 +255,54 @@
           <button id="copyActivitySyncDiagnostics" class="secondary" type="button">Kopieer diagnose</button>
         </div>
         <p id="activitySyncStatus" class="status"></p>
+      </div>
+
+      <div id="trainingQualityCard" class="training-quality-card control">
+        <div class="training-quality-head">
+          <div>
+            <p class="label">Performance 9.6 · Training Quality Analyzer</p>
+            <h3 id="trainingQualityTitle">Nog geen sleuteltraining</h3>
+          </div>
+          <div class="training-quality-score">
+            <span>Kwaliteit</span>
+            <strong id="trainingQualityScore">—</strong>
+          </div>
+        </div>
+
+        <div class="training-quality-meta">
+          <div>
+            <span>Beoordeling</span>
+            <strong id="trainingQualityVerdict">Nog niet geanalyseerd</strong>
+          </div>
+          <div>
+            <span>Zekerheid</span>
+            <strong id="trainingQualityConfidence">—</strong>
+          </div>
+        </div>
+
+        <p id="trainingQualitySummary" class="help">
+          Laatste gekoppelde kwaliteit- of lange duurtraining wordt geanalyseerd.
+        </p>
+
+        <div id="trainingQualityComponents" class="training-quality-components"></div>
+
+        <details class="training-quality-details">
+          <summary>Bekijk herkende werkblokken</summary>
+          <div class="training-quality-table-head">
+            <span>Blok</span><span>Afstand</span><span>Tempo</span><span>HR</span>
+          </div>
+          <div id="trainingQualityIntervals" class="training-quality-intervals"></div>
+        </details>
+
+        <div id="trainingQualitySignals" class="reason-list"></div>
+
+        <div class="today-actions">
+          <button id="refreshTrainingQuality" class="secondary" type="button">
+            Analyseer laatste training
+          </button>
+        </div>
+
+        <p id="trainingQualityStatus" class="status"></p>
       </div>
 
       <div class="recommendation-card">
@@ -2096,12 +2144,13 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=950" defer></script>
-<script src="/js/training-sync.js?v=950" defer></script>
-<script src="/js/performance-model.js?v=950" defer></script>
-<script src="/js/daily-decision.js?v=950" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=950" defer></script>
-<script src="/js/bootstrap.js?v=950" defer></script>
+<script src="/js/app.js?v=960" defer></script>
+<script src="/js/training-sync.js?v=960" defer></script>
+<script src="/js/training-quality.js?v=960" defer></script>
+<script src="/js/performance-model.js?v=960" defer></script>
+<script src="/js/daily-decision.js?v=960" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=960" defer></script>
+<script src="/js/bootstrap.js?v=960" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

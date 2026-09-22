@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"9.5.0",
+    appVersion:"9.6.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -7293,6 +7293,7 @@ function resetGeneratedPlannerPreviews(){
 function refreshDerivedCoachViews(){
   // renderTodayCoach ververst ook Load Monitor, Performance Engine en AI-previews.
   // Houd die keten op één plek om dubbele DOM-renders op mobiel te voorkomen.
+  renderTrainingQualityAnalyzer();
   renderTodayCoach();
   renderAdaptiveWeekReplanner();
   renderCoachBrain();
