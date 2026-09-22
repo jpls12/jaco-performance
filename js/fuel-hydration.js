@@ -293,10 +293,13 @@ function fuelHydrationGelSchedule({
     };
   }
 
-  const firstMinute=Math.min(
-    20,
-    Math.max(12,Math.round(durationMinutes/(count+1)))
-  );
+  const firstMinute=
+    durationMinutes>60
+      ?20
+      :Math.min(
+        20,
+        Math.max(12,Math.round(durationMinutes/(count+1)))
+      );
   const lastMinute=Math.max(
     firstMinute,
     durationMinutes-8
@@ -394,7 +397,7 @@ function fuelHydrationStationSchedule({
 
   const mlPerStation=fuelHydrationRound(
     totalFluidMl/stations.length,
-    25
+    10
   );
 
   return{
@@ -455,10 +458,11 @@ function buildPersonalFuelHydrationPlan(
 
   const gelCarbs=
     fuelHydrationOptionalNumber(p.gelCarbsG);
-  const drinkCarbs=
+  const rawDrinkCarbs=
     fuelHydrationOptionalNumber(
       p.drinkCarbsGPerHour
-    )??0;
+    );
+  const drinkCarbs=rawDrinkCarbs??0;
 
   const gel=fuelHydrationGelSchedule({
     durationMinutes,
@@ -540,6 +544,8 @@ function buildPersonalFuelHydrationPlan(
   const personalizedFields=[
     storedTarget!==null,
     maxCarbs!==null,
+    gelCarbs!==null,
+    rawDrinkCarbs!==null,
     enteredFluid!==null,
     sweatRate!==null,
     sodiumRate!==null,
@@ -555,8 +561,14 @@ function buildPersonalFuelHydrationPlan(
         ?"hybride"
         :"basis";
 
+  const exactCarbProducts=
+    carbTarget<=drinkCarbs ||
+    gelCarbs!==null;
+
   const actualCarbsPerHour=
-    Math.round(gel.actualCarbsPerHour);
+    exactCarbProducts
+      ?Math.round(gel.actualCarbsPerHour)
+      :Math.round(carbTarget);
 
   return{
     level,
@@ -595,9 +607,11 @@ function buildPersonalFuelHydrationPlan(
       timing:
         gel.times.length
           ?`${gel.times.length} gel${gel.times.length===1?"":"s"} van ${Math.round(gelCarbs)} g rond minuut ${gel.times.join(", ")}.`
-          :carbTarget>0
-            ?"Geen afzonderlijke gels gepland op basis van de huidige invoer."
-            :"Geen koolhydraten tijdens de race nodig."
+          :carbTarget>0 && gelCarbs===null && carbTarget>drinkCarbs
+            ?"Vul koolhydraten per gel in voor een exact gelschema."
+            :carbTarget>0
+              ?"Geen afzonderlijke gels nodig op basis van de huidige drankinvoer."
+              :"Geen koolhydraten tijdens de race nodig."
     },
     hydration:{
       fluid:
