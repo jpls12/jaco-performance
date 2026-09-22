@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=922">
+  <link rel="manifest" href="/manifest.webmanifest?v=930">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/app-icon.svg">
-  <link rel="stylesheet" href="/css/app.css?v=922">
+  <link rel="stylesheet" href="/css/app.css?v=930">
 </head>
 <body>
 <main>
@@ -100,7 +100,7 @@
     </article>
 
     <article class="card">
-      <span class="v2-badge">Jaco Performance 9.2.2 · Sync Calibration</span>
+      <span class="v2-badge">Jaco Performance 9.3 · Daily Decision Engine</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -132,6 +132,46 @@
           <span>Trainingsfase</span>
           <strong id="todayPhase">—</strong>
         </div>
+      </div>
+
+      <div id="dailyDecisionCard" class="daily-decision-card control">
+        <div class="daily-decision-head">
+          <div>
+            <span id="dailyDecisionState" class="daily-decision-state control">≈ GECONTROLEERD</span>
+            <h2 id="dailyDecisionTitle">Dagbeslissing wordt opgebouwd…</h2>
+          </div>
+          <div class="daily-decision-effort">
+            <span>Doelbelasting</span>
+            <strong id="dailyDecisionEffort">—</strong>
+          </div>
+        </div>
+
+        <p id="dailyDecisionAction" class="daily-decision-action">
+          Herstel, uitvoering en planning worden gecombineerd.
+        </p>
+
+        <div class="daily-decision-metrics">
+          <div>
+            <span>Zekerheid</span>
+            <strong id="dailyDecisionConfidence">—</strong>
+          </div>
+          <div>
+            <span>Planwijziging</span>
+            <strong id="dailyDecisionChange">—</strong>
+          </div>
+          <div>
+            <span>Morgen</span>
+            <div id="dailyDecisionTomorrow" class="daily-decision-tomorrow">—</div>
+          </div>
+        </div>
+
+        <p id="dailyDecisionConfidenceText" class="help"></p>
+        <div id="dailyDecisionReasons" class="daily-decision-reasons"></div>
+
+        <details class="daily-horizon-details">
+          <summary>Bekijk komende 3 dagen</summary>
+          <div id="dailyDecisionHorizon" class="daily-horizon"></div>
+        </details>
       </div>
 
       <div id="todayReasons" class="reason-list">
@@ -1978,9 +2018,10 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=922" defer></script>
-<script src="/js/training-sync.js?v=922" defer></script>
-<script src="/js/bootstrap.js?v=922" defer></script>
+<script src="/js/app.js?v=930" defer></script>
+<script src="/js/training-sync.js?v=930" defer></script>
+<script src="/js/daily-decision.js?v=930" defer></script>
+<script src="/js/bootstrap.js?v=930" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

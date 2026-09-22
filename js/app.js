@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"9.2.2",
+    appVersion:"9.3.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -9169,8 +9169,8 @@ function buildLoadMonitor(){
   };
 }
 
-function renderLoadMonitor(){
-  const result=buildLoadMonitor();
+function renderLoadMonitor(prebuiltResult=null){
+  const result=prebuiltResult || buildLoadMonitor();
 
   const badge=document.getElementById("loadMonitorBadge");
   if(!badge) return result;
@@ -11973,6 +11973,7 @@ function renderTodayCoach(){
   const availability=todayAvailabilityInfo();
   const existing=currentTodayWorkout();
   const executionFeedback=buildAdaptiveExecutionFeedback();
+  const loadMonitor=buildLoadMonitor();
 
   pendingTodayAdvice=createTodayRecommendation(
     readiness,
@@ -12114,6 +12115,17 @@ function renderTodayCoach(){
 
   renderTodayDataSources(snapshot,readiness);
 
+  renderDailyDecisionEngine({
+    readiness,
+    race,
+    phase,
+    availability,
+    existing,
+    recommendation:pendingTodayAdvice,
+    executionFeedback,
+    loadMonitor
+  });
+
   document.getElementById("todayRecommendationTitle").textContent=
     pendingTodayAdvice.title;
 
@@ -12151,7 +12163,7 @@ function renderTodayCoach(){
   renderPerformanceEngine();
   renderAiTrainingGenerator();
   renderAiWeekPlanner();
-  renderLoadMonitor();
+  renderLoadMonitor(loadMonitor);
 }
 
 function applyTodayRecommendation(){

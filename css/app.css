@@ -1283,3 +1283,128 @@
       .guided-training-player{padding-top:calc(9px + env(safe-area-inset-top))}
       .guided-training-clock strong{font-size:2.8rem}
     }
+
+
+/* Performance 9.3 · Daily Decision Engine */
+.daily-decision-card{
+  margin:16px 0;
+  padding:16px;
+  border:1px solid #36516f;
+  border-radius:18px;
+  background:linear-gradient(180deg,#10243a,#0d1c2e);
+}
+.daily-decision-card.execute{border-color:#347a50}
+.daily-decision-card.control{border-color:#6b6040}
+.daily-decision-card.adjust{border-color:#4d76a1}
+.daily-decision-card.recover{border-color:#8a5948}
+.daily-decision-card.race{border-color:#8d4b59}
+.daily-decision-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:14px;
+}
+.daily-decision-head h2{
+  margin:9px 0 0;
+  font-size:1.3rem;
+  line-height:1.25;
+}
+.daily-decision-state{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 9px;
+  border-radius:999px;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.07em;
+}
+.daily-decision-state.execute{background:#173d2a;color:#9ce7b5;border:1px solid #2f6d49}
+.daily-decision-state.control{background:#41391f;color:#ffe09b;border:1px solid #6f5d2c}
+.daily-decision-state.adjust{background:#173553;color:#a9d5ff;border:1px solid #37658c}
+.daily-decision-state.recover{background:#4a2c25;color:#ffc0ad;border:1px solid #794b3d}
+.daily-decision-state.race{background:#4b2630;color:#ffc0cb;border:1px solid #81404f}
+.daily-decision-effort{
+  min-width:105px;
+  padding:10px;
+  border-radius:13px;
+  background:#0a1727;
+  border:1px solid #29415e;
+  text-align:right;
+}
+.daily-decision-effort span,
+.daily-decision-metrics span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+  margin-bottom:4px;
+}
+.daily-decision-action{
+  margin:14px 0;
+  line-height:1.5;
+}
+.daily-decision-metrics{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+.daily-decision-metrics>div{
+  padding:10px;
+  border-radius:13px;
+  background:#0a1727;
+  border:1px solid #263f5b;
+}
+.daily-decision-tomorrow{
+  display:grid;
+  gap:2px;
+}
+.daily-decision-tomorrow span,
+.daily-decision-tomorrow small{
+  color:var(--muted);
+}
+.daily-decision-reasons{
+  display:grid;
+  gap:7px;
+  margin-top:12px;
+}
+.daily-decision-reason{
+  display:grid;
+  grid-template-columns:14px 1fr;
+  gap:5px;
+  color:#cfdaea;
+  font-size:.88rem;
+  line-height:1.4;
+}
+.daily-decision-reason>span{color:var(--blue);font-weight:900}
+.daily-horizon-details{
+  margin-top:14px;
+  border-top:1px solid #263f5b;
+  padding-top:12px;
+}
+.daily-horizon-details summary{
+  cursor:pointer;
+  color:#bad7f4;
+  font-weight:800;
+}
+.daily-horizon{
+  display:grid;
+  gap:7px;
+  margin-top:10px;
+}
+.daily-horizon-row{
+  display:grid;
+  grid-template-columns:88px 1fr auto;
+  gap:9px;
+  align-items:center;
+  padding:9px 0;
+  border-top:1px solid #21364f;
+}
+.daily-horizon-row span,
+.daily-horizon-row small{color:var(--muted)}
+@media(max-width:650px){
+  .daily-decision-head{display:grid;grid-template-columns:1fr}
+  .daily-decision-effort{text-align:left}
+  .daily-decision-metrics{grid-template-columns:1fr 1fr}
+  .daily-decision-metrics>div:last-child{grid-column:1/-1}
+  .daily-horizon-row{grid-template-columns:78px 1fr}
+  .daily-horizon-row small{grid-column:2}
+}

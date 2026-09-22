@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**9.2.2 · Sync Calibration**
+**9.3 · Daily Decision Engine**
 
-9.2.2 verwerkt de eerste echte syncdiagnose: racedagen kiezen de meest waarschijnlijke wedstrijdactiviteit in plaats van een warming-up, de lopende dag vervuilt de historische kalibratie niet en handmatig voltooide twijfelgevallen worden correct als handmatig weergegeven.
+9.3 maakt van het Vandaag-scherm een centrale coachbeslissing. Herstel, werkelijke uitvoering, belastbaarheid, beschikbaarheid, wedstrijdfase en bestaande planning worden samengebracht in één status met doelbelasting, zekerheid en een korte vooruitblik.
 
 ## Architectuur
 
@@ -16,6 +16,7 @@ De app is bewust licht opgebouwd:
 - `css/app.css` — responsive/mobile styling
 - `js/app.js` — state, planners, coachlogica en rendering
 - `js/training-sync.js` — koppeling uitgevoerd ↔ gepland en adaptieve feedback
+- `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
 - `js/bootstrap.js` — event handlers en initialisatie
 - `api/workouts.js` — publieke vaste workouts
 - `api/upload-workout.js` — export naar Intervals.icu
@@ -106,6 +107,15 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 9.3 Daily Decision Engine
+
+- Eén centrale dagstatus: Uitvoeren, Gecontroleerd, Aanpassen, Herstellen of Race.
+- Combineert actuele hersteldata, belastbaarheidsmonitor, Training Sync, beschikbaarheid, wedstrijd en fase.
+- Laat doelbelasting/RPE en een expliciete planwijzigingsstatus zien.
+- Geeft een zekerheidsniveau zodat ontbrekende data niet als stellig coachadvies wordt gepresenteerd.
+- Toont morgen direct en een inklapbare 3-daagse kalenderblik.
+- De Decision Engine wijzigt de kalender niet zelfstandig; toepassen blijft via de bestaande bevestigde coachactie verlopen.
 
 ## 9.2.2 Sync Calibration
 
