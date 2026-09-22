@@ -1920,3 +1920,84 @@
   .race-readiness-score{text-align:left}
   .race-readiness-grid{grid-template-columns:1fr}
 }
+
+
+/* Performance 10.2 · Race Strategy Engine */
+.race-strategy-engine{
+  margin:16px 0;
+  padding:16px;
+  border:1px solid #31506f;
+  border-radius:18px;
+  background:#0c1a2b;
+}
+.race-strategy-head h3{margin:4px 0}
+.race-strategy-metrics{
+  display:grid;
+  grid-template-columns:1fr 1fr 1.4fr;
+  gap:8px;
+  margin:12px 0 16px;
+}
+.race-strategy-metrics>div{
+  padding:10px;
+  border:1px solid #29415e;
+  border-radius:12px;
+  background:#091725;
+}
+.race-strategy-metrics span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+  margin-bottom:4px;
+}
+.race-strategy-section{
+  margin-top:14px;
+  border-top:1px solid #263f5b;
+  padding-top:12px;
+}
+.race-strategy-table-head,
+.race-strategy-split{
+  display:grid;
+  grid-template-columns:1fr .9fr .9fr .9fr .9fr;
+  gap:8px;
+  align-items:center;
+}
+.race-strategy-table-head{
+  color:var(--muted);
+  font-size:.7rem;
+  padding:4px 6px 7px;
+}
+.race-strategy-split{
+  padding:10px 6px;
+  border-top:1px solid #20364f;
+}
+.race-strategy-split span,
+.race-strategy-split small{
+  color:#c9d8ea;
+  font-size:.82rem;
+}
+.race-strategy-decisions{
+  display:grid;
+  gap:8px;
+}
+.race-strategy-decision{
+  display:grid;
+  gap:4px;
+  padding:10px;
+  border-radius:12px;
+  border:1px solid #29415e;
+  background:#091725;
+}
+.race-strategy-decision span{
+  color:#c9d8ea;
+  line-height:1.4;
+  font-size:.84rem;
+}
+@media(max-width:720px){
+  .race-strategy-metrics{grid-template-columns:1fr}
+  .race-strategy-table-head{display:none}
+  .race-strategy-split{
+    grid-template-columns:1fr 1fr;
+    gap:5px 10px;
+  }
+  .race-strategy-split small{grid-column:2}
+}
