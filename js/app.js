@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"9.2.0",
+    appVersion:"9.2.1",
     createdAt:new Date().toISOString(),
     data
   };

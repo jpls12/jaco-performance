@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**9.2 · Training Sync & Adaptive Coach**
+**9.2.1 · Live Sync Validation & Calibration**
 
-9.2 sluit de trainingslus: uitgevoerde Intervals.icu-activiteiten worden teruggelezen, veilig aan de planning gekoppeld en gebruikt voor voltooidstatus, werkelijk loopvolume en adaptieve coaching. Wedstrijden blijven beschermd.
+9.2.1 kalibreert de live Training Sync voordat de coach verder wordt geautomatiseerd. Alleen sterke, niet-ambigue matches worden automatisch afgevinkt; twijfelgevallen blijven zichtbaar als 'controleren'. De app toont daarnaast API-dekking, extra activiteiten en een kopieerbare syncdiagnose.
 
 ## Architectuur
 
@@ -106,6 +106,16 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 9.2.1 Live Sync Validation & Calibration
+
+- Automatische voltooiing vereist nu 70–160% van het geplande volume en een niet-ambigue beste match.
+- Ontbrekende volume-informatie, te kleine/grote afwijkingen en bijna gelijke kandidaten worden als **Controleren** getoond.
+- Alleen vertrouwde matches leveren werkelijk loopvolume aan de belastbaarheidsmonitor.
+- De app toont een 21-daagse kalibratielijst met automatisch gekoppelde, open, handmatig voltooide, beschermde en extra activiteiten.
+- De Intervals.icu-route rapporteert hoeveel records ontvangen, bruikbaar en overgeslagen zijn plus dekking van afstand, duur, hartslag, load en vermogen.
+- De activities-aanvraag gebruikt alleen de kernparameters `oldest`, `newest` en `limit`.
+- Een kopieerbare diagnose maakt verdere kalibratie mogelijk zonder API-key of app-pincode te delen.
 
 ## 9.2 Training Sync & Adaptive Coach
 
