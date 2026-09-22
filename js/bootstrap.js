@@ -303,6 +303,7 @@ document.getElementById("guidedTrainingPause").onclick=toggleGuidedTrainingPause
 document.getElementById("guidedTrainingNext").onclick=nextGuidedTrainingStep;
 document.getElementById("finishGuidedTraining").onclick=finishGuidedTrainingSession;
 document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
+document.getElementById("refreshActivitySync").onclick=()=>syncCompletedActivities();
 document.getElementById("applyTodayAdvice").onclick=applyTodayRecommendation;
 document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
 document.getElementById("buildAdaptiveWeek").onclick=()=>{
@@ -476,6 +477,17 @@ async function initializeJacoPerformance(){
     console.error(
       "Wellnessdata laden mislukt:",
       wellnessResult.error
+    );
+  }
+
+  const activitySyncResult=await syncCompletedActivities({
+    silent:true,
+    render:true
+  });
+  if(!activitySyncResult.ok){
+    console.error(
+      "Training Sync laden mislukt:",
+      activitySyncResult.error
     );
   }
 

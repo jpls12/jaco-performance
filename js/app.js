@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"9.1.1",
+    appVersion:"9.2.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -8801,7 +8801,7 @@ function runKmFromEntries(entries){
   return entries
     .filter(item=>isRunLikeWorkout(item.workout))
     .reduce(
-      (sum,item)=>sum+(Number(item.workout.distanceKm)||0),
+      (sum,item)=>sum+completedEntryRunDistanceKm(item),
       0
     );
 }
@@ -8910,7 +8910,7 @@ function buildLoadMonitor(){
 
   const runEntries7=last7.filter(item=>isRunLikeWorkout(item.workout));
   const longestRunKm=runEntries7.length
-    ?Math.max(...runEntries7.map(item=>Number(item.workout.distanceKm)||0))
+    ?Math.max(...runEntries7.map(completedEntryRunDistanceKm))
     :null;
 
   const longRunShare=
@@ -11232,7 +11232,7 @@ function phaseLabel(phase){
   return labels[phase] || phase;
 }
 
-function createTodayRecommendation(readiness,race,phase,availability,currentWorkout){
+function createTodayRecommendation(readiness,race,phase,availability,currentWorkout,executionFeedback=null){
   const date=todayDateString();
 
   if(currentWorkout?.type==="Race"){
@@ -11337,7 +11337,7 @@ Recovery
     };
   }
 
-  if(loadMonitor.level==="elevated"){
+  if(loadMonitor.level==="elevated" || executionFeedback?.level==="elevated"){
     const currentIsLowLoad=
       currentWorkout &&
       !isHardWorkout(currentWorkout) &&
@@ -11349,7 +11349,7 @@ Recovery
         kind:"keep",
         workout:currentWorkout,
         title:currentWorkout.name,
-        text:"De belastbaarheidsmonitor staat op verhoogd, maar je geplande training is al rustig. Houd hem bewust gemakkelijk en voeg geen extra volume toe.",
+        text:"De belastbaarheid staat verhoogd door de monitor of Training Sync, maar je geplande training is al rustig. Houd hem bewust gemakkelijk en voeg geen extra volume toe.",
         steps:currentWorkout.displaySteps||[]
       };
     }
@@ -11378,7 +11378,7 @@ Recovery
       kind:currentWorkout?"replace":"new",
       workout,
       title:`Herstelloop ${km} km`,
-      text:"De belastbaarheidsmonitor geeft een verhoogd signaal. Daarom wordt een zware trainingsprikkel vandaag vervangen door een rustige herstelprikkel.",
+      text:"De belastbaarheidsmonitor of Training Sync geeft een verhoogd signaal. Daarom wordt een zware trainingsprikkel vandaag vervangen door een rustige herstelprikkel.",
       steps:workout.displaySteps
     };
   }
@@ -11458,7 +11458,9 @@ Recovery
       kind:"keep",
       workout:currentWorkout,
       title:currentWorkout.name,
-      text:"De geplande training past bij je herstelstatus. Voer hem uit zoals gepland en gebruik je gevoel als laatste controle.",
+      text:executionFeedback?.level==="attention"
+        ?`De geplande training blijft staan. Training Sync geeft wel aandacht: ${executionFeedback.text}`
+        :"De geplande training past bij je herstelstatus. Voer hem uit zoals gepland en gebruik je gevoel als laatste controle.",
       steps:currentWorkout.displaySteps||[]
     };
   }
@@ -11970,13 +11972,15 @@ function renderTodayCoach(){
   const phase=seasonPhaseToLegacyPhase(currentSeasonBlock,race);
   const availability=todayAvailabilityInfo();
   const existing=currentTodayWorkout();
+  const executionFeedback=buildAdaptiveExecutionFeedback();
 
   pendingTodayAdvice=createTodayRecommendation(
     readiness,
     race,
     phase,
     availability,
-    existing
+    existing,
+    executionFeedback
   );
 
   const score=document.getElementById("coachScore");
@@ -12059,6 +12063,22 @@ function renderTodayCoach(){
   }
 
 
+  if(executionFeedback.level!=="unknown"){
+    reasonRows.push({
+      cls:executionFeedback.level==="stable"
+        ?"good"
+        :executionFeedback.level==="attention"
+          ?"warn"
+          :"bad",
+      icon:executionFeedback.level==="stable"
+        ?"✓"
+        :executionFeedback.level==="attention"
+          ?"!"
+          :"×",
+      text:`Training Sync: ${executionFeedback.text}`
+    });
+  }
+
   const diary=buildDiaryContext();
   if(diary.level!=="unknown"){
     reasonRows.push({
@@ -12127,6 +12147,7 @@ function renderTodayCoach(){
           :"Plan advies voor vandaag";
 
   renderCurrentTodayWorkout(existing);
+  renderActivitySyncStatus();
   renderPerformanceEngine();
   renderAiTrainingGenerator();
   renderAiWeekPlanner();
@@ -12178,17 +12199,30 @@ async function refreshTodayCoach(){
   status.className="status";
   status.textContent="Hersteldata wordt vernieuwd…";
 
-  const result=await loadWellnessDashboard();
+  const wellnessResult=await loadWellnessDashboard();
+  const activityResult=await syncCompletedActivities({
+    silent:true,
+    render:true
+  });
 
-  if(result.ok){
+  if(wellnessResult.ok && activityResult.ok){
     status.className="status ok";
-    status.textContent="Coachadvies is bijgewerkt.";
+    status.textContent="Coachadvies, hersteldata en uitgevoerde trainingen zijn bijgewerkt.";
+    return;
+  }
+
+  if(wellnessResult.ok || activityResult.ok){
+    status.className="status";
+    status.textContent=
+      wellnessResult.ok
+        ?"Hersteldata is bijgewerkt; Training Sync kon niet worden vernieuwd."
+        :"Training Sync is bijgewerkt; actuele wellnessdata kon niet worden vernieuwd.";
     return;
   }
 
   status.className="status error";
   status.textContent=
-    `Wellnessdata kon niet worden vernieuwd: ${result.error?.message || "onbekende fout"}. Bestaande lokale planning blijft beschikbaar.`;
+    `Coachdata kon niet worden vernieuwd. Wellness: ${wellnessResult.error?.message || "onbekend"} · Training Sync: ${activityResult.error?.message || "onbekend"}. Lokale planning blijft beschikbaar.`;
 }
 
 
