@@ -1,0 +1,19 @@
+{
+  "name": "Jaco Performance",
+  "short_name": "Jaco",
+  "description": "Persoonlijke running coach en trainingsplanner.",
+  "start_url": "/?source=app",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#07111f",
+  "theme_color": "#07111f",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
