@@ -1408,3 +1408,99 @@
   .daily-horizon-row{grid-template-columns:78px 1fr}
   .daily-horizon-row small{grid-column:2}
 }
+
+
+/* Performance 9.4 · Performance Model */
+.performance-model-card{
+  border-color:#31506f;
+}
+.performance-model-head{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  align-items:flex-start;
+}
+.performance-model-head h2{margin-bottom:6px}
+.performance-model-confidence{
+  min-width:150px;
+  background:#0b1929;
+  border:1px solid #294866;
+  border-radius:14px;
+  padding:11px;
+  text-align:right;
+}
+.performance-model-confidence span,
+.performance-model-meta span{
+  display:block;
+  color:var(--muted);
+  font-size:.72rem;
+  margin-bottom:4px;
+}
+.performance-model-meta{
+  display:grid;
+  grid-template-columns:1fr 2fr;
+  gap:9px;
+  margin:14px 0;
+}
+.performance-model-meta>div{
+  background:#0b1929;
+  border:1px solid #253e59;
+  border-radius:13px;
+  padding:11px;
+}
+.performance-model-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:9px;
+  margin-top:13px;
+}
+.performance-model-prediction{
+  background:#0a1727;
+  border:1px solid #29435f;
+  border-radius:15px;
+  padding:12px;
+  display:grid;
+  gap:5px;
+}
+.performance-model-distance{
+  color:var(--blue);
+  font-size:.78rem;
+  font-weight:900;
+}
+.performance-model-prediction>strong{
+  font-size:1.35rem;
+}
+.performance-model-prediction>span{
+  color:#dce8f8;
+  font-weight:800;
+}
+.performance-model-prediction>small{
+  color:var(--muted);
+  line-height:1.35;
+}
+.performance-model-prediction>em{
+  color:#8ea6c0;
+  font-size:.72rem;
+  line-height:1.35;
+  font-style:normal;
+  margin-top:3px;
+}
+.performance-model-details{
+  margin-top:14px;
+  border-top:1px solid #263d57;
+  padding-top:12px;
+}
+.performance-model-details summary{
+  cursor:pointer;
+  color:#bad7f4;
+  font-weight:800;
+}
+@media(max-width:760px){
+  .performance-model-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:560px){
+  .performance-model-head{display:grid}
+  .performance-model-confidence{text-align:left}
+  .performance-model-meta{grid-template-columns:1fr}
+  .performance-model-grid{grid-template-columns:1fr}
+}
