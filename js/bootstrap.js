@@ -100,6 +100,10 @@ async function handleInstallApp(){
     return;
   }
 
+  // Sluit de mobiele sheet vóór een browser- of iOS-installatiestap.
+  // Zo blijft er na de installprompt geen onzichtbare overlay boven de app staan.
+  closeAppMenu();
+
   if(deferredPwaInstallPrompt){
     deferredPwaInstallPrompt.prompt();
     const choice=await deferredPwaInstallPrompt.userChoice;
@@ -123,7 +127,6 @@ async function handleInstallApp(){
       :"Open het browsermenu en kies ‘Installeren’ of ‘Toevoegen aan beginscherm’.";
   }
 
-  closeAppMenu();
   banner?.scrollIntoView({behavior:"smooth",block:"start"});
 }
 
@@ -258,10 +261,7 @@ document.getElementById("showMobilityRecipe").onclick=()=>renderVisualWorkout("m
 document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
-document.getElementById("refreshLoadMonitor").onclick=()=>{
-  renderLoadMonitor();
-  renderTodayCoach();
-};
+document.getElementById("refreshLoadMonitor").onclick=renderTodayCoach;
 document.getElementById("coachDiaryForm").onsubmit=saveCoachDiary;
 document.getElementById("diaryDate").onchange=event=>{
   renderCoachDiary(event.target.value);

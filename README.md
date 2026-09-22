@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**9.1 · Daily Training Experience**
+**9.1.1 · Stability & Cleanup**
 
-Deze release bouwt voort op de afgeronde stabilisatie-audit en 9.0 Mobile App Experience. Vandaag is nu een echte trainingshub met weekstrip, trainingskaart, status, trainingsstappen en een begeleide fullscreen sessie die afronding direct koppelt aan het Coach Dagboek.
+Deze patch stabiliseert de bestaande 9.1-codebasis zonder nieuwe functies toe te voegen. De focus ligt op data-integriteit, consistente voltooidstatus, robuuste backupfoutafhandeling, mobiele/PWA-gedragingen en minder dubbel renderwerk.
 
 ## Architectuur
 
@@ -139,3 +139,14 @@ de bestaande modules.
 - Fullscreen begeleide sessie toont trainingsonderdelen, voortgang en verstreken tijd.
 - De sessie houdt waar mogelijk het scherm actief, maar gebruikt geen GPS; live tempo en afstand blijven op het sporthorloge.
 - Afronden gebruikt dezelfde completion-identiteit als kalender en belastbaarheidsmonitor en opent daarna het Coach Dagboek.
+
+
+## 9.1.1 Stability & Cleanup
+
+- Ontbrekende numerieke waarden blijven onbekend in volume-, metric- en scorehelpers in plaats van stilzwijgend als 0 te worden behandeld.
+- De actuele datum blijft de bron voor `selectedDate`; de bestaande daggrenscorrectie blijft actief voor lang geopende PWA-sessies.
+- Afgeleide coachpanelen worden niet meer dubbel gerenderd tijdens één refresh.
+- Een begeleide trainingssessie kan alleen de workout afronden waarmee de sessie daadwerkelijk is gestart; wijzigingen in de kalender tijdens de sessie blokkeren afronding.
+- Backup-export vangt ook fouten tijdens het verzamelen van lokale opslag af.
+- De mobiele installatiestroom sluit het app-menu vóór de browserinstallatieprompt.
+- Cache- en assetversies zijn verhoogd naar 9.1.1.
