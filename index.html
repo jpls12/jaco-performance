@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1030">
+  <link rel="manifest" href="/manifest.webmanifest?v=1040">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/app-icon.svg">
-  <link rel="stylesheet" href="/css/app.css?v=1030">
+  <link rel="stylesheet" href="/css/app.css?v=1040">
 </head>
 <body>
 <main>
@@ -100,7 +100,7 @@
     </article>
 
     <article class="card">
-      <span class="v2-badge">Jaco Performance 10.3 · Personal Fuel & Hydration</span>
+      <span class="v2-badge">Jaco Performance 10.4 · Race Day Mode</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -1819,6 +1819,49 @@
         </p>
       </div>
 
+      <div id="raceDaySummaryCard" class="race-day-summary-card">
+        <div class="race-day-summary-head">
+          <div>
+            <p class="label">Performance 10.4 · Race Day Checklist & Live Card</p>
+            <h3 id="raceDaySummaryRace">Geen wedstrijd</h3>
+          </div>
+          <span id="raceDaySummaryMode" class="race-day-mode-badge">PREVIEW</span>
+        </div>
+
+        <div class="race-day-summary-grid">
+          <div>
+            <span>Checklist</span>
+            <strong id="raceDayChecklistProgress">—</strong>
+          </div>
+          <div>
+            <span>Openingspace</span>
+            <strong id="raceDayOpeningPace">—</strong>
+          </div>
+          <div>
+            <span>Voeding snel</span>
+            <strong id="raceDayFuelQuick">—</strong>
+          </div>
+        </div>
+
+        <div id="raceDayChecklist" class="race-day-checklist">
+          <p class="help">Selecteer eerst een wedstrijd.</p>
+        </div>
+
+        <div class="today-actions">
+          <button id="openRaceDayMode" type="button" disabled>
+            Open Race Mode
+          </button>
+          <button id="resetRaceDayChecklist" class="secondary" type="button" disabled>
+            Reset checklist
+          </button>
+        </div>
+
+        <p class="engine-disclaimer">
+          Race Mode toont een geplande positie op basis van verstreken tijd en het
+          10.2-tempo. Het gebruikt geen GPS en vervangt je horloge of parcoursmarkeringen niet.
+        </p>
+      </div>
+
       <div id="raceSimSignals" class="reason-list"></div>
 
       <div class="race-sim-section">
@@ -2397,17 +2440,87 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=1030" defer></script>
-<script src="/js/training-sync.js?v=1030" defer></script>
-<script src="/js/training-quality.js?v=1030" defer></script>
-<script src="/js/performance-model.js?v=1030" defer></script>
-<script src="/js/race-readiness.js?v=1030" defer></script>
-<script src="/js/fuel-hydration.js?v=1030" defer></script>
-<script src="/js/race-strategy.js?v=1030" defer></script>
-<script src="/js/daily-decision.js?v=1030" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1030" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1030" defer></script>
-<script src="/js/bootstrap.js?v=1030" defer></script>
+<section id="raceDayOverlay" class="race-day-overlay" hidden aria-hidden="true">
+  <div class="race-day-live-shell">
+    <div class="race-day-live-top">
+      <div>
+        <span id="raceDayLiveStatus" class="race-day-live-status">PREVIEW</span>
+        <h2 id="raceDayLiveRaceName">Race</h2>
+      </div>
+      <button id="closeRaceDayMode" class="secondary" type="button">Sluiten</button>
+    </div>
+
+    <div class="race-day-live-clock">
+      <span>Verstreken</span>
+      <strong id="raceDayLiveClock">00:00</strong>
+    </div>
+
+    <div class="race-day-live-grid">
+      <div>
+        <span>Geplande positie</span>
+        <strong id="raceDayLiveDistance">—</strong>
+        <small id="raceDayLiveDistanceNote">geen GPS</small>
+      </div>
+      <div>
+        <span>Huidige fase</span>
+        <strong id="raceDayLivePhase">—</strong>
+        <small id="raceDayLivePace">—</small>
+      </div>
+      <div>
+        <span>HR-guardrail</span>
+        <strong id="raceDayLiveHr">—</strong>
+        <small>controle, geen absolute target</small>
+      </div>
+    </div>
+
+    <div class="race-day-live-next">
+      <article>
+        <span>Volgende gel</span>
+        <strong id="raceDayNextGel">—</strong>
+        <small id="raceDayNextGelWhen">—</small>
+      </article>
+      <article>
+        <span>Volgende drankpost</span>
+        <strong id="raceDayNextDrink">—</strong>
+        <small id="raceDayNextDrinkWhen">—</small>
+      </article>
+      <article class="decision">
+        <span>Volgend beslismoment</span>
+        <strong id="raceDayNextDecision">—</strong>
+        <p id="raceDayNextDecisionText">—</p>
+        <small id="raceDayNextDecisionWhen">—</small>
+      </article>
+    </div>
+
+    <div class="race-day-live-actions">
+      <button id="startRaceDayClock" type="button">Start raceklok</button>
+      <button id="finishRaceDayClock" class="secondary" type="button" disabled>
+        Stop raceklok
+      </button>
+      <button id="resetRaceDayClock" class="secondary" type="button">
+        Reset klok
+      </button>
+    </div>
+
+    <p class="race-day-live-note">
+      Gebruik je parcoursmarkeringen en horloge voor werkelijke afstand. Deze kaart
+      vertelt alleen wat volgens jouw geplande tijdlijn nu aan de beurt hoort te zijn.
+    </p>
+  </div>
+</section>
+
+<script src="/js/app.js?v=1040" defer></script>
+<script src="/js/training-sync.js?v=1040" defer></script>
+<script src="/js/training-quality.js?v=1040" defer></script>
+<script src="/js/performance-model.js?v=1040" defer></script>
+<script src="/js/race-readiness.js?v=1040" defer></script>
+<script src="/js/fuel-hydration.js?v=1040" defer></script>
+<script src="/js/race-strategy.js?v=1040" defer></script>
+<script src="/js/race-day.js?v=1040" defer></script>
+<script src="/js/daily-decision.js?v=1040" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1040" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1040" defer></script>
+<script src="/js/bootstrap.js?v=1040" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

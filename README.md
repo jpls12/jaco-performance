@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.3 · Personal Fuel & Hydration Profile**
+**10.4 · Race Day Checklist & Live Race Card**
 
-10.3 personaliseert het 10.2-raceplan met eigen koolhydraattolerantie, gelgrootte, zweetverlies, drinkdoel, natrium en drankpostafstand. De app rekent daar exacte gelminuten, ml per post en natriumtotalen uit en valt per ontbrekend veld terug op de bestaande veilige basisrange.
+10.4 maakt van de Race Strategy een praktische racedagweergave: een afvinkbare checklist en een fullscreen Race Mode met startklok, huidige geplande fase, tempo/HR-guardrail, volgende gel, volgende drankpost en volgend beslismoment.
 
 ## Architectuur
 
@@ -21,6 +21,7 @@ De app is bewust licht opgebouwd:
 - `js/race-readiness.js` — race readiness, geloofwaardige raceband en doeltempo-optimalisatie
 - `js/fuel-hydration.js` — persoonlijk voedings-/zweetprofiel en exacte race-innameplanning
 - `js/race-strategy.js` — pacingfasen, HR-guardrails, voeding en racedagbeslismomenten
+- `js/race-day.js` — afvinkbare racedagchecklist, persistente raceklok en fullscreen live racekaart
 - `js/daily-decision.js` — centrale dagbeslissing en 3-daagse vooruitblik
 - `js/adaptive-week-replanner.js` — herschikking van de resterende week na gemiste/afwijkende training of herstelwijziging
 - `js/fully-adaptive-coach.js` — centrale 10.0-coachstaat, prioriteit, veranderlog en doelontwikkeling
@@ -114,6 +115,18 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 10.4 Race Day Checklist & Live Race Card
+
+- Bouwt automatisch een checklist uit wedstrijdmateriaal, pacing en het persoonlijke 10.3-voedingsplan.
+- Checkliststatus wordt per wedstrijd lokaal bewaard en gaat via de bestaande `jp_`-backup mee.
+- Fullscreen Race Mode met persistente startklok; herladen van de pagina verliest een lopende klok niet.
+- Toont huidige geplande racefase, segmentpace en HR-guardrail.
+- Toont volgende gel en resterende minuten tot die gel.
+- Toont volgende drankpost, geplande ml en resterende minuten.
+- Toont het volgende 10.2-beslismoment met concrete instructie.
+- Schat alleen de **geplande** positie uit tijd + pacing; Race Mode gebruikt geen GPS en presenteert dit expliciet niet als werkelijke afstand.
+- Raceklok kan handmatig worden gestart, gestopt en gereset.
 
 ## 10.3 Personal Fuel & Hydration Profile
 
