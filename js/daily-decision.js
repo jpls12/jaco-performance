@@ -125,26 +125,34 @@ function buildDailyDecision({
     state="race";
     title=`Wedstrijddag: ${existing.name}`;
     action="Voer de wedstrijd uit zoals gepland. Training Sync verandert de wedstrijdstatus niet automatisch.";
-  }else if(
-    recommendation?.kind==="rest" ||
-    readiness?.level==="low" ||
-    loadMonitor?.level==="elevated" ||
-    executionFeedback?.level==="elevated"
-  ){
+  }else if(recommendation?.kind==="rest"){
     state="recover";
     title=targetWorkout
       ?`Herstelprioriteit: ${targetWorkout.name}`
       :"Herstel heeft vandaag prioriteit";
   }else if(recommendation?.kind==="replace"){
-    state="adjust";
+    const recoveryReplacement=
+      String(targetWorkout?.planType||"").toLowerCase()==="recovery" ||
+      targetWorkout?.type==="Mobility" ||
+      (
+        decisionRpeValue(targetWorkout)!==null &&
+        decisionRpeValue(targetWorkout)<=3
+      );
+
+    state=recoveryReplacement?"recover":"adjust";
     title=targetWorkout
-      ?`Pas vandaag aan naar: ${targetWorkout.name}`
+      ?recoveryReplacement
+        ?`Herstelprioriteit: ${targetWorkout.name}`
+        :`Pas vandaag aan naar: ${targetWorkout.name}`
       :"Pas de training van vandaag aan";
   }else if(
+    readiness?.level==="low" ||
     readiness?.level==="moderate" ||
     readiness?.level==="unknown" ||
+    loadMonitor?.level==="elevated" ||
     loadMonitor?.level==="attention" ||
     loadMonitor?.level==="unknown" ||
+    executionFeedback?.level==="elevated" ||
     executionFeedback?.level==="attention" ||
     confidence.level==="limited"
   ){
