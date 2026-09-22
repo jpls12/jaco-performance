@@ -4,14 +4,39 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#07111f">
+  <meta name="application-name" content="Jaco Performance">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Jaco Performance">
+  <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="stylesheet" href="/css/app.css?v=836">
+  <link rel="manifest" href="/manifest.webmanifest?v=900">
+  <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/icons/app-icon.svg">
+  <link rel="stylesheet" href="/css/app.css?v=900">
 </head>
 <body>
 <main>
   <p class="eyebrow">Persoonlijke running coach</p>
   <h1>Jaco Performance</h1>
   <p class="subtitle" id="greeting">Hallo Jaco</p>
+
+  <aside id="installAppBanner" class="install-app-banner" hidden>
+    <div>
+      <strong>Jaco Performance als app gebruiken</strong>
+      <p id="installAppText">
+        Zet de app op je beginscherm voor een volledig scherm en snellere toegang.
+      </p>
+      <p id="installAppInstructions" class="install-app-instructions" hidden>
+        iPhone: tik in Safari op Deel ⬆︎ → Zet op beginscherm → Voeg toe.
+      </p>
+    </div>
+    <div class="install-app-actions">
+      <button id="installAppButton" type="button">Installeer</button>
+      <button id="dismissInstallApp" class="secondary" type="button" aria-label="Installatiemelding sluiten">Later</button>
+    </div>
+  </aside>
 
   <nav class="tabs" aria-label="Hoofdnavigatie">
     <button type="button" class="tab active" data-view="today">Vandaag</button>
@@ -29,7 +54,7 @@
 
   <section id="today" class="view active">
     <article class="card">
-      <span class="v2-badge">Jaco Performance 8.3.6 · Final Audit</span>
+      <span class="v2-badge">Jaco Performance 9.0 · Mobile App Experience</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -1767,6 +1792,65 @@
   </section>
 </main>
 
+
+<nav class="mobile-bottom-nav" aria-label="Mobiele hoofdnavigatie">
+  <button type="button" class="mobile-nav-button active" data-mobile-view="today" aria-current="page">
+    <span class="mobile-nav-icon" aria-hidden="true">⌂</span>
+    <span>Vandaag</span>
+  </button>
+  <button type="button" class="mobile-nav-button" data-mobile-view="calendar">
+    <span class="mobile-nav-icon" aria-hidden="true">▦</span>
+    <span>Kalender</span>
+  </button>
+  <button type="button" class="mobile-nav-button" data-mobile-view="races">
+    <span class="mobile-nav-icon" aria-hidden="true">◎</span>
+    <span>Wedstrijden</span>
+  </button>
+  <button type="button" class="mobile-nav-button" data-mobile-view="planning">
+    <span class="mobile-nav-icon" aria-hidden="true">≡</span>
+    <span>Planning</span>
+  </button>
+  <button id="openAppMenu" type="button" class="mobile-nav-button">
+    <span class="mobile-nav-icon" aria-hidden="true">•••</span>
+    <span>Meer</span>
+  </button>
+</nav>
+
+<div id="appMenuBackdrop" class="app-menu-backdrop" hidden>
+  <section class="app-menu-sheet" role="dialog" aria-modal="true" aria-labelledby="appMenuTitle">
+    <div class="app-menu-handle" aria-hidden="true"></div>
+    <div class="app-menu-head">
+      <div>
+        <p class="label">Jaco Performance</p>
+        <h2 id="appMenuTitle">Meer</h2>
+      </div>
+      <button id="closeAppMenu" class="secondary app-menu-close" type="button" aria-label="Menu sluiten">Sluiten</button>
+    </div>
+
+    <div class="app-menu-grid">
+      <button type="button" class="app-menu-item" data-menu-view="dashboard">
+        <span aria-hidden="true">◫</span><strong>Dashboard</strong><small>Herstel & trends</small>
+      </button>
+      <button type="button" class="app-menu-item" data-menu-view="editor">
+        <span aria-hidden="true">＋</span><strong>Nieuwe training</strong><small>Maak of importeer</small>
+      </button>
+      <button type="button" class="app-menu-item" data-menu-view="saved">
+        <span aria-hidden="true">✓</span><strong>Mijn trainingen</strong><small>Opgeslagen sessies</small>
+      </button>
+      <button type="button" class="app-menu-item" data-menu-view="library">
+        <span aria-hidden="true">▤</span><strong>Bibliotheek</strong><small>Core & mobiliteit</small>
+      </button>
+      <button type="button" class="app-menu-item" data-menu-view="profile">
+        <span aria-hidden="true">○</span><strong>Profiel</strong><small>Instellingen & backup</small>
+      </button>
+      <button id="menuInstallApp" type="button" class="app-menu-item">
+        <span aria-hidden="true">⇩</span><strong>Installeer app</strong><small>Zet op beginscherm</small>
+      </button>
+    </div>
+  </section>
+</div>
+
+
 <div id="duplicateModal" class="modal-backdrop">
   <div class="modal">
     <p class="label">Training dupliceren</p>
@@ -1782,8 +1866,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=836" defer></script>
-<script src="/js/bootstrap.js?v=836" defer></script>
+<script src="/js/app.js?v=900" defer></script>
+<script src="/js/bootstrap.js?v=900" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

@@ -2487,7 +2487,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"8.3.6",
+    appVersion:"9.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -3238,7 +3238,18 @@ function clone(value){
 function switchView(id){
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===id));
-  document.getElementById(id).classList.add("active");
+  const target=document.getElementById(id);
+  if(!target) return;
+
+  target.classList.add("active");
+
+  if(typeof window.syncMobileNavigation==="function"){
+    window.syncMobileNavigation(id);
+  }
+  if(typeof window.closeAppMenu==="function"){
+    window.closeAppMenu();
+  }
+
   if(id==="saved") renderSaved();
   if(id==="races"){
     renderRaces();
@@ -7357,6 +7368,17 @@ async function loadWellnessDashboard(){
 
   if(error) error.textContent="";
   if(success) success.textContent="";
+
+  if(typeof navigator!=="undefined" && navigator.onLine===false){
+    if(error) error.textContent="Je bent offline. Lokale planning blijft beschikbaar.";
+    if(success){
+      success.className="status";
+      success.textContent="Offline modus · geen actuele Intervals.icu-data.";
+    }
+    document.getElementById("dashboardUpdated").textContent="Offline";
+    refreshDerivedCoachViews();
+    return{ok:false,error:new Error("Offline")};
+  }
 
   document.getElementById("dashboardUpdated").textContent=
     "Intervals.icu-data wordt geladen…";
