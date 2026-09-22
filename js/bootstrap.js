@@ -306,6 +306,7 @@ document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
 document.getElementById("refreshActivitySync").onclick=()=>syncCompletedActivities();
 document.getElementById("copyActivitySyncDiagnostics").onclick=copyActivitySyncDiagnostics;
 document.getElementById("refreshTrainingQuality").onclick=()=>syncTrainingQualityLatest({force:true});
+document.getElementById("refreshTrainingResponse").onclick=refreshTrainingResponseLearner;
 document.getElementById("refreshFullyAdaptiveCoach").onclick=refreshFullyAdaptiveCoach;
 document.getElementById("fullyAdaptivePrimaryAction").onclick=applyFullyAdaptiveCoachPriority;
 document.getElementById("applyTodayAdvice").onclick=applyTodayRecommendation;

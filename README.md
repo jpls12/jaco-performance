@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.5 · Race Debrief & Model Calibration**
+**10.6 · Training Response Learner**
 
-10.5 sluit de wedstrijdcyclus na de finish: een afgelopen race wordt gekoppeld aan de echte Intervals.icu-run, vergeleken met het vooraf bewaarde raceplan en na bevestiging zwaarder meegewogen als prestatiebewijs zonder de activiteit dubbel toe te voegen.
+10.6 leert uit meerdere vergelijkbare sleuteltrainingen of drempel-, VO₂- en HM-specifieke doeltempo’s structureel te scherp, te conservatief of stabiel zijn. Alleen na voldoende consistent bewijs worden toekomstige gegenereerde drempel- en VO₂-paces maximaal enkele seconden per kilometer bijgesteld.
 
 ## Architectuur
 
@@ -17,6 +17,7 @@ De app is bewust licht opgebouwd:
 - `js/app.js` — state, planners, coachlogica en rendering
 - `js/training-sync.js` — koppeling uitgevoerd ↔ gepland en adaptieve feedback
 - `js/training-quality.js` — blok-voor-blok analyse van gekoppelde sleuteltrainingen
+- `js/training-response.js` — leert uit meerdere sleuteltrainingen en kalibreert toekomstige trainingspaces conservatief
 - `js/performance-model.js` — actuele loopprognoses uit wedstrijddata en PR-benchmarks
 - `js/race-readiness.js` — race readiness, geloofwaardige raceband en doeltempo-optimalisatie
 - `js/fuel-hydration.js` — persoonlijk voedings-/zweetprofiel en exacte race-innameplanning
@@ -116,6 +117,19 @@ Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
 
 
+
+## 10.6 Training Response Learner
+
+- Gebruikt de recente 9.6 Training Quality-resultaten als leerbewijs; geen extra API-verzoeken nodig.
+- Classificeert bruikbare sessies als drempel, VO₂, HM-specifiek of marathon-specifiek op basis van workouttekst, blokafstand en huidige modelpaces.
+- Vergelijkt werkelijk gemiddeld werktempo met het geplande midden van de pace-band.
+- Tempo-afwijking telt alleen als sterk sneller-signaal wanneer blokvoltooiing, consistentie en beschikbare HR/RPE-signalen voldoende goed zijn.
+- Minimaal drie vergelijkbare sessies nodig voordat een richting als structureel wordt gezien.
+- Leerrichting: sneller, rustiger of stabiel; spreiding tussen sessies verlaagt de zekerheid.
+- Automatische correctie is maximaal ±4 sec/km en geldt alleen voor toekomstige gegenereerde drempel- en VO₂-trainingen.
+- HM-specifiek wordt wel geleerd en getoond, maar wijzigt de 10.1-racereferentie of opgeslagen streeftijd niet.
+- Bestaande kalendertrainingen worden nooit achteraf herschreven.
+- Toont per categorie bewijsomvang, mediaan tempo-afwijking, zekerheid en de recentste gebruikte sessies.
 
 ## 10.5 Race Debrief & Model Calibration
 

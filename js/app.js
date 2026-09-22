@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.5.0",
+    appVersion:"10.6.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -7338,6 +7338,7 @@ function refreshDerivedCoachViews(){
   // renderTodayCoach ververst ook Load Monitor, Performance Engine en AI-previews.
   // Houd die keten op één plek om dubbele DOM-renders op mobiel te voorkomen.
   renderTrainingQualityAnalyzer();
+  renderTrainingResponseLearner();
   renderTodayCoach();
   renderAdaptiveWeekReplanner();
   renderFullyAdaptiveCoach();
@@ -12462,12 +12463,25 @@ function targetPacesForRace(race,profileData){
     else racePace=parseTimeToSeconds(p.halfGoal)/21.0975;
   }
 
+  const thresholdAdjustment=
+    typeof learnedTrainingPaceAdjustment==="function"
+      ?learnedTrainingPaceAdjustment("threshold")
+      :0;
+  const vo2Adjustment=
+    typeof learnedTrainingPaceAdjustment==="function"
+      ?learnedTrainingPaceAdjustment("vo2")
+      :0;
+
   return{
     race:racePace,
     easy:"5:00-5:25/km",
     recovery:"5:10-5:35/km",
-    threshold:racePace ? `${formatPace(racePace+8)}-${formatPace(racePace+15)}/km` : "3:42-3:48/km",
-    vo2:racePace ? `${formatPace(racePace-8)}-${formatPace(racePace-3)}/km` : "3:28-3:30/km"
+    threshold:racePace
+      ?`${formatPace(racePace+8+thresholdAdjustment)}-${formatPace(racePace+15+thresholdAdjustment)}/km`
+      :"3:42-3:48/km",
+    vo2:racePace
+      ?`${formatPace(racePace-8+vo2Adjustment)}-${formatPace(racePace-3+vo2Adjustment)}/km`
+      :"3:28-3:30/km"
   };
 }
 
