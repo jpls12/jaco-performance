@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Jaco Performance">
+  <rect width="512" height="512" rx="112" fill="#07111f"/>
+  <circle cx="256" cy="256" r="174" fill="#10243a" stroke="#315775" stroke-width="16"/>
+  <path d="M112 303c48-5 73-41 99-84 24-39 52-62 89-62 43 0 70 30 100 74" fill="none" stroke="#39c979" stroke-width="30" stroke-linecap="round"/>
+  <path d="M130 342h252" stroke="#69c4ff" stroke-width="24" stroke-linecap="round"/>
+  <circle cx="311" cy="158" r="27" fill="#f1f7ff"/>
+  <path d="M284 196l-38 72 50 30 37-63 45 35" fill="none" stroke="#f1f7ff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
