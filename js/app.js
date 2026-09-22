@@ -3243,28 +3243,47 @@ function clearWorkoutMarkersForDate(date){
 }
 
 function upgradeCompletionMarkers(){
-  let changed=false;
+  let completionChanged=false;
+  let uploadChanged=false;
+  const workouts=allWorkouts();
 
   Object.entries(doneWorkouts).forEach(([date,marker])=>{
-    if(marker===false || marker===null){
+    const workout=workouts[date]||null;
+
+    if(marker===false || marker===null || !workout){
       delete doneWorkouts[date];
-      changed=true;
+      completionChanged=true;
       return;
     }
 
     if(marker===true){
-      const workout=allWorkouts()[date];
-      if(workout){
-        markWorkoutCompleted(date,workout);
-      }else{
-        delete doneWorkouts[date];
-      }
-      changed=true;
+      markWorkoutCompleted(date,workout);
+      completionChanged=true;
+      return;
+    }
+
+    if(!completionMarkerMatches(marker,workout)){
+      delete doneWorkouts[date];
+      completionChanged=true;
     }
   });
 
-  if(changed){
+  Object.keys(uploadedWorkouts).forEach(date=>{
+    const workout=workouts[date]||null;
+    if(!workout || !workoutUploadIsCurrent(date,workout)){
+      delete uploadedWorkouts[date];
+      uploadChanged=true;
+    }
+  });
+
+  if(completionChanged){
     saveObject(DONE_KEY,doneWorkouts);
+  }
+  if(uploadChanged){
+    saveObject(UPLOAD_KEY,uploadedWorkouts);
+  }
+
+  if(completionChanged || uploadChanged){
     renderMonth();
     renderSelected();
   }
