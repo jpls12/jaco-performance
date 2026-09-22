@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1080">
+  <link rel="manifest" href="/manifest.webmanifest?v=1081">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/app-icon.svg">
-  <link rel="stylesheet" href="/css/app.css?v=1080">
+  <link rel="stylesheet" href="/css/app.css?v=1081">
 </head>
 <body>
 <main>
@@ -100,7 +100,7 @@
     </article>
 
     <article class="card">
-      <span class="v2-badge">Jaco Performance 10.8 · Adaptive Training Block Planner</span>
+      <span class="v2-badge">Jaco Performance 10.8.1 · Stability & UX Hardening</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -2612,7 +2612,7 @@
 
 
 <div id="guidedTrainingPlayer" class="guided-training-player" aria-hidden="true">
-  <div class="guided-training-shell" role="dialog" aria-modal="true" aria-labelledby="guidedTrainingName">
+  <div id="guidedTrainingDialog" class="guided-training-shell" role="dialog" aria-modal="true" aria-labelledby="guidedTrainingName" tabindex="-1">
     <div class="guided-training-topbar">
       <div>
         <span id="guidedTrainingType" class="pill">Training</span>
@@ -2632,7 +2632,7 @@
 
     <div class="guided-current-step">
       <span id="guidedTrainingStepLabel">Onderdeel 1/1</span>
-      <h3 id="guidedTrainingCurrentStep">Training uitvoeren</h3>
+      <h3 id="guidedTrainingCurrentStep" aria-live="polite">Training uitvoeren</h3>
       <p id="guidedTrainingNextStep" class="help"></p>
     </div>
 
@@ -2737,22 +2737,22 @@
   </div>
 </section>
 
-<script src="/js/app.js?v=1080" defer></script>
-<script src="/js/training-sync.js?v=1080" defer></script>
-<script src="/js/training-quality.js?v=1080" defer></script>
-<script src="/js/performance-model.js?v=1080" defer></script>
-<script src="/js/training-response.js?v=1080" defer></script>
-<script src="/js/session-progression.js?v=1080" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1080" defer></script>
-<script src="/js/race-readiness.js?v=1080" defer></script>
-<script src="/js/fuel-hydration.js?v=1080" defer></script>
-<script src="/js/race-strategy.js?v=1080" defer></script>
-<script src="/js/race-day.js?v=1080" defer></script>
-<script src="/js/race-debrief.js?v=1080" defer></script>
-<script src="/js/daily-decision.js?v=1080" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1080" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1080" defer></script>
-<script src="/js/bootstrap.js?v=1080" defer></script>
+<script src="/js/app.js?v=1081" defer></script>
+<script src="/js/training-sync.js?v=1081" defer></script>
+<script src="/js/training-quality.js?v=1081" defer></script>
+<script src="/js/performance-model.js?v=1081" defer></script>
+<script src="/js/training-response.js?v=1081" defer></script>
+<script src="/js/session-progression.js?v=1081" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1081" defer></script>
+<script src="/js/race-readiness.js?v=1081" defer></script>
+<script src="/js/fuel-hydration.js?v=1081" defer></script>
+<script src="/js/race-strategy.js?v=1081" defer></script>
+<script src="/js/race-day.js?v=1081" defer></script>
+<script src="/js/race-debrief.js?v=1081" defer></script>
+<script src="/js/daily-decision.js?v=1081" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1081" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1081" defer></script>
+<script src="/js/bootstrap.js?v=1081" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
