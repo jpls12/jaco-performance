@@ -247,8 +247,16 @@ function weekReplanCanPlaceStress(workout,date,schedule,ignoreDate=null){
 
   for(const [otherDate,other] of Object.entries(schedule)){
     if(otherDate===date || otherDate===ignoreDate || !other) continue;
-    if(other.type==="Race") return false===false &&
-      (dateGapDays(otherDate,date)>=2 || !weekReplanIsStressWorkout(workout));
+
+    if(other.type==="Race"){
+      const raceDistance=Number(other.distanceKm)||0;
+      const raceBuffer=raceDistance>=15?2:1;
+      if(dateGapDays(otherDate,date)<=raceBuffer){
+        return false;
+      }
+      continue;
+    }
+
     if(
       weekReplanIsStressWorkout(other) &&
       dateGapDays(otherDate,date)<2
