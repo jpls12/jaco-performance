@@ -366,6 +366,13 @@ document.getElementById("refreshRaceCalendarOptimizer").onclick=()=>{
 };
 document.getElementById("simulateRace").onclick=renderRaceSimulator;
 document.getElementById("raceSimulatorSelect").onchange=renderRaceSimulator;
+document.getElementById("raceDayChecklist").onchange=handleRaceDayChecklistChange;
+document.getElementById("openRaceDayMode").onclick=openRaceDayMode;
+document.getElementById("resetRaceDayChecklist").onclick=resetRaceDayChecklist;
+document.getElementById("closeRaceDayMode").onclick=closeRaceDayMode;
+document.getElementById("startRaceDayClock").onclick=startRaceDayClock;
+document.getElementById("finishRaceDayClock").onclick=finishRaceDayClock;
+document.getElementById("resetRaceDayClock").onclick=resetRaceDayClock;
 document.getElementById("saveRaceSimulation").onclick=saveCurrentRaceSimulation;
 document.getElementById("editSimulatedRace").onclick=editCurrentSimulatedRace;
 document.getElementById("raceForm").onsubmit=saveRace;

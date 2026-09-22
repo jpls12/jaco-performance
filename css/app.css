@@ -2090,3 +2090,205 @@
   .fuel-profile-summary{grid-template-columns:1fr}
   .race-fuel-columns{grid-template-columns:1fr}
 }
+
+
+/* Performance 10.4 · Race Day Checklist & Live Card */
+.race-day-summary-card{
+  margin:16px 0;
+  padding:16px;
+  border:1px solid #3f5f7d;
+  border-radius:18px;
+  background:
+    linear-gradient(180deg,rgba(20,48,74,.96),rgba(11,27,44,.96));
+}
+.race-day-summary-head{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-start;
+}
+.race-day-summary-head h3{margin:4px 0}
+.race-day-mode-badge,
+.race-day-live-status{
+  display:inline-flex;
+  padding:6px 9px;
+  border-radius:999px;
+  border:1px solid #47739b;
+  background:#153a5a;
+  color:#b8ddff;
+  font-size:.72rem;
+  font-weight:900;
+  letter-spacing:.06em;
+}
+.race-day-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  margin:13px 0;
+}
+.race-day-summary-grid>div{
+  padding:10px;
+  border-radius:12px;
+  border:1px solid #2b4966;
+  background:#091725;
+}
+.race-day-summary-grid span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+  margin-bottom:4px;
+}
+.race-day-checklist{
+  display:grid;
+  gap:7px;
+  margin:13px 0;
+}
+.race-day-check-item{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:9px;
+  align-items:flex-start;
+  padding:10px;
+  border-radius:12px;
+  border:1px solid #29415e;
+  background:#091725;
+  cursor:pointer;
+}
+.race-day-check-item.done{
+  border-color:#347a50;
+  opacity:.82;
+}
+.race-day-check-item input{
+  width:20px;
+  height:20px;
+  margin-top:2px;
+}
+.race-day-check-item span{
+  display:grid;
+  gap:3px;
+}
+.race-day-check-item small{
+  color:var(--muted);
+  line-height:1.35;
+}
+.race-day-mode-open{
+  overflow:hidden;
+}
+.race-day-overlay{
+  position:fixed;
+  inset:0;
+  z-index:9999;
+  background:#06111e;
+  overflow-y:auto;
+}
+.race-day-live-shell{
+  width:min(760px,100%);
+  min-height:100%;
+  margin:0 auto;
+  padding:18px 16px 34px;
+  background:
+    radial-gradient(circle at top right,rgba(47,100,145,.25),transparent 38%),
+    #071421;
+}
+.race-day-live-top{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:flex-start;
+}
+.race-day-live-top h2{
+  margin:7px 0 0;
+}
+.race-day-live-top button{
+  width:auto;
+}
+.race-day-live-clock{
+  margin:20px 0 14px;
+  padding:18px;
+  text-align:center;
+  border-radius:18px;
+  border:1px solid #345d83;
+  background:#091b2d;
+}
+.race-day-live-clock span{
+  display:block;
+  color:var(--muted);
+  font-size:.72rem;
+}
+.race-day-live-clock strong{
+  display:block;
+  margin-top:3px;
+  font-size:3rem;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.03em;
+}
+.race-day-live-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+.race-day-live-grid>div,
+.race-day-live-next article{
+  padding:12px;
+  border-radius:14px;
+  border:1px solid #29415e;
+  background:#091725;
+}
+.race-day-live-grid span,
+.race-day-live-next span{
+  display:block;
+  color:var(--muted);
+  font-size:.7rem;
+  margin-bottom:5px;
+}
+.race-day-live-grid strong{
+  display:block;
+  font-size:1.05rem;
+}
+.race-day-live-grid small,
+.race-day-live-next small{
+  display:block;
+  margin-top:3px;
+  color:#86a3bf;
+}
+.race-day-live-next{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:8px;
+}
+.race-day-live-next .decision{
+  grid-column:1 / -1;
+  border-color:#496d8e;
+}
+.race-day-live-next .decision p{
+  margin:6px 0;
+  line-height:1.45;
+  color:#d8e6f4;
+}
+.race-day-live-actions{
+  display:grid;
+  grid-template-columns:1.4fr 1fr 1fr;
+  gap:8px;
+  margin-top:14px;
+}
+.race-day-live-note{
+  margin-top:16px;
+  color:#8ba5bd;
+  font-size:.78rem;
+  line-height:1.45;
+}
+@media(max-width:650px){
+  .race-day-summary-grid,
+  .race-day-live-grid,
+  .race-day-live-next,
+  .race-day-live-actions{
+    grid-template-columns:1fr;
+  }
+  .race-day-live-next .decision{
+    grid-column:auto;
+  }
+  .race-day-live-clock strong{
+    font-size:2.55rem;
+  }
+}

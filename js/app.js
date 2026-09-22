@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.3.0",
+    appVersion:"10.4.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -5681,6 +5681,9 @@ function renderRaceSimulator(){
     if(typeof renderRaceStrategyEngine==="function"){
       renderRaceStrategyEngine(null);
     }
+    if(typeof renderRaceDaySummaryCard==="function"){
+      renderRaceDaySummaryCard(null);
+    }
     document.getElementById("raceSimPrediction").textContent="—";
     document.getElementById("raceSimPredictionSource").textContent="Voeg eerst een toekomstige wedstrijd toe";
     document.getElementById("raceSimTarget").textContent="—";
@@ -5708,6 +5711,9 @@ function renderRaceSimulator(){
   }
   if(typeof renderRaceStrategyEngine==="function"){
     renderRaceStrategyEngine(simulation.strategy);
+  }
+  if(typeof renderRaceDaySummaryCard==="function"){
+    renderRaceDaySummaryCard(simulation.strategy);
   }
 
   document.getElementById("raceSimPrediction").textContent=
