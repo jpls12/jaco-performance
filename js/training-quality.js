@@ -454,7 +454,26 @@ function analyzeTrainingQuality(candidate,detail){
       {key:"consistency",label:"Intervalconsistentie",score:consistencyScore,weight:10}
     ];
 
-  const score=qualityWeightedScore(parts);
+  let score=qualityWeightedScore(parts);
+
+  if(structured && !intervals.length){
+    score=null;
+  }
+
+  if(
+    score!==null &&
+    plan.expectedReps &&
+    selected.length<plan.expectedReps
+  ){
+    const completionRatio=selected.length/plan.expectedReps;
+    const completionCap=Math.round(55+completionRatio*35);
+    score=Math.min(score,completionCap);
+  }
+
+  if(score!==null && paceScore!==null && paceScore<70){
+    score=Math.min(score,79);
+  }
+
   const confidence=qualityConfidence(plan,selected,detail);
   const verdict=qualityVerdict(score);
 
