@@ -121,19 +121,28 @@ function performanceModelSyncedRunEvidence(){
 
   const trusted=all
     .filter(item=>Boolean(item.race))
-    .map(item=>({
-      id:`activity-${item.activity.id}`,
-      kind:"race",
-      trusted:true,
-      distance:item.distance,
-      seconds:item.seconds,
-      date:item.activity.date,
-      ageDays:item.ageDays,
-      name:item.race.name,
-      source:`${item.race.name} · ${item.activity.date}`,
-      confidence:"Hoog",
-      weightBase:1.35
-    }));
+    .map(item=>{
+      const debrief=
+        typeof raceDebriefEvidenceBoost==="function"
+          ?raceDebriefEvidenceBoost(item.activity.id)
+          :null;
+
+      return{
+        id:`activity-${item.activity.id}`,
+        kind:"race",
+        trusted:true,
+        distance:item.distance,
+        seconds:item.seconds,
+        date:item.activity.date,
+        ageDays:item.ageDays,
+        name:item.race.name,
+        source:debrief
+          ?`${item.race.name} · bevestigd debrief · ${item.activity.date}`
+          :`${item.race.name} · ${item.activity.date}`,
+        confidence:debrief?.confidence||"Hoog",
+        weightBase:debrief?.weightBase||1.35
+      };
+    });
 
   const standardFallbacks=[];
   PERFORMANCE_MODEL_TARGETS.forEach(target=>{

@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1040">
+  <link rel="manifest" href="/manifest.webmanifest?v=1050">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/app-icon.svg">
-  <link rel="stylesheet" href="/css/app.css?v=1040">
+  <link rel="stylesheet" href="/css/app.css?v=1050">
 </head>
 <body>
 <main>
@@ -100,7 +100,7 @@
     </article>
 
     <article class="card">
-      <span class="v2-badge">Jaco Performance 10.4 · Race Day Mode</span>
+      <span class="v2-badge">Jaco Performance 10.5 · Race Debrief & Calibration</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -1901,6 +1901,108 @@
       <p id="raceSimStatus" class="status"></p>
     </article>
 
+    <article class="card race-debrief-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 10.5 · Race Debrief & Model Calibration</p>
+          <h2>Wat gebeurde er echt?</h2>
+          <p class="help">
+            Koppel een afgelopen wedstrijd aan de echte Intervals.icu-activiteit,
+            vergelijk met het bewaarde raceplan en bevestig de race als sterk modelbewijs.
+          </p>
+        </div>
+        <button id="refreshRaceDebrief" class="secondary" type="button" style="width:auto">
+          Vernieuw sync
+        </button>
+      </div>
+
+      <label>Afgelopen wedstrijd
+        <select id="raceDebriefSelect"></select>
+      </label>
+
+      <div class="race-debrief-grid">
+        <div>
+          <span>Koppeling</span>
+          <strong id="raceDebriefMatch">—</strong>
+        </div>
+        <div>
+          <span>Werkelijke tijd</span>
+          <strong id="raceDebriefActual">—</strong>
+        </div>
+        <div>
+          <span>Vs. raceplan</span>
+          <strong id="raceDebriefVsPlan">—</strong>
+        </div>
+        <div>
+          <span>Gemiddeld tempo</span>
+          <strong id="raceDebriefPace">—</strong>
+        </div>
+        <div>
+          <span>Hartslag</span>
+          <strong id="raceDebriefHr">—</strong>
+        </div>
+        <div>
+          <span>Training load</span>
+          <strong id="raceDebriefLoad">—</strong>
+        </div>
+      </div>
+
+      <div class="grid2 race-debrief-form-grid">
+        <label>Ervaren RPE
+          <select id="raceDebriefRpe">
+            <option value="">Niet ingevuld</option>
+            <option value="6">6/10</option>
+            <option value="7">7/10</option>
+            <option value="8">8/10</option>
+            <option value="9">9/10</option>
+            <option value="10">10/10</option>
+          </select>
+        </label>
+        <label>Voedingsplan uitgevoerd
+          <select id="raceDebriefFuel">
+            <option value="">Niet ingevuld</option>
+            <option value="all">Volledig</option>
+            <option value="most">Grotendeels</option>
+            <option value="partial">Gedeeltelijk</option>
+            <option value="none">Niet</option>
+          </select>
+        </label>
+      </div>
+
+      <label>Maag / darmen
+        <select id="raceDebriefStomach">
+          <option value="">Niet ingevuld</option>
+          <option value="none">Geen klachten</option>
+          <option value="light">Lichte klachten</option>
+          <option value="moderate">Duidelijke klachten</option>
+          <option value="severe">Ernstige klachten</option>
+        </select>
+      </label>
+
+      <label>Race-notities
+        <textarea id="raceDebriefNotes" placeholder="Bijv. zijsteek vanaf km 16, benen goed, gel 4 overgeslagen…"></textarea>
+      </label>
+
+      <div class="race-debrief-model">
+        <span>Invloed op Performance Model</span>
+        <p id="raceDebriefModelImpact" class="help">
+          Nog geen bevestigde race.
+        </p>
+      </div>
+
+      <div class="today-actions">
+        <button id="saveRaceDebrief" type="button" disabled>
+          Bevestig race & kalibreer model
+        </button>
+      </div>
+
+      <p id="raceDebriefStatus" class="status"></p>
+      <p class="engine-disclaimer">
+        Bevestigen voegt geen tweede resultaat toe. Het verhoogt alleen het gewicht
+        van dezelfde gesynchroniseerde raceactiviteit in het Performance Model.
+      </p>
+    </article>
+
     <article class="card">
       <p class="label">Wedstrijdkalender</p>
       <h2>Wedstrijd toevoegen</h2>
@@ -2509,18 +2611,19 @@
   </div>
 </section>
 
-<script src="/js/app.js?v=1040" defer></script>
-<script src="/js/training-sync.js?v=1040" defer></script>
-<script src="/js/training-quality.js?v=1040" defer></script>
-<script src="/js/performance-model.js?v=1040" defer></script>
-<script src="/js/race-readiness.js?v=1040" defer></script>
-<script src="/js/fuel-hydration.js?v=1040" defer></script>
-<script src="/js/race-strategy.js?v=1040" defer></script>
-<script src="/js/race-day.js?v=1040" defer></script>
-<script src="/js/daily-decision.js?v=1040" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1040" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1040" defer></script>
-<script src="/js/bootstrap.js?v=1040" defer></script>
+<script src="/js/app.js?v=1050" defer></script>
+<script src="/js/training-sync.js?v=1050" defer></script>
+<script src="/js/training-quality.js?v=1050" defer></script>
+<script src="/js/performance-model.js?v=1050" defer></script>
+<script src="/js/race-readiness.js?v=1050" defer></script>
+<script src="/js/fuel-hydration.js?v=1050" defer></script>
+<script src="/js/race-strategy.js?v=1050" defer></script>
+<script src="/js/race-day.js?v=1050" defer></script>
+<script src="/js/race-debrief.js?v=1050" defer></script>
+<script src="/js/daily-decision.js?v=1050" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1050" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1050" defer></script>
+<script src="/js/bootstrap.js?v=1050" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
