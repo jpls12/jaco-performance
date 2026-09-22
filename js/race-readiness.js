@@ -237,13 +237,17 @@ function buildRaceReadinessGoalOptimizer(race){
           :"Laag";
 
   const status=
-    score>=86
-      ?"ready"
-      :score>=72
-        ?"on-track"
-        :score>=58
-          ?"controlled"
-          :"attention";
+    assessment.state==="aggressive"
+      ?score>=58
+        ?"controlled"
+        :"attention"
+      :score>=86
+        ?"ready"
+        :score>=72
+          ?"on-track"
+          :score>=58
+            ?"controlled"
+            :"attention";
 
   const signals=[
     {
