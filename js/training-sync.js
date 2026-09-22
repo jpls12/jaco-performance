@@ -466,6 +466,49 @@ function formatSyncedActivitySummary(activity){
   return parts.join(" · ");
 }
 
+function bestProtectedRaceActivity(date,workout){
+  const all=syncedActivitiesForDate(date);
+  if(!all.length) return null;
+
+  const runLike=all.filter(activity=>
+    syncedSportFamily(activity.type)==="run"
+  );
+  const pool=runLike.length?runLike:all;
+  const plannedDistance=finiteNumberOrNull(workout?.distanceKm);
+
+  return [...pool]
+    .map(activity=>{
+      const distance=finiteNumberOrNull(activity.distanceKm);
+      const minutes=finiteNumberOrNull(activity.durationMinutes);
+      let distanceDelta=Infinity;
+
+      if(
+        plannedDistance!==null &&
+        plannedDistance>0 &&
+        distance!==null &&
+        distance>0
+      ){
+        distanceDelta=Math.abs(distance-plannedDistance)/plannedDistance;
+      }
+
+      return{
+        activity,
+        distanceDelta,
+        distance:distance||0,
+        minutes:minutes||0
+      };
+    })
+    .sort((a,b)=>{
+      if(a.distanceDelta!==b.distanceDelta){
+        return a.distanceDelta-b.distanceDelta;
+      }
+      if(a.distance!==b.distance){
+        return b.distance-a.distance;
+      }
+      return b.minutes-a.minutes;
+    })[0]?.activity || null;
+}
+
 function buildActivitySyncDiagnostics(days=21){
   const workouts=allWorkouts();
   const rows=[];
@@ -481,23 +524,31 @@ function buildActivitySyncDiagnostics(days=21){
       item.workout &&
       item.workout.type!=="Rest" &&
       item.age!==null &&
-      item.age>=0 &&
-      item.age<days
+      item.age>=1 &&
+      item.age<=days
     )
     .sort((a,b)=>b.date.localeCompare(a.date))
     .forEach(item=>{
       if(item.workout.type==="Race"){
-        const raceActivities=syncedActivitiesForDate(item.date);
-        raceActivities.forEach(activity=>consumedActivityIds.add(activity.id));
+        const raceActivity=bestProtectedRaceActivity(
+          item.date,
+          item.workout
+        );
+
+        if(raceActivity){
+          consumedActivityIds.add(raceActivity.id);
+        }
 
         rows.push({
           date:item.date,
           workout:item.workout,
           status:"protected",
-          reason:"Wedstrijd beschermd; geen automatische voltooiing.",
-          activity:raceActivities[0]||null,
-          ratio:raceActivities[0]
-            ?executionVolumeRatio(item.workout,raceActivities[0])
+          reason:raceActivity
+            ?"Wedstrijdactiviteit herkend; voltooiing blijft bewust handmatig beschermd."
+            :"Wedstrijd beschermd; geen passende activiteit gevonden.",
+          activity:raceActivity,
+          ratio:raceActivity
+            ?executionVolumeRatio(item.workout,raceActivity)
             :null
         });
         return;
@@ -513,13 +564,15 @@ function buildActivitySyncDiagnostics(days=21){
       const marker=doneWorkouts[item.date];
 
       if(
-        status==="unmatched" &&
+        status!=="auto" &&
         marker &&
         marker.source!=="intervals" &&
         completionMarkerMatches(marker,item.workout)
       ){
         status="manual";
-        reason="Handmatig voltooid; geen Intervals.icu-match gevonden.";
+        reason=assessment.activity
+          ?"Handmatig voltooid; automatische koppeling was bewust te onzeker."
+          :"Handmatig voltooid; geen betrouwbare Intervals.icu-match gevonden.";
       }
 
       rows.push({
@@ -538,8 +591,8 @@ function buildActivitySyncDiagnostics(days=21){
       const age=calendarDayDifference(todayDateString(),activity.date);
       return(
         age!==null &&
-        age>=0 &&
-        age<days &&
+        age>=1 &&
+        age<=days &&
         !consumedActivityIds.has(activity.id)
       );
     })
