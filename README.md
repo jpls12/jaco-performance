@@ -4,9 +4,9 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**8.3.6 · Final Audit**
+**9.1 · Daily Training Experience**
 
-Deze release sluit de volledige stabilisatie-audit af: kalenderstatus, racedagen, plannerpreviews, lokale markers, backupmetadata en lang-openstaande mobiele sessies zijn op één consistente basis gebracht.
+Deze release bouwt voort op de afgeronde stabilisatie-audit en 9.0 Mobile App Experience. Vandaag is nu een echte trainingshub met weekstrip, trainingskaart, status, trainingsstappen en een begeleide fullscreen sessie die afronding direct koppelt aan het Coach Dagboek.
 
 ## Architectuur
 
@@ -129,3 +129,13 @@ de bestaande modules.
 - Wedstrijden kunnen niet stilzwijgend op een bezette trainings- of andere wedstrijddag worden geplaatst.
 - Bij het verplaatsen van een voltooide wedstrijd verhuist de voltooidstatus mee en een verborgen geïmporteerde racefallback komt niet terug op de oude datum.
 - Niet-ondersteunde Intervals.icu-export wordt als niet beschikbaar weergegeven in plaats van als toekomstige fase.
+
+
+## 9.1 Daily Training Experience
+
+- Training van vandaag staat als eerste inhoudelijke kaart op het Vandaag-scherm.
+- Compacte weekstrip toont planning, voltooidstatus en wedstrijddagen.
+- Eén primaire actie start de geplande sessie.
+- Fullscreen begeleide sessie toont trainingsonderdelen, voortgang en verstreken tijd.
+- De sessie houdt waar mogelijk het scherm actief, maar gebruikt geen GPS; live tempo en afstand blijven op het sporthorloge.
+- Afronden gebruikt dezelfde completion-identiteit als kalender en belastbaarheidsmonitor en opent daarna het Coach Dagboek.

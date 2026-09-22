@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=900">
+  <link rel="manifest" href="/manifest.webmanifest?v=910">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="/icons/app-icon.svg">
-  <link rel="stylesheet" href="/css/app.css?v=900">
+  <link rel="stylesheet" href="/css/app.css?v=910">
 </head>
 <body>
 <main>
@@ -53,8 +53,54 @@
 
 
   <section id="today" class="view active">
+
+    <article class="card daily-training-card" id="dailyTrainingCard">
+      <div class="daily-training-head">
+        <div>
+          <p class="label">Performance 9.1 · Vandaag trainen</p>
+          <h2>Training van vandaag</h2>
+        </div>
+        <span id="todayTrainingStatus" class="daily-training-status loading">Laden…</span>
+      </div>
+
+      <div id="todayWeekStrip" class="today-week-strip" aria-label="Trainingsweek">
+        <span class="help">Week wordt geladen…</span>
+      </div>
+
+      <div class="daily-training-hero">
+        <div id="todayTrainingIcon" class="daily-training-icon" aria-hidden="true">🏃</div>
+        <div class="daily-training-copy">
+          <span id="todayTrainingType" class="daily-training-type">Training</span>
+          <h2 id="todayTrainingTitle">Kalender wordt gecontroleerd…</h2>
+          <p id="todayTrainingSubtitle" class="help">
+            Je geplande training verschijnt hier.
+          </p>
+        </div>
+      </div>
+
+      <div class="daily-training-stats">
+        <div><span>Omvang</span><strong id="todayTrainingVolume">—</strong></div>
+        <div><span>RPE</span><strong id="todayTrainingRpe">—</strong></div>
+        <div><span>Bron</span><strong id="todayTrainingSource">—</strong></div>
+      </div>
+
+      <ol id="todayTrainingSteps" class="daily-training-steps"></ol>
+
+      <div class="daily-training-actions">
+        <button id="startTodayTraining" type="button" disabled>Start training</button>
+        <button id="completeTodayTraining" class="secondary" type="button" disabled>
+          Markeer voltooid
+        </button>
+        <button id="openTodayTrainingCalendar" class="secondary" type="button">
+          Open kalender
+        </button>
+      </div>
+
+      <p id="todayTrainingStatusText" class="status"></p>
+    </article>
+
     <article class="card">
-      <span class="v2-badge">Jaco Performance 9.0 · Mobile App Experience</span>
+      <span class="v2-badge">Jaco Performance 9.1 · Daily Training Experience</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -757,13 +803,6 @@
       </p>
     </article>
 
-
-    <article class="card">
-      <p class="label">Wat staat er al?</p>
-      <div id="todayCurrentWorkout">
-        <p class="help">Kalender wordt gecontroleerd…</p>
-      </div>
-    </article>
 
     <article class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
@@ -1851,6 +1890,49 @@
 </div>
 
 
+
+<div id="guidedTrainingPlayer" class="guided-training-player" aria-hidden="true">
+  <div class="guided-training-shell" role="dialog" aria-modal="true" aria-labelledby="guidedTrainingName">
+    <div class="guided-training-topbar">
+      <div>
+        <span id="guidedTrainingType" class="pill">Training</span>
+        <h2 id="guidedTrainingName">Training</h2>
+      </div>
+      <button id="closeGuidedTraining" class="secondary guided-close" type="button" aria-label="Training sluiten">
+        Sluiten
+      </button>
+    </div>
+
+    <div class="guided-training-clock">
+      <span>Verstreken tijd</span>
+      <strong id="guidedTrainingElapsed">0:00</strong>
+    </div>
+
+    <div class="guided-progress"><div id="guidedTrainingProgressBar"></div></div>
+
+    <div class="guided-current-step">
+      <span id="guidedTrainingStepLabel">Onderdeel 1/1</span>
+      <h3 id="guidedTrainingCurrentStep">Training uitvoeren</h3>
+      <p id="guidedTrainingNextStep" class="help"></p>
+    </div>
+
+    <div id="guidedTrainingStepList" class="guided-step-list"></div>
+
+    <div class="guided-training-controls">
+      <button id="guidedTrainingPrevious" class="secondary" type="button">← Vorige</button>
+      <button id="guidedTrainingPause" class="secondary" type="button">Pauze</button>
+      <button id="guidedTrainingNext" type="button">Volgende →</button>
+    </div>
+
+    <button id="finishGuidedTraining" class="guided-finish" type="button">
+      Training afronden
+    </button>
+    <p class="help guided-training-note">
+      Jaco Performance begeleidt de trainingsonderdelen en tijd. GPS, afstand en live tempo blijven op je sporthorloge.
+    </p>
+  </div>
+</div>
+
 <div id="duplicateModal" class="modal-backdrop">
   <div class="modal">
     <p class="label">Training dupliceren</p>
@@ -1866,8 +1948,8 @@
   </div>
 </div>
 
-<script src="/js/app.js?v=900" defer></script>
-<script src="/js/bootstrap.js?v=900" defer></script>
+<script src="/js/app.js?v=910" defer></script>
+<script src="/js/bootstrap.js?v=910" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

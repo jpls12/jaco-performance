@@ -294,6 +294,14 @@ document.getElementById("saveAiWeek").onclick=saveAiGeneratedWeek;
 document.getElementById("generateAiTraining").onclick=generateAiTrainingOptions;
 document.getElementById("regenerateAiTraining").onclick=regenerateAiTraining;
 document.getElementById("saveAiTraining").onclick=saveAiGeneratedTraining;
+document.getElementById("startTodayTraining").onclick=startTodayTrainingExperience;
+document.getElementById("completeTodayTraining").onclick=completeTodayTrainingFromCard;
+document.getElementById("openTodayTrainingCalendar").onclick=openTodayTrainingCalendar;
+document.getElementById("closeGuidedTraining").onclick=()=>closeGuidedTrainingSession();
+document.getElementById("guidedTrainingPrevious").onclick=previousGuidedTrainingStep;
+document.getElementById("guidedTrainingPause").onclick=toggleGuidedTrainingPause;
+document.getElementById("guidedTrainingNext").onclick=nextGuidedTrainingStep;
+document.getElementById("finishGuidedTraining").onclick=finishGuidedTrainingSession;
 document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
 document.getElementById("applyTodayAdvice").onclick=applyTodayRecommendation;
 document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
@@ -407,6 +415,21 @@ function refreshDayBoundaryIfNeeded(){
 document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState==="visible"){
     refreshDayBoundaryIfNeeded();
+    if(
+      document.getElementById("guidedTrainingPlayer")?.classList.contains("active") &&
+      !guidedTrainingSession.pauseStartedAt
+    ){
+      requestGuidedWakeLock();
+    }
+  }
+});
+
+document.addEventListener("keydown",event=>{
+  if(
+    event.key==="Escape" &&
+    document.getElementById("guidedTrainingPlayer")?.classList.contains("active")
+  ){
+    closeGuidedTrainingSession();
   }
 });
 window.addEventListener("focus",refreshDayBoundaryIfNeeded);

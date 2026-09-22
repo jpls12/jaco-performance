@@ -1,11 +1,11 @@
-const CACHE_NAME="jaco-performance-shell-v900";
+const CACHE_NAME="jaco-performance-shell-v910";
 const APP_SHELL=[
   "/",
   "/index.html",
-  "/css/app.css?v=900",
-  "/js/app.js?v=900",
-  "/js/bootstrap.js?v=900",
-  "/manifest.webmanifest?v=900",
+  "/css/app.css?v=910",
+  "/js/app.js?v=910",
+  "/js/bootstrap.js?v=910",
+  "/manifest.webmanifest?v=910",
   "/icons/app-icon.svg"
 ];
 
