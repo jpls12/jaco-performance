@@ -69,6 +69,15 @@ function showInstallExperience(){
     return;
   }
 
+  const installAvailable=
+    isIosWebBrowser() ||
+    Boolean(deferredPwaInstallPrompt);
+
+  if(!installAvailable){
+    hideInstallExperience();
+    return;
+  }
+
   let dismissed=false;
   try{
     dismissed=sessionStorage.getItem("jp_install_banner_dismissed")==="1";
