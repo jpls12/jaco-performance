@@ -2487,7 +2487,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"9.0",
+    appVersion:"9.1",
     createdAt:new Date().toISOString(),
     data
   };
@@ -11377,37 +11377,408 @@ Easy
   };
 }
 
+function todayWeekStartDate(){
+  const todayString=todayDateString();
+  const date=new Date(todayString+"T12:00:00");
+  const mondayOffset=(date.getDay()+6)%7;
+  return addDays(todayString,-mondayOffset);
+}
+
+function openTodayWeekDate(date){
+  selectedDate=date;
+  const parsed=new Date(date+"T12:00:00");
+  visibleMonth=new Date(parsed.getFullYear(),parsed.getMonth(),1);
+  switchView("calendar");
+  renderMonth();
+  renderSelected();
+}
+
+function renderTodayWeekStrip(){
+  const strip=document.getElementById("todayWeekStrip");
+  if(!strip) return;
+
+  const start=todayWeekStartDate();
+  const todayString=todayDateString();
+  const workouts=allWorkouts();
+  const shortDay=new Intl.DateTimeFormat("nl-NL",{weekday:"short"});
+
+  strip.innerHTML=Array.from({length:7},(_,index)=>{
+    const date=addDays(start,index);
+    const workout=workouts[date]||null;
+    const parsed=new Date(date+"T12:00:00");
+    const done=workout ? workoutWasCompleted(date,workout) : false;
+    const race=workout?.type==="Race";
+    const classes=[
+      "today-week-day",
+      date===todayString?"today":"",
+      workout?"has-workout":"",
+      done?"done":"",
+      race?"race":""
+    ].filter(Boolean).join(" ");
+
+    return`
+      <button type="button" class="${classes}" onclick="openTodayWeekDate('${date}')"
+        aria-label="${safe(fullDate.format(parsed))}${workout?` · ${safe(workout.name)}`:""}">
+        <small>${safe(shortDay.format(parsed).replace(".",""))}</small>
+        <strong>${parsed.getDate()}</strong>
+        <span class="week-dot"></span>
+      </button>`;
+  }).join("");
+}
+
+function dailyTrainingIcon(type){
+  const icons={
+    Run:"🏃",
+    Race:"🏁",
+    Core:"◈",
+    Mobility:"↔",
+    Strength:"◆",
+    Swim:"≈",
+    Rest:"☾"
+  };
+  return icons[type]||"●";
+}
+
+function dailyTrainingSourceLabel(date,workout){
+  if(
+    workout?.type==="Race" &&
+    Object.values(races).some(race=>race.date===date)
+  ){
+    return "Wedstrijd";
+  }
+  if(customWorkouts[date]){
+    if(workout?.importedPlan) return "Schema-import";
+    if(workout?.seasonGenerated) return "Seizoensschema";
+    return "Eigen";
+  }
+  if(serverWorkouts[date]) return "Vast schema";
+  return "Planning";
+}
+
 function renderCurrentTodayWorkout(workout){
-  const box=document.getElementById("todayCurrentWorkout");
+  renderTodayWeekStrip();
+
+  const statusBadge=document.getElementById("todayTrainingStatus");
+  const icon=document.getElementById("todayTrainingIcon");
+  const type=document.getElementById("todayTrainingType");
+  const title=document.getElementById("todayTrainingTitle");
+  const subtitle=document.getElementById("todayTrainingSubtitle");
+  const volume=document.getElementById("todayTrainingVolume");
+  const rpe=document.getElementById("todayTrainingRpe");
+  const source=document.getElementById("todayTrainingSource");
+  const steps=document.getElementById("todayTrainingSteps");
+  const startButton=document.getElementById("startTodayTraining");
+  const completeButton=document.getElementById("completeTodayTraining");
+  const statusText=document.getElementById("todayTrainingStatusText");
+
+  if(!statusBadge || !title) return;
+
+  statusText.className="status";
+  statusText.textContent="";
+
   if(!workout){
-    box.innerHTML='<p class="help">Er staat vandaag nog geen training in je kalender.</p>';
+    statusBadge.className="daily-training-status rest";
+    statusBadge.textContent="Geen training";
+    icon.textContent="○";
+    type.textContent="Vrije dag";
+    title.textContent="Geen training gepland";
+    subtitle.textContent="Je kalender is vandaag leeg. Gebruik de coach als je een passende training wilt plannen.";
+    volume.textContent="—";
+    rpe.textContent="—";
+    source.textContent="—";
+    steps.innerHTML="";
+    startButton.disabled=true;
+    startButton.textContent="Geen training";
+    completeButton.disabled=true;
+    completeButton.textContent="Markeer voltooid";
     return;
   }
 
   const date=todayDateString();
-  const isCalendarRace=
-    workout.type==="Race" &&
-    Object.values(races).some(race=>race.date===date);
+  const done=workoutWasCompleted(date,workout);
+  const uploaded=workoutUploadIsCurrent(date,workout);
+  const isRace=workout.type==="Race";
+  const isRest=workout.type==="Rest";
+  const typeInfo=trainingTypeInfo(workout.type);
 
-  const sourceLabel=isCalendarRace
-    ?"WEDSTRIJD"
-    :customWorkouts[date]
-      ?"EIGEN"
-      :serverWorkouts[date]
-        ?"SCHEMA"
-        :"PLAN";
+  statusBadge.className=`daily-training-status ${done?"done":isRace?"race":isRest?"rest":"planned"}`;
+  statusBadge.textContent=done?"Voltooid":isRace?"Wedstrijd":isRest?"Rustdag":"Gepland";
 
-  box.innerHTML=`
-    <div class="saved-row">
-      <div class="saved-row-top">
-        <div>
-          <strong>${safe(workout.name)}</strong>
-          <small>${safe(workout.type||"Run")} · ${trainingVolumeLabel(workout)} · RPE ${safe(workout.rpe||"—")}</small>
-        </div>
-        <span class="pill">${sourceLabel}</span>
-      </div>
-    </div>`;
+  icon.textContent=dailyTrainingIcon(workout.type);
+  type.textContent=typeInfo.label;
+  title.textContent=workout.name;
+  subtitle.textContent=
+    uploaded
+      ?"Gesynchroniseerd met Intervals.icu."
+      :done
+        ?"Training afgerond. Je check-in kan nog worden bijgewerkt."
+        :isRest
+          ?"Herstel staat vandaag centraal."
+          :"Klaar om te starten wanneer jij dat bent.";
+
+  volume.textContent=trainingVolumeLabel(workout);
+  rpe.textContent=workout.rpe||"—";
+  source.textContent=dailyTrainingSourceLabel(date,workout);
+
+  const workoutSteps=Array.isArray(workout.displaySteps)
+    ?workout.displaySteps.filter(Boolean)
+    :[];
+
+  steps.innerHTML=workoutSteps.map((step,index)=>`
+    <li><span class="step-number">${index+1}</span><span>${safe(step)}</span></li>
+  `).join("");
+
+  startButton.disabled=done || isRest;
+  startButton.textContent=
+    done
+      ?"Training voltooid"
+      :isRest
+        ?"Rustdag"
+        :isRace
+          ?"Start wedstrijddag"
+          :"Start training";
+
+  completeButton.disabled=isRest && done;
+  completeButton.textContent=
+    done && !isRest
+      ?"Bekijk check-in"
+      :done
+        ?"Voltooid"
+        :"Markeer voltooid";
 }
+
+let guidedTrainingSession={
+  date:null,
+  workout:null,
+  steps:[],
+  index:0,
+  startedAt:null,
+  pauseStartedAt:null,
+  pausedMs:0,
+  intervalId:null,
+  wakeLock:null
+};
+
+function guidedSessionElapsedSeconds(){
+  if(!guidedTrainingSession.startedAt) return 0;
+  const now=guidedTrainingSession.pauseStartedAt || Date.now();
+  return Math.max(
+    0,
+    Math.floor((now-guidedTrainingSession.startedAt-guidedTrainingSession.pausedMs)/1000)
+  );
+}
+
+function formatGuidedElapsed(seconds){
+  const value=Math.max(0,Math.floor(Number(seconds)||0));
+  const hours=Math.floor(value/3600);
+  const minutes=Math.floor((value%3600)/60);
+  const secs=value%60;
+  if(hours){
+    return `${hours}:${String(minutes).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+  }
+  return `${minutes}:${String(secs).padStart(2,"0")}`;
+}
+
+async function requestGuidedWakeLock(){
+  if(!("wakeLock" in navigator)) return;
+  try{
+    guidedTrainingSession.wakeLock=await navigator.wakeLock.request("screen");
+  }catch(error){
+    console.warn("Scherm actief houden lukte niet:",error);
+  }
+}
+
+function releaseGuidedWakeLock(){
+  try{
+    guidedTrainingSession.wakeLock?.release();
+  }catch{
+    // Browser kan de wake lock zelf al hebben vrijgegeven.
+  }
+  guidedTrainingSession.wakeLock=null;
+}
+
+function renderGuidedTrainingSession(){
+  const session=guidedTrainingSession;
+  const workout=session.workout;
+  if(!workout) return;
+
+  const steps=session.steps.length
+    ?session.steps
+    :["Voer de training volgens plan uit"];
+  const index=Math.min(session.index,steps.length-1);
+
+  document.getElementById("guidedTrainingType").textContent=
+    `${trainingTypeInfo(workout.type).label} · ${trainingVolumeLabel(workout)}`;
+  document.getElementById("guidedTrainingName").textContent=workout.name;
+  document.getElementById("guidedTrainingStepLabel").textContent=
+    `Onderdeel ${index+1}/${steps.length}`;
+  document.getElementById("guidedTrainingCurrentStep").textContent=steps[index];
+  document.getElementById("guidedTrainingNextStep").textContent=
+    index<steps.length-1
+      ?`Hierna: ${steps[index+1]}`
+      :"Laatste onderdeel · rond daarna de training af.";
+
+  document.getElementById("guidedTrainingProgressBar").style.width=
+    `${Math.round(((index+1)/steps.length)*100)}%`;
+
+  document.getElementById("guidedTrainingStepList").innerHTML=
+    steps.map((step,stepIndex)=>`
+      <div class="guided-step-row ${stepIndex===index?"active":stepIndex<index?"done":""}">
+        <span class="guided-step-index">${stepIndex<index?"✓":stepIndex+1}</span>
+        <span>${safe(step)}</span>
+      </div>
+    `).join("");
+
+  document.getElementById("guidedTrainingPrevious").disabled=index===0;
+  document.getElementById("guidedTrainingNext").disabled=index===steps.length-1;
+}
+
+function startGuidedTrainingClock(){
+  clearInterval(guidedTrainingSession.intervalId);
+  guidedTrainingSession.intervalId=setInterval(()=>{
+    const elapsed=document.getElementById("guidedTrainingElapsed");
+    if(elapsed){
+      elapsed.textContent=formatGuidedElapsed(guidedSessionElapsedSeconds());
+    }
+  },1000);
+}
+
+function startTodayTrainingExperience(){
+  const workout=currentTodayWorkout();
+  const status=document.getElementById("todayTrainingStatusText");
+  if(!workout) return;
+
+  if(workoutWasCompleted(todayDateString(),workout)){
+    status.className="status ok";
+    status.textContent="Deze training is al als voltooid gemarkeerd.";
+    return;
+  }
+
+  if(workout.type==="Rest"){
+    status.className="status";
+    status.textContent="Vandaag staat als rustdag gepland; er is geen sessie om te starten.";
+    return;
+  }
+
+  guidedTrainingSession.date=todayDateString();
+  guidedTrainingSession.workout=clone(workout);
+  guidedTrainingSession.steps=Array.isArray(workout.displaySteps)
+    ?workout.displaySteps.filter(Boolean)
+    :[];
+  guidedTrainingSession.index=0;
+  guidedTrainingSession.startedAt=Date.now();
+  guidedTrainingSession.pauseStartedAt=null;
+  guidedTrainingSession.pausedMs=0;
+
+  const player=document.getElementById("guidedTrainingPlayer");
+  player.classList.add("active");
+  player.setAttribute("aria-hidden","false");
+  document.body.style.overflow="hidden";
+
+  document.getElementById("guidedTrainingElapsed").textContent="0:00";
+  document.getElementById("guidedTrainingPause").textContent="Pauze";
+
+  renderGuidedTrainingSession();
+  startGuidedTrainingClock();
+  requestGuidedWakeLock();
+}
+
+function closeGuidedTrainingSession(force=false){
+  const player=document.getElementById("guidedTrainingPlayer");
+  if(!player?.classList.contains("active")) return;
+
+  const elapsed=guidedSessionElapsedSeconds();
+  if(!force && elapsed>30){
+    const confirmed=confirm(
+      "Training sluiten zonder hem als voltooid te markeren? Je sessietimer wordt gestopt."
+    );
+    if(!confirmed) return;
+  }
+
+  clearInterval(guidedTrainingSession.intervalId);
+  guidedTrainingSession.intervalId=null;
+  releaseGuidedWakeLock();
+
+  player.classList.remove("active");
+  player.setAttribute("aria-hidden","true");
+  document.body.style.overflow="";
+}
+
+function previousGuidedTrainingStep(){
+  guidedTrainingSession.index=Math.max(0,guidedTrainingSession.index-1);
+  renderGuidedTrainingSession();
+}
+
+function nextGuidedTrainingStep(){
+  const max=Math.max(0,guidedTrainingSession.steps.length-1);
+  if(guidedTrainingSession.index<max){
+    guidedTrainingSession.index++;
+    renderGuidedTrainingSession();
+  }
+}
+
+function toggleGuidedTrainingPause(){
+  const button=document.getElementById("guidedTrainingPause");
+  if(guidedTrainingSession.pauseStartedAt){
+    guidedTrainingSession.pausedMs+=Date.now()-guidedTrainingSession.pauseStartedAt;
+    guidedTrainingSession.pauseStartedAt=null;
+    button.textContent="Pauze";
+    requestGuidedWakeLock();
+  }else{
+    guidedTrainingSession.pauseStartedAt=Date.now();
+    button.textContent="Hervat";
+    releaseGuidedWakeLock();
+  }
+
+  document.getElementById("guidedTrainingElapsed").textContent=
+    formatGuidedElapsed(guidedSessionElapsedSeconds());
+}
+
+function completeTodayTrainingFromCard(){
+  const date=todayDateString();
+  const workout=currentTodayWorkout();
+  if(!workout) return;
+
+  if(workoutWasCompleted(date,workout)){
+    if(workout.type!=="Rest"){
+      openDiaryForDate(date);
+    }
+    return;
+  }
+
+  const confirmed=confirm(`"${workout.name}" als voltooid markeren?`);
+  if(!confirmed) return;
+
+  markWorkoutCompleted(date,workout);
+  saveObject(DONE_KEY,doneWorkouts);
+  refreshAfterCalendarMutation();
+
+  if(workout.type!=="Rest"){
+    openDiaryForDate(date);
+  }
+}
+
+function finishGuidedTrainingSession(){
+  const date=guidedTrainingSession.date;
+  const current=allWorkouts()[date];
+  if(!date || !current) return;
+
+  const confirmed=confirm(`"${current.name}" afronden en als voltooid markeren?`);
+  if(!confirmed) return;
+
+  markWorkoutCompleted(date,current);
+  saveObject(DONE_KEY,doneWorkouts);
+  closeGuidedTrainingSession(true);
+  refreshAfterCalendarMutation();
+
+  selectedDate=date;
+  openDiaryForDate(date);
+}
+
+function openTodayTrainingCalendar(){
+  openTodayWeekDate(todayDateString());
+}
+
 
 
 function renderTodayDataSources(snapshot,readiness){
