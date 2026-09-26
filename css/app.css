@@ -2745,3 +2745,31 @@ input::placeholder,textarea::placeholder{color:#a4b5c9}
 @media(prefers-reduced-motion:reduce){
   button,.today-more-chevron{transition:none}
 }
+
+/* 10.9.3 · Consistent section navigation and clearer planning flow */
+.view-intro{margin:24px 2px 20px;max-width:760px}
+.view-intro .eyebrow{margin:0 0 6px}
+.view-intro h2{font-size:clamp(1.9rem,4vw,2.45rem);margin:0 0 7px}
+.view-intro .help{margin-bottom:0}
+.view-jumps{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.view-jumps a{
+  min-height:42px;display:inline-flex;align-items:center;padding:8px 13px;
+  border:1px solid #385b77;border-radius:999px;background:#142a40;
+  color:#d8efff;font-size:.86rem;font-weight:750;text-decoration:none
+}
+.view-jumps a:hover{background:#20415b;border-color:#70b9e4}
+#planningAvailability,#planningSupport,#planningExample{scroll-margin-top:94px}
+#planningSupport,#planningExample{border-top:2px solid #3e6b78}
+#planningSupport #supportWeek{margin-top:15px}
+#planningExample .saved-list{margin-top:12px}
+#coreModeHelp{font-size:.84rem;margin:0}
+.mobile-nav-icon svg{width:23px;height:23px;display:block}
+.mobile-bottom-nav .mobile-nav-button{gap:4px;min-height:55px}
+.mobile-bottom-nav .mobile-nav-button.active{color:#f2faff;background:#193a50}
+.mobile-bottom-nav .mobile-nav-button.active .mobile-nav-icon{color:#76d0ff}
+@media(max-width:650px){
+  .view-intro{margin:14px 2px 18px}
+  .view-jumps{gap:7px;margin-top:14px}
+  .view-jumps a{padding:7px 10px;min-height:38px;font-size:.79rem}
+  #planningAvailability,#planningSupport,#planningExample{scroll-margin-top:24px}
+}

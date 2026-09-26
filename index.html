@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1092">
+  <link rel="manifest" href="/manifest.webmanifest?v=1093">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png">
-  <link rel="stylesheet" href="/css/app.css?v=1092">
+  <link rel="stylesheet" href="/css/app.css?v=1093">
 </head>
 <body>
 <main>
@@ -69,7 +69,7 @@
     <article class="card daily-training-card" id="dailyTrainingCard">
       <div class="daily-training-head">
         <div>
-          <p class="label">Performance 9.1 · Vandaag trainen</p>
+          <p class="label">Jouw hoofdtraining</p>
           <h2>Training van vandaag</h2>
         </div>
         <span id="todayTrainingStatus" class="daily-training-status loading">Laden…</span>
@@ -1262,6 +1262,7 @@
   </section>
 
   <section id="dashboard" class="view">
+    <header class="view-intro"><p class="eyebrow">Trends & herstel</p><h2>Dashboard</h2><p class="help">De cijfers hieronder gebruiken alleen beschikbare en actuele gegevens.</p></header>
     <article class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
         <div>
@@ -1375,9 +1376,9 @@
   <section id="calendar" class="view">
     <article class="card">
       <div class="calendar-head">
-        <button type="button" class="secondary" id="prevMonth">←</button>
+        <button type="button" class="secondary" id="prevMonth" aria-label="Vorige maand">←</button>
         <div class="month-title" id="monthTitle"></div>
-        <button type="button" class="secondary" id="nextMonth">→</button>
+        <button type="button" class="secondary" id="nextMonth" aria-label="Volgende maand">→</button>
       </div>
 
       <div class="weekdays">
@@ -2259,9 +2260,19 @@
 
 
   <section id="planning" class="view">
-    <article class="card">
-      <p class="label">Sprint 11.1</p>
-      <h2>Mijn vaste weekplanning</h2>
+    <header class="view-intro">
+      <p class="eyebrow">Jouw trainingsritme</p>
+      <h2>Weekplanning</h2>
+      <p class="help">Leg eerst je beschikbare tijd vast, kies daarna je aanvullende sessies en bekijk het weekoverzicht.</p>
+      <nav class="view-jumps" aria-label="Onderdelen van de weekplanning">
+        <a href="#planningAvailability">Beschikbaarheid</a>
+        <a href="#planningSupport">Kracht & mobiliteit</a>
+        <a href="#planningExample">Weekoverzicht</a>
+      </nav>
+    </header>
+    <article class="card" id="planningAvailability">
+      <p class="label">Stap 1 · Beschikbaarheid</p>
+      <h2>Mijn beschikbare dagen</h2>
       <p class="help">
         Stel per dag in wanneer je kunt trainen. De weekplanner plant daarna alleen
         op beschikbare dagen en houdt rekening met tijd, voorkeur en prioriteit.
@@ -2298,26 +2309,30 @@
 
           <label class="switchrow">
             <span>Core automatisch toevoegen op een passende dag</span>
-            <input id="profileAutoCore" type="checkbox" checked>
+            <input id="profileAutoCore" type="checkbox" checked aria-describedby="coreModeHelp">
           </label>
+          <p id="coreModeHelp" class="help">Bij actieve kracht- en mobiliteitssessies voegt de planner geen dubbele core-sessie toe.</p>
         </div>
 
-        <button type="submit">Planning opslaan</button>
+        <button type="submit">Beschikbaarheid opslaan</button>
         <p id="planningStatus" class="status"></p>
       </form>
     </article>
 
-    <article class="card">
-      <p class="label">Voorbeeld van jouw week</p>
-      <div id="planningPreview" class="saved-list"></div>
-    </article>
-    <article class="card">
+    <article class="card" id="planningSupport">
+      <p class="label">Stap 2 · Aanvullende sessies</p>
       <h2>Vaste kracht & mobiliteit</h2>
       <p class="help">Kracht en mobiliteit naast je looptraining, thuis zonder materiaal. Kies je voorkeursdagen en niveau. De planner gebruikt je beschikbare tijd en beschermt wedstrijden en herstel. Je kunt sessies begeleiden, registreren en afzonderlijk exporteren.</p>
       <form id="supportSettingsForm"></form><p id="supportSettingsStatus" class="status" aria-live="polite"></p>
       <label>Bekijk week van<input id="supportWeekDate" type="date"></label>
       <div id="supportWeek"></div>
       <h3>Jouw voortgang</h3><div id="supportHistory"></div>
+    </article>
+    <article class="card" id="planningExample">
+      <p class="label">Stap 3 · Overzicht</p>
+      <h2>Zo ziet jouw week eruit</h2>
+      <p class="help">Dit overzicht helpt je controleren of de vaste dagen bij je hoofdtrainingen passen.</p>
+      <div id="planningPreview" class="saved-list"></div>
     </article>
   </section>
 
@@ -2586,23 +2601,23 @@
 
 <nav class="mobile-bottom-nav" aria-label="Mobiele hoofdnavigatie">
   <button type="button" class="mobile-nav-button active" data-mobile-view="today" aria-current="page">
-    <span class="mobile-nav-icon" aria-hidden="true">⌂</span>
+    <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1Z"/><path d="M9 21v-7h6v7"/></svg></span>
     <span>Vandaag</span>
   </button>
   <button type="button" class="mobile-nav-button" data-mobile-view="calendar">
-    <span class="mobile-nav-icon" aria-hidden="true">▦</span>
+    <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/></svg></span>
     <span>Kalender</span>
   </button>
   <button type="button" class="mobile-nav-button" data-mobile-view="races">
-    <span class="mobile-nav-icon" aria-hidden="true">◎</span>
+    <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V3m1 1h13l-3 4 3 4H6"/></svg></span>
     <span>Wedstrijden</span>
   </button>
   <button type="button" class="mobile-nav-button" data-mobile-view="planning">
-    <span class="mobile-nav-icon" aria-hidden="true">≡</span>
+    <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h12"/></svg></span>
     <span>Planning</span>
   </button>
   <button id="openAppMenu" type="button" class="mobile-nav-button">
-    <span class="mobile-nav-icon" aria-hidden="true">•••</span>
+    <span class="mobile-nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg></span>
     <span>Meer</span>
   </button>
 </nav>
@@ -2772,23 +2787,23 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1092" defer></script>
-<script src="/js/training-sync.js?v=1092" defer></script>
-<script src="/js/training-quality.js?v=1092" defer></script>
-<script src="/js/performance-model.js?v=1092" defer></script>
-<script src="/js/training-response.js?v=1092" defer></script>
-<script src="/js/session-progression.js?v=1092" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1092" defer></script>
-<script src="/js/race-readiness.js?v=1092" defer></script>
-<script src="/js/fuel-hydration.js?v=1092" defer></script>
-<script src="/js/race-strategy.js?v=1092" defer></script>
-<script src="/js/race-day.js?v=1092" defer></script>
-<script src="/js/race-debrief.js?v=1092" defer></script>
-<script src="/js/daily-decision.js?v=1092" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1092" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1092" defer></script>
-<script src="/js/support-training.js?v=1092" defer></script>
-<script src="/js/bootstrap.js?v=1092" defer></script>
+<script src="/js/app.js?v=1093" defer></script>
+<script src="/js/training-sync.js?v=1093" defer></script>
+<script src="/js/training-quality.js?v=1093" defer></script>
+<script src="/js/performance-model.js?v=1093" defer></script>
+<script src="/js/training-response.js?v=1093" defer></script>
+<script src="/js/session-progression.js?v=1093" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1093" defer></script>
+<script src="/js/race-readiness.js?v=1093" defer></script>
+<script src="/js/fuel-hydration.js?v=1093" defer></script>
+<script src="/js/race-strategy.js?v=1093" defer></script>
+<script src="/js/race-day.js?v=1093" defer></script>
+<script src="/js/race-debrief.js?v=1093" defer></script>
+<script src="/js/daily-decision.js?v=1093" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1093" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1093" defer></script>
+<script src="/js/support-training.js?v=1093" defer></script>
+<script src="/js/bootstrap.js?v=1093" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

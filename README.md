@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.9.3 · Professionele navigatie en planning**
+
+Weekplanning heeft nu een duidelijke volgorde: beschikbaarheid opslaan, vaste kracht/mobiliteit instellen en de week beoordelen. Snelkoppelingen springen naar de drie onderdelen; Dashboard krijgt dezelfde sectiehiërarchie. De mobiele navigatie gebruikt consistente vectoriconen en de maandknoppen hebben duidelijke schermlezerlabels. De core-optie licht toe waarom dubbele core-sessies worden onderdrukt bij een actieve aanvullende planning. Trainingsdata en beslisregels blijven gelijk. Cache- en backupmetadata zijn verhoogd naar 10.9.3.
+
 **10.9.2 · Professionele dagweergave**
 
 De Vandaag-pagina zet de hoofdtraining bovenaan, gevolgd door aanvullende kracht/mobiliteit, coach en dagboek. Snelle ankers springen naar deze onderdelen. Uitgebreide analyses en planners staan onder één uitklapbaar gedeelte. Typografie, kaartvlakken, contrast, bediening en mobiele afstanden zijn aangescherpt. De datum van het overzicht ververst bij terugkeer naar de app; cache en backupmetadata delen versie 10.9.2. Trainingsdata en beslisregels blijven gelijk.
