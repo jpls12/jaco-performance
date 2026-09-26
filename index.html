@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1098">
-  <link rel="icon" href="/icons/app-icon.svg?v=1098" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1098">
-  <link rel="stylesheet" href="/css/app.css?v=1098">
+  <link rel="manifest" href="/manifest.webmanifest?v=1099">
+  <link rel="icon" href="/icons/app-icon.svg?v=1099" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1099">
+  <link rel="stylesheet" href="/css/app.css?v=1099">
 </head>
 <body>
 <main>
@@ -693,6 +693,13 @@
       <details id="diaryHistory" class="diary-fold diary-history">
         <summary><span><strong>Voortgang en logboek</strong><small>Trends, kracht en mobiliteit, eerdere check-ins</small></span><span aria-hidden="true">⌄</span></summary>
         <div class="diary-history-content">
+          <div class="diary-trend-heading">
+            <h3>Verloop per check-in</h3>
+            <p class="help">Maximaal 7 check-ins uit de laatste 28 dagen. Een lege dag krijgt geen score.</p>
+          </div>
+          <div id="diaryTrends" class="diary-trends">
+            <p class="help">Nog geen dagboekgegevens.</p>
+          </div>
           <div class="diary-summary-grid">
             <div class="today-metric">
               <span>Check-ins 7 d</span>
@@ -2812,23 +2819,23 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1098" defer></script>
-<script src="/js/training-sync.js?v=1098" defer></script>
-<script src="/js/training-quality.js?v=1098" defer></script>
-<script src="/js/performance-model.js?v=1098" defer></script>
-<script src="/js/training-response.js?v=1098" defer></script>
-<script src="/js/session-progression.js?v=1098" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1098" defer></script>
-<script src="/js/race-readiness.js?v=1098" defer></script>
-<script src="/js/fuel-hydration.js?v=1098" defer></script>
-<script src="/js/race-strategy.js?v=1098" defer></script>
-<script src="/js/race-day.js?v=1098" defer></script>
-<script src="/js/race-debrief.js?v=1098" defer></script>
-<script src="/js/daily-decision.js?v=1098" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1098" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1098" defer></script>
-<script src="/js/support-training.js?v=1098" defer></script>
-<script src="/js/bootstrap.js?v=1098" defer></script>
+<script src="/js/app.js?v=1099" defer></script>
+<script src="/js/training-sync.js?v=1099" defer></script>
+<script src="/js/training-quality.js?v=1099" defer></script>
+<script src="/js/performance-model.js?v=1099" defer></script>
+<script src="/js/training-response.js?v=1099" defer></script>
+<script src="/js/session-progression.js?v=1099" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1099" defer></script>
+<script src="/js/race-readiness.js?v=1099" defer></script>
+<script src="/js/fuel-hydration.js?v=1099" defer></script>
+<script src="/js/race-strategy.js?v=1099" defer></script>
+<script src="/js/race-day.js?v=1099" defer></script>
+<script src="/js/race-debrief.js?v=1099" defer></script>
+<script src="/js/daily-decision.js?v=1099" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1099" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1099" defer></script>
+<script src="/js/support-training.js?v=1099" defer></script>
+<script src="/js/bootstrap.js?v=1099" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

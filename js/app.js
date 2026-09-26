@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.9.8";
+const APP_VERSION = "10.9.9";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -1555,6 +1555,52 @@ function renderDiaryRecent(entries){
   }).join("");
 }
 
+function renderDiaryTrends(entries){
+  const box=document.getElementById("diaryTrends");
+  if(!box) return;
+  const points=entries.slice(0,7).reverse();
+  if(!points.length){
+    box.innerHTML='<p class="help">Nog geen check-ins in de laatste 28 dagen.</p>';
+    return;
+  }
+
+  const metrics=[
+    {key:"sessionRpe",label:"Zwaarte",unit:"RPE",max:10,kind:"rpe"},
+    {key:"energy",label:"Energie",unit:"/5",max:5,kind:"energy"},
+    {key:"complaintSeverity",label:"Klachten",unit:"/3",max:3,kind:"complaint"}
+  ];
+  const dateLabel=date=>`${Number(date.slice(8,10))}/${Number(date.slice(5,7))}`;
+  const score=(entry,key,max)=>{
+    const value=diaryNumber(entry?.[key]);
+    return Number.isInteger(value) && value>=0 && value<=max &&
+      (key==="complaintSeverity" || value>=1)?value:null;
+  };
+  const gridStyle=`style="--diary-points:${points.length}"`;
+
+  box.innerHTML=metrics.map(metric=>{
+    const descriptions=points.map(({date,entry})=>{
+      const value=score(entry,metric.key,metric.max);
+      return `${dateLabel(date)}: ${value===null?"geen meting":value===0?"geen klachten":`${value} van ${metric.max}`}`;
+    });
+    const cells=points.map(({date,entry})=>{
+      const value=score(entry,metric.key,metric.max);
+      const missing=value===null;
+      const title=`${metric.label} ${dateLabel(date)}: ${missing?"geen meting":value===0?"geen klachten":`${value}/${metric.max}`}`;
+      return `<span class="diary-trend-cell${missing?" is-missing":""}${value===0?" is-zero":""}" title="${escapeHtmlAttribute(title)}" aria-hidden="true">
+        <span class="diary-trend-number">${missing?"—":value}</span>
+        <span class="diary-trend-track">${missing?"":`<span class="diary-trend-fill" style="height:${Math.round(value/metric.max*100)}%"></span>`}</span>
+      </span>`;
+    }).join("");
+    return `<div class="diary-trend-row diary-trend-${metric.kind}" role="group" aria-label="${escapeHtmlAttribute(`${metric.label}. ${descriptions.join("; ")}`)}">
+      <span class="diary-trend-name">${metric.label}<small>${metric.unit}</small></span>
+      <div class="diary-trend-points" ${gridStyle}>${cells}</div>
+    </div>`;
+  }).join("")+`<div class="diary-trend-row diary-trend-dates" aria-hidden="true">
+    <span class="diary-trend-name">Datum</span>
+    <div class="diary-trend-points" ${gridStyle}>${points.map(({date})=>`<span>${dateLabel(date)}</span>`).join("")}</div>
+  </div>`;
+}
+
 function renderCoachDiary(date=todayDateString()){
   if(typeof renderSupportHistory==="function") renderSupportHistory();
   const seven=coachDiaryEntries(7);
@@ -1562,6 +1608,7 @@ function renderCoachDiary(date=todayDateString()){
   const context=buildDiaryContext();
 
   fillCoachDiaryForm(date);
+  renderDiaryTrends(twentyEight);
 
   document.getElementById("diary7Count").textContent=String(seven.length);
 
