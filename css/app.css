@@ -2937,3 +2937,21 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .app-menu-item>span svg{width:25px;height:25px;display:block}
 .app-menu-item strong{font-weight:760}
 .app-menu-item small{color:#b3c8d3}
+
+/* 10.9.6 · Compact empty state for supplementary training */
+.support-today-card.is-empty{background:#152b31;border-color:#3b6466}
+.support-today-card.is-empty>p.help{display:none}
+.support-today-card.is-empty .today-card-heading{margin-bottom:8px}
+.support-empty{display:flex;align-items:center;gap:13px;min-height:58px}
+.support-empty-mark{
+  display:grid;place-items:center;flex:0 0 30px;width:30px;height:30px;
+  border-radius:50%;background:#225347;color:#a7f1c1;font-weight:900
+}
+.support-empty strong{display:block;font-size:.92rem}
+.support-empty p{margin:1px 0 0;color:var(--muted);font-size:.82rem;line-height:1.4}
+.support-empty button{width:auto;margin-left:auto;padding:9px 12px;font-size:.81rem;white-space:nowrap}
+@media(max-width:530px){
+  .support-empty{flex-wrap:wrap}
+  .support-empty>div{flex:1 1 calc(100% - 48px)}
+  .support-empty button{margin:0 0 0 43px}
+}

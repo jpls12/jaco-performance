@@ -268,7 +268,13 @@ function renderSupportTraining(){
   if(resume) resume.hidden=!supportPlayer;
   for(const [id,date] of [["supportToday",todayDateString()],["supportCalendar",selectedDate]]){
     const element=document.getElementById(id);
-    if(element) element.innerHTML=currentSupportSessions(date).map(supportSessionMarkup).join("")||'<p class="help">Geen aanvullende sessie gepland.</p>';
+    if(!element) continue;
+    const sessions=currentSupportSessions(date);
+    const today=id==="supportToday";
+    if(today) document.getElementById("supportTodayCard")?.classList.toggle("is-empty",!sessions.length);
+    element.innerHTML=sessions.length?sessions.map(supportSessionMarkup).join("")
+      :today?`<div class="support-empty"><span class="support-empty-mark" aria-hidden="true">✓</span><div><strong>Geen aanvullende sessie vandaag</strong><p>Bekijk of wijzig je vaste dagen in Weekplanning.</p></div><button class="secondary" type="button" onclick="switchView('planning')">Weekplanning</button></div>`
+      :'<p class="help">Geen aanvullende sessie op deze datum.</p>';
   }
   const week=document.getElementById("supportWeek");
   if(week){

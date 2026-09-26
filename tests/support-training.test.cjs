@@ -137,3 +137,23 @@ test('timer uses wall clock and pause freezes elapsed time and rest',()=>{
   context.pauseSupportPlayer();now=50000;assert.equal(context.supportElapsedMs(),7000);
   assert.equal(vm.runInContext('supportPlayer.restRemaining',context),40000);
 });
+
+test('today shows a compact empty state and restores the full session card when planned',()=>{
+  const {context,storage,availability}=setup();
+  const states=[];
+  const nodes={
+    supportToday:{innerHTML:''},supportCalendar:{innerHTML:''},
+    supportTodayCard:{classList:{toggle:(name,enabled)=>states.push([name,enabled])}}
+  };
+  context.document.getElementById=id=>nodes[id]||null;
+  Object.assign(context,{selectedDate:'2026-09-27',allWorkouts:()=>({}),races:{},defaultAvailability:()=>availability,getProfile:()=>({})});
+  storage.jp_support_settings_v1={enabled:false,strength:[5],mobility:[]};
+  context.renderSupportTraining();
+  assert.match(nodes.supportToday.innerHTML,/Geen aanvullende sessie vandaag/);
+  assert.match(nodes.supportToday.innerHTML,/Weekplanning/);
+  assert.deepEqual(states,[['is-empty',true]]);
+  storage.jp_support_settings_v1.enabled=true;
+  context.renderSupportTraining();
+  assert.match(nodes.supportToday.innerHTML,/Start begeleide sessie/);
+  assert.deepEqual(states.at(-1),['is-empty',false]);
+});
