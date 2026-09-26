@@ -2773,3 +2773,35 @@ input::placeholder,textarea::placeholder{color:#a4b5c9}
   .view-jumps a{padding:7px 10px;min-height:38px;font-size:.79rem}
   #planningAvailability,#planningSupport,#planningExample{scroll-margin-top:24px}
 }
+
+/* 10.9.4 · Progressive disclosure without hiding the primary coaching action */
+.coach-evidence,.coach-technical,.dashboard-planners{margin-top:16px}
+.coach-evidence>summary,.coach-technical>summary,.dashboard-planners>summary{
+  cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:14px 16px;border:1px solid #3a5d78;border-radius:14px;
+  background:#162d42;color:#eaf6ff;font-weight:750
+}
+.coach-evidence>summary::-webkit-details-marker,
+.coach-technical>summary::-webkit-details-marker,
+.dashboard-planners>summary::-webkit-details-marker{display:none}
+.coach-technical>summary strong,.dashboard-planners>summary strong,
+.coach-technical>summary small,.dashboard-planners>summary small{display:block}
+.coach-technical>summary small,.dashboard-planners>summary small{
+  color:var(--muted);font-size:.8rem;font-weight:450;margin-top:3px;line-height:1.35
+}
+.coach-technical>summary>span:last-child,.dashboard-planners>summary>span:last-child{
+  font-size:1.35rem;line-height:1;transition:transform .18s ease
+}
+.coach-technical[open]>summary>span:last-child,.dashboard-planners[open]>summary>span:last-child{transform:rotate(180deg)}
+.coach-evidence[open]>summary,.coach-technical[open]>summary,.dashboard-planners[open]>summary{margin-bottom:15px}
+.coach-evidence>summary:hover,.coach-technical>summary:hover,.dashboard-planners>summary:hover{border-color:#71b6d7;background:#20415a}
+.coach-evidence .fully-adaptive-main-grid{margin-top:10px}
+.coach-technical>div,.dashboard-planners>.card{margin-top:12px}
+.dashboard-planners{margin:20px 0}
+.dashboard-planners>.card{margin-left:0;margin-right:0}
+@media(max-width:650px){
+  .coach-evidence>summary,.coach-technical>summary,.dashboard-planners>summary{min-height:50px;padding:13px 14px}
+}
+@media(prefers-reduced-motion:reduce){
+  .coach-technical>summary>span:last-child,.dashboard-planners>summary>span:last-child{transition:none}
+}

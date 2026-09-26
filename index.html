@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1093">
+  <link rel="manifest" href="/manifest.webmanifest?v=1094">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png">
-  <link rel="stylesheet" href="/css/app.css?v=1093">
+  <link rel="stylesheet" href="/css/app.css?v=1094">
 </head>
 <body>
 <main>
@@ -174,6 +174,8 @@
         </p>
         <p id="fullyAdaptiveCoachConfidenceText" class="help"></p>
 
+        <details class="coach-evidence">
+          <summary>Bekijk de onderbouwing</summary>
         <div class="fully-adaptive-main-grid">
           <div>
             <span>Vandaag</span>
@@ -196,6 +198,8 @@
           <div id="fullyAdaptiveChanges"></div>
         </details>
 
+        </details>
+
         <div class="fully-adaptive-action-box">
           <div>
             <span>Volgende coachactie</span>
@@ -214,9 +218,11 @@
           </button>
         </div>
 
-        <p id="fullyAdaptiveCoachStatus" class="status"></p>
+        <p id="fullyAdaptiveCoachStatus" class="status" role="status"></p>
       </div>
 
+      <details id="coachTechnical" class="coach-technical">
+        <summary><span><strong>Verdieping bij het coachadvies</strong><small>Dagbeslissing, trainingskwaliteit en de rest van de week</small></span><span aria-hidden="true">⌄</span></summary>
       <div id="dailyDecisionCard" class="daily-decision-card control">
         <div class="daily-decision-head">
           <div>
@@ -289,7 +295,7 @@
           </button>
         </div>
 
-        <p id="weekReplannerApplyStatus" class="status"></p>
+        <p id="weekReplannerApplyStatus" class="status" role="status"></p>
       </div>
 
       <div id="todayReasons" class="reason-list">
@@ -481,7 +487,8 @@
         <button id="applyTodayAdvice" type="button" disabled>Plan advies voor vandaag</button>
       </div>
 
-      <p id="todayStatus" class="status"></p>
+      <p id="todayStatus" class="status" role="status"></p>
+      </details>
     </article>
 
 
@@ -1321,9 +1328,11 @@
       <div id="wellnessHistory" class="wellness-list"></div>
     </article>
 
+    <details class="dashboard-planners">
+      <summary><span><strong>Maak een weekvoorstel</strong><small>Vergelijk een basisweek met het adaptieve voorstel</small></span><span aria-hidden="true">⌄</span></summary>
     <article class="card">
       <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
-        <div><p class="label">Versie 1.1</p><h2>Plan mijn week</h2><p class="help">De app gebruikt je profiel, eerstvolgende wedstrijd, weekomvang en hersteldata om een trainingsweek voor te stellen.</p></div>
+        <div><p class="label">Basisvoorstel</p><h2>Plan mijn week</h2><p class="help">De app gebruikt je profiel, eerstvolgende wedstrijd, weekomvang en hersteldata om een trainingsweek voor te stellen.</p></div>
         <button id="planMyWeek" type="button" style="width:auto">Plan week</button>
       </div>
       <div class="profile-summary">
@@ -1370,6 +1379,7 @@
 
       <p id="adaptiveWeekStatus" class="status"></p>
     </article>
+    </details>
 
   </section>
 
@@ -2787,23 +2797,23 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1093" defer></script>
-<script src="/js/training-sync.js?v=1093" defer></script>
-<script src="/js/training-quality.js?v=1093" defer></script>
-<script src="/js/performance-model.js?v=1093" defer></script>
-<script src="/js/training-response.js?v=1093" defer></script>
-<script src="/js/session-progression.js?v=1093" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1093" defer></script>
-<script src="/js/race-readiness.js?v=1093" defer></script>
-<script src="/js/fuel-hydration.js?v=1093" defer></script>
-<script src="/js/race-strategy.js?v=1093" defer></script>
-<script src="/js/race-day.js?v=1093" defer></script>
-<script src="/js/race-debrief.js?v=1093" defer></script>
-<script src="/js/daily-decision.js?v=1093" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1093" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1093" defer></script>
-<script src="/js/support-training.js?v=1093" defer></script>
-<script src="/js/bootstrap.js?v=1093" defer></script>
+<script src="/js/app.js?v=1094" defer></script>
+<script src="/js/training-sync.js?v=1094" defer></script>
+<script src="/js/training-quality.js?v=1094" defer></script>
+<script src="/js/performance-model.js?v=1094" defer></script>
+<script src="/js/training-response.js?v=1094" defer></script>
+<script src="/js/session-progression.js?v=1094" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1094" defer></script>
+<script src="/js/race-readiness.js?v=1094" defer></script>
+<script src="/js/fuel-hydration.js?v=1094" defer></script>
+<script src="/js/race-strategy.js?v=1094" defer></script>
+<script src="/js/race-day.js?v=1094" defer></script>
+<script src="/js/race-debrief.js?v=1094" defer></script>
+<script src="/js/daily-decision.js?v=1094" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1094" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1094" defer></script>
+<script src="/js/support-training.js?v=1094" defer></script>
+<script src="/js/bootstrap.js?v=1094" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
