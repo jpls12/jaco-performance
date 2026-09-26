@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.9.2 · Professionele dagweergave**
+
+De Vandaag-pagina zet de hoofdtraining bovenaan, gevolgd door aanvullende kracht/mobiliteit, coach en dagboek. Snelle ankers springen naar deze onderdelen. Uitgebreide analyses en planners staan onder één uitklapbaar gedeelte. Typografie, kaartvlakken, contrast, bediening en mobiele afstanden zijn aangescherpt. De datum van het overzicht ververst bij terugkeer naar de app; cache en backupmetadata delen versie 10.9.2. Trainingsdata en beslisregels blijven gelijk.
+
 **10.9.1 · Kracht & Mobiliteit**
 
 - Standaard twee kracht- en drie mobiliteitssessies per week naast de hoofdtraining. Instelbare dagen, aan/uit, Start/Standaard/Uitgebreid en krachtvarianten A/B, zonder materiaal.
