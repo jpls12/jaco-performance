@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.9.6 · Merk en rustige dagen**
+
+Het app-icoon gebruikt nu dezelfde JP-kleuren en monogram als de appheader, met nieuwe SVG- en PNG-formaten voor browser, Android en iPhone. Op dagen zonder aanvullende sessie toont Vandaag een compacte, duidelijke lege toestand met toegang tot Weekplanning. Bestaande sessies en voltooiingen blijven onaangetast. Manifest, app-shell en backupmetadata gebruiken 10.9.6. Bestaande geïnstalleerde iconen worden afhankelijk van het besturingssysteem niet altijd automatisch vernieuwd.
+
 **10.9.5 · Visuele identiteit**
 
 Een consistent visueel systeem voor Vandaag, Dashboard, Weekplanning en mobiele navigatie: herkenbare JP-merkheader, rustige nachtblauwe oppervlakken, één accentkleur voor primaire acties, leesbare typografie en afstanden, uniforme kaarten/velden/statussen en vectoriconen voor trainingstypen. De iconen zijn vaste SVG-markup per type en verwerken geen workouttekst. Trainingslogica blijft ongewijzigd; cache en backupmetadata zijn verhoogd naar 10.9.5.
