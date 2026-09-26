@@ -5,7 +5,7 @@ const fs=require('node:fs');
 function setup(userAgent,standalone=false){
  const elements=Object.fromEntries(['installAppBanner','menuInstallApp','installAppInstructions','installAppText'].map(id=>[id,{hidden:true,scrollIntoView(){}}]));
  const navigator={userAgent,standalone,maxTouchPoints:0};
- const context=vm.createContext({navigator,window:{navigator,matchMedia:()=>({matches:standalone})},document:{getElementById:id=>elements[id]},sessionStorage:{getItem:()=>null}});
+ const context=vm.createContext({navigator,window:{navigator,matchMedia:()=>({matches:standalone})},document:{getElementById:id=>elements[id],addEventListener(){}},sessionStorage:{getItem:()=>null}});
  vm.runInContext(fs.readFileSync('js/bootstrap.js','utf8').split('function setupPwaExperience(){')[0],context);
  return {context,elements};
 }

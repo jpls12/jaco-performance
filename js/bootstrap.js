@@ -1,6 +1,13 @@
 
 let deferredPwaInstallPrompt=null;
 
+function updateTodayOverviewDate(){
+  const label=document.getElementById("todayOverviewDate");
+  if(label) label.textContent=new Intl.DateTimeFormat("nl-NL",{weekday:"long",day:"numeric",month:"long"}).format(new Date());
+}
+document.addEventListener("DOMContentLoaded",updateTodayOverviewDate);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden) updateTodayOverviewDate();});
+
 function appRunsStandalone(){
   return window.matchMedia?.("(display-mode: standalone)")?.matches ||
     window.navigator.standalone===true;
