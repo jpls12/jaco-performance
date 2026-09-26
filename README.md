@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.1 · Doorlopende 7-daagse planning**
+
+De adaptieve herschikker bekijkt voortaan de zeven dagen na vandaag, ook wanneer het venster een zondag passeert. Hij combineert recente uitgevoerde trainingen, dagboeksignalen, herstel, beschikbaarheid, wedstrijdvensters en de bestaande kalender; de nabije wedstrijdfocus en het A-hoofddoel worden naast het voorstel getoond. Zware prikkels worden ook over de weekgrens uit elkaar gehouden en bestaande zware sessies vlak bij een wedstrijd worden afgezwakt. Een gemiste kwaliteitstraining wordt niet ongemerkt de nieuwe week ingehaald. Zonder geplande trainingen meldt de app dat de planning ontbreekt; hij genereert geen nieuwe trainingsbelasting op basis van onvoldoende context. Wedstrijden en voltooide trainingen blijven beschermd, en toepassen vraagt bevestiging na een controle van het actuele voorstel. App-shell en backupmetadata gebruiken 10.10.1.
+
 **10.10.0 · Dagboekgestuurde coachreactie**
 
 Een recente check-in (vandaag of de twee voorgaande kalenderdagen) voedt nu direct het dagadvies en het voorstel voor de resterende week. Hoge RPE alleen is geen herstelalarm; RPE in combinatie met zware benen/lage energie en duidelijke klachten geven een conservatief signaal. Bij duidelijke klachten stelt de dagcoach rust voor en wordt een nabije kwaliteitstraining in het weekvoorstel niet later die week ingehaald. Bij verhoogde inspanning zonder klachten krijgt herstel of meer ruimte tussen zware sessies voorrang. Wedstrijden en afgeronde trainingen blijven beschermd; de app herberekent voorstellen na opslaan, maar kalenderwijzigingen vragen nog expliciete bevestiging. De huidige weekplanner kijkt alleen tot het einde van de lopende week en maakt niet autonoom een volledig nieuw wedstrijdschema. App-shell en backupmetadata gebruiken 10.10.0.
@@ -289,12 +293,12 @@ de bestaande modules.
 
 ## 9.5 Adaptive Week Replanner
 
-- Analyseert automatisch de resterende kalenderweek na herstel- en Training Sync-updates.
+- Analyseert automatisch de komende zeven dagen na herstel- en Training Sync-updates, ook over de kalenderweekgrens.
 - Gemiste rustige trainingen en gemiste lange duurlopen worden niet automatisch ingehaald.
 - Gemiste kwaliteit mag alleen een toekomstige rustige training vervangen wanneer herstel goed, belasting stabiel en de wedstrijdfase veilig is.
 - Bij verhoogde belasting wordt een nabije zware sessie verplaatst naar een veiligere dag of afgezwakt naar herstel.
 - Zware/lange trainingen worden niet in taper- of herstelvensters geplaatst en wedstrijddagen blijven volledig beschermd.
-- Beschikbaarheidsconflicten worden waar mogelijk binnen dezelfde week opgelost.
+- Beschikbaarheidsconflicten worden waar mogelijk binnen het zeven-daagse venster opgelost.
 - Alle voorgestelde wijzigingen worden vooraf getoond; kalenderwijzigingen gebeuren alleen na expliciete bevestiging.
 
 ## 9.4 Performance Model

@@ -10,8 +10,9 @@ function weekReplanClone(workout,date=null){
 function weekReplanWeekBounds(){
   const today=todayDateString();
   const start=mondayOf(today);
-  const end=addDays(start,6);
-  return{today,start,end};
+  const weekEnd=addDays(start,6);
+  const end=addDays(today,7);
+  return{today,start,weekEnd,end};
 }
 
 function weekReplanDateList(from,to){
@@ -125,6 +126,14 @@ function weekReplanIsStressWorkout(workout){
     workout.type!=="Race" &&
     (isHardWorkout(workout)||isLongWorkout(workout))
   );
+}
+
+function weekReplanRaceConflict(date,workouts){
+  return Object.entries(workouts).find(([raceDate,workout])=>{
+    if(workout?.type!=="Race" || raceDate===date) return false;
+    const buffer=Number(workout.distanceKm)>=15?2:1;
+    return dateGapDays(raceDate,date)<=buffer;
+  })||null;
 }
 
 function weekReplanStressLevel(){
@@ -254,6 +263,16 @@ function weekReplanCanPlaceStress(workout,date,schedule,ignoreDate=null){
   const protection=weekReplanProtection(date);
   if(protection.protected) return false;
 
+  const today=todayDateString();
+  const outside=allWorkouts();
+  for(const adjacent of [addDays(date,-1),addDays(date,1)]){
+    if(adjacent!==today && adjacent<today) continue;
+    if(Object.prototype.hasOwnProperty.call(schedule,adjacent)) continue;
+    const other=outside[adjacent];
+    if(other && (other.type==="Race" || weekReplanIsStressWorkout(other))){
+      return false;
+    }
+  }
   for(const [otherDate,other] of Object.entries(schedule)){
     if(otherDate===date || otherDate===ignoreDate || !other) continue;
 
@@ -374,7 +393,7 @@ function weekReplanRescheduleMissedQuality(missed,schedule,bounds,stress){
 
   const candidateDates=weekReplanDateList(
     addDays(bounds.today,1),
-    bounds.end
+    bounds.weekEnd
   );
 
   for(const date of candidateDates){
@@ -420,6 +439,8 @@ function buildAdaptiveWeekReplan(){
   const bounds=weekReplanWeekBounds();
   const workouts=allWorkouts();
   const stress=weekReplanStressLevel();
+  const focusRace=getRaceFocus();
+  const primaryGoal=getPrimaryARace();
   const missed=weekReplanRecentMissed(bounds);
   const futureDates=weekReplanDateList(
     addDays(bounds.today,1),
@@ -460,7 +481,7 @@ function buildAdaptiveWeekReplan(){
 
   if(missedLong){
     notes.push(
-      `Gemiste lange duurloop "${missedLong.workout.name}" wordt niet automatisch later in dezelfde week ingehaald.`
+      `Gemiste lange duurloop "${missedLong.workout.name}" wordt niet automatisch ingehaald.`
     );
     triggers.push("gemiste lange duurloop");
   }
@@ -480,27 +501,31 @@ function buildAdaptiveWeekReplan(){
       );
     }else{
       notes.push(
-        `Gemiste kwaliteit "${missedHard.workout.name}" wordt niet ingehaald: herstel, wedstrijdfase of de resterende week biedt onvoldoende veilige ruimte.`
+        `Gemiste kwaliteit "${missedHard.workout.name}" wordt niet ingehaald: herstel, wedstrijdfase of de lopende week biedt onvoldoende veilige ruimte.`
       );
     }
   }
 
-  // Bestaande zware sessies in taper/herstelvensters altijd conservatiever maken.
+  // Bescherm ook de dagen direct rond een C-race, inclusief over de weekgrens.
   futureDates.forEach(date=>{
     const workout=schedule[date];
     if(!weekReplanIsStressWorkout(workout)) return;
 
     const protection=weekReplanProtection(date);
+    const nearbyRace=weekReplanRaceConflict(date,workouts);
     if(
-      protection.protected &&
-      ["taper","recovery"].includes(protection.kind)
+      (protection.protected && ["taper","recovery"].includes(protection.kind)) ||
+      nearbyRace
     ){
+      const reason=protection.protected && ["taper","recovery"].includes(protection.kind)
+        ?protection.text
+        :`Ruimte rond wedstrijd ${nearbyRace[1].name}`;
       schedule[date]=weekReplanRecoveryWorkout(
         workout,
         date,
-        protection.text
+        reason
       );
-      triggers.push(protection.text);
+      triggers.push(reason);
     }
   });
 
@@ -527,7 +552,7 @@ function buildAdaptiveWeekReplan(){
             date,
             `Klachten gemeld: ${stress.diary.reason}`
           );
-          notes.push("De zware training wordt bij duidelijke klachten niet later deze week ingehaald.");
+          notes.push("De zware training wordt bij duidelijke klachten niet binnen dit venster ingehaald.");
         }else if(swap){
           weekReplanMove(
             schedule,
@@ -543,7 +568,7 @@ function buildAdaptiveWeekReplan(){
           );
         }else{
           notes.push(
-            `${workout.name} staat dichtbij, maar er is geen veiligere plek in deze week; voer hem alleen gecontroleerd uit.`
+            `${workout.name} staat dichtbij, maar er is geen veiligere plek in de komende zeven dagen; voer hem alleen gecontroleerd uit.`
           );
         }
       }
@@ -584,16 +609,31 @@ function buildAdaptiveWeekReplan(){
     }
   });
 
-  // Laat twee zware/lange prikkels niet op opeenvolgende dagen staan.
+  // Laat zware/lange prikkels ook rond de grens van het venster niet opeenvolgen.
   const stressDates=Object.entries(schedule)
     .filter(([,workout])=>weekReplanIsStressWorkout(workout))
     .sort((a,b)=>a[0].localeCompare(b[0]));
 
-  for(let i=1;i<stressDates.length;i++){
-    const [previousDate]=stressDates[i-1];
-    const [date,workout]=stressDates[i];
+  const todayWorkout=workouts[bounds.today];
+  let previousDate=weekReplanIsStressWorkout(todayWorkout)
+    ?bounds.today
+    :null;
+  const yesterday=addDays(bounds.today,-1);
+  if(!previousDate && weekReplanIsStressWorkout(workouts[yesterday]) &&
+    weekReplanIsDone(yesterday,workouts[yesterday])){
+    previousDate=yesterday;
+  }
 
-    if(dateGapDays(previousDate,date)>=2) continue;
+  for(const [date,workout] of stressDates){
+    if(!weekReplanIsStressWorkout(schedule[date])) continue;
+    if(!previousDate){
+      previousDate=date;
+      continue;
+    }
+    if(dateGapDays(previousDate,date)>=2){
+      previousDate=date;
+      continue;
+    }
 
     const swap=weekReplanFindLaterSwap(
       date,
@@ -640,6 +680,8 @@ function buildAdaptiveWeekReplan(){
     createdAt:new Date().toISOString(),
     bounds,
     stress,
+    focusRace,
+    primaryGoal,
     missed,
     triggers:[...new Set(triggers)],
     notes,
@@ -674,22 +716,34 @@ function weekReplanActionLabel(change){
   return "Herschikken";
 }
 
+function weekReplanHasPlanned(proposal){
+  return Object.values(proposal?.original||{}).some(workout=>
+    workout && workout.type!=="Rest"
+  );
+}
+
 function weekReplanStatusMeta(proposal){
   if(!proposal) return{label:"Nog niet berekend",cls:"control"};
 
-  if(proposal.stress.level==="elevated"){
+  if(!weekReplanHasPlanned(proposal)) return{label:"Nog geen planning",cls:"control"};
+
+  if(proposal.stress.level==="elevated" && proposal.changes.length){
     return{label:"Aanpassen aanbevolen",cls:"recover"};
   }
 
   if(proposal.changes.length){
-    return{label:"Week kan slimmer",cls:"adjust"};
+    return{label:"Planning kan slimmer",cls:"adjust"};
+  }
+
+  if(proposal.stress.level==="elevated"){
+    return{label:"Herstel vraagt aandacht",cls:"control"};
   }
 
   if(proposal.triggers.length){
     return{label:"Aandacht · plan behouden",cls:"control"};
   }
 
-  return{label:"Week staat goed",cls:"execute"};
+  return{label:"Planning staat goed",cls:"execute"};
 }
 
 function renderAdaptiveWeekReplanner(){
@@ -716,14 +770,25 @@ function renderAdaptiveWeekReplanner(){
   document.getElementById("weekReplannerRaces").textContent=
     proposal.raceDates.length
       ?`${proposal.raceDates.length} beschermd`
-      :"Geen deze week";
+      :"Geen komende 7 dagen";
+
+  const focus=proposal.focusRace;
+  const primary=proposal.primaryGoal;
+  document.getElementById("weekReplannerGoal").textContent=focus
+    ?`Wedstrijdfocus: ${focus.name} · ${focus.date} · prioriteit ${focus.priority||"C"}.`+
+      (primary && primary.date!==focus.date
+        ?` Hoofddoel: ${primary.name} · ${primary.date}.`
+        :"")
+    :"Nog geen doelwedstrijd ingesteld; het voorstel volgt herstel en de bestaande planning.";
 
   const triggers=proposal.triggers.length
     ?proposal.triggers.join(" · ")
     :"Geen afwijking die om herschikking vraagt.";
 
   document.getElementById("weekReplannerSummary").textContent=
-    proposal.changes.length
+    !weekReplanHasPlanned(proposal)
+      ?"Er staan geen trainingen in de komende 7 dagen. Voeg eerst een planning toe; zonder sessies wordt geen nieuwe trainingsbelasting verzonnen."
+      :proposal.changes.length
       ?`${proposal.changes.length} toekomstige dag${proposal.changes.length===1?"":"en"} wijzigen. ${triggers}`
       :`Geen kalenderwijziging nodig. ${triggers}`;
 
@@ -760,13 +825,15 @@ function renderAdaptiveWeekReplanner(){
   `);
 
   list.innerHTML=[...rows,...noteRows].join("") ||
-    '<div class="week-replanner-note"><span>✓</span><div>De resterende week hoeft op basis van de huidige data niet te worden aangepast.</div></div>';
+    (!weekReplanHasPlanned(proposal)
+      ?'<div class="week-replanner-note"><span>i</span><div>Plan eerst trainingen richting je doelwedstrijd; daarna kan de coach ze doorlopend bijsturen.</div></div>'
+      :'<div class="week-replanner-note"><span>✓</span><div>De komende zeven dagen hoeven op basis van de huidige data niet te worden aangepast.</div></div>');
 
   const apply=document.getElementById("applyWeekReplan");
   apply.disabled=!proposal.changes.length;
   apply.textContent=proposal.changes.length
     ?`Pas ${proposal.changes.length} wijziging${proposal.changes.length===1?"":"en"} toe`
-    :"Week staat al goed";
+    :weekReplanHasPlanned(proposal)?"Planning staat goed":"Nog geen planning";
 
   return proposal;
 }
@@ -779,7 +846,9 @@ function refreshAdaptiveWeekReplanner(){
       status.className="status";
       status.textContent=proposal?.changes.length
         ?"Voorstel opnieuw berekend. Er is nog niets gewijzigd."
-        :"Voorstel opnieuw berekend; geen wijziging nodig.";
+        :weekReplanHasPlanned(proposal)
+          ?"Voorstel opnieuw berekend; geen wijziging nodig."
+          :"Er staan nog geen trainingen in de komende zeven dagen.";
     }
     return proposal;
   }catch(error){
