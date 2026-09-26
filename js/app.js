@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.9.9";
+const APP_VERSION = "10.10.0";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -1382,6 +1382,48 @@ function diaryAverage(items,key){
   return values.reduce((sum,value)=>sum+value,0)/values.length;
 }
 
+function latestDiaryRecoverySignal(entries=coachDiary,today=todayDateString()){
+  const latest=Object.entries(entries||{})
+    .filter(([date,entry])=>{
+      const age=calendarDayDifference(today,date);
+      return entry && age!==null && age>=0 && age<=2;
+    })
+    .sort(([a],[b])=>b.localeCompare(a))[0];
+  if(!latest) return{level:"unknown",date:null,reason:"",complaint:false};
+
+  const [date,entry]=latest;
+  const score=(value,min,max)=>{
+    const number=diaryNumber(value);
+    return Number.isInteger(number) && number>=min && number<=max?number:null;
+  };
+  const rpe=score(entry.sessionRpe,1,10);
+  const legs=score(entry.legs,1,5);
+  const energy=score(entry.energy,1,5);
+  const complaint=score(entry.complaintSeverity,0,3);
+
+  if(complaint!==null && complaint>=2){
+    return{
+      level:"elevated",date,complaint:true,
+      reason:`duidelijke klachten na de check-in van ${date}`
+    };
+  }
+  if(rpe!==null && rpe>=9 && legs!==null && legs>=4 && energy!==null && energy<=2){
+    return{
+      level:"elevated",date,complaint:false,
+      reason:`RPE ${rpe}, zware benen en lage energie op ${date}`
+    };
+  }
+  if((rpe!==null && rpe>=8 && ((legs!==null && legs>=4) || (energy!==null && energy<=2))) || complaint===1){
+    return{
+      level:"attention",date,complaint:false,
+      reason:complaint===1
+        ?`lichte klachten op ${date}`
+        :`RPE ${rpe} samen met zware benen of lage energie op ${date}`
+    };
+  }
+  return{level:"stable",date,reason:"",complaint:false};
+}
+
 function buildDiaryContext(){
   const recent4=coachDiaryEntries(4);
   const latest=recent4[0]?.entry||null;
@@ -1520,6 +1562,7 @@ function fillCoachDiaryForm(date){
   const status=document.getElementById("diaryStatus");
   status.className="status";
   status.textContent="";
+  document.getElementById("diaryAdviceLink").hidden=true;
 }
 
 function renderDiaryRecent(entries){
@@ -1703,7 +1746,8 @@ function saveCoachDiary(event){
 
   const status=document.getElementById("diaryStatus");
   status.className="status ok";
-  status.textContent="Check-in opgeslagen en meegenomen in je coachadvies.";
+  status.textContent="Check-in opgeslagen. Het dag- en weekadvies is opnieuw berekend; kalenderwijzigingen vragen je bevestiging.";
+  document.getElementById("diaryAdviceLink").hidden=false;
 }
 
 function deleteCoachDiaryEntry(){
@@ -1720,7 +1764,8 @@ function deleteCoachDiaryEntry(){
 
   const status=document.getElementById("diaryStatus");
   status.className="status ok";
-  status.textContent="Check-in verwijderd.";
+  status.textContent="Check-in verwijderd. Het coachadvies is opnieuw berekend.";
+  document.getElementById("diaryAdviceLink").hidden=false;
 }
 
 function openDiaryForDate(date=todayDateString()){
@@ -11421,7 +11466,7 @@ function phaseLabel(phase){
   return labels[phase] || phase;
 }
 
-function createTodayRecommendation(readiness,race,phase,availability,currentWorkout,executionFeedback=null){
+function createTodayRecommendation(readiness,race,phase,availability,currentWorkout,executionFeedback=null,diarySignal=latestDiaryRecoverySignal()){
   const date=todayDateString();
 
   if(currentWorkout?.type==="Race"){
@@ -11431,6 +11476,28 @@ function createTodayRecommendation(readiness,race,phase,availability,currentWork
       title:currentWorkout.name,
       text:"Vandaag is een wedstrijddag. De coach vervangt je wedstrijd niet automatisch door een andere training.",
       steps:currentWorkout.displaySteps||[]
+    };
+  }
+
+  if(currentWorkout && workoutWasCompleted(date,currentWorkout)){
+    return{
+      kind:"keep",workout:currentWorkout,title:currentWorkout.name,
+      text:"Deze training is al afgerond. De coach gebruikt je feedback voor de volgende dagen en wijzigt een voltooide training niet.",
+      steps:currentWorkout.displaySteps||[]
+    };
+  }
+
+  if(diarySignal.complaint && diarySignal.level==="elevated"){
+    const workout={
+      date,type:"Rest",name:"Rust na klachten",uploadName:"Jaco - Rust na klachten",
+      planType:"rest",distanceKm:0,durationMinutes:0,rpe:"1/10",status:"planned",
+      priority:"should",displaySteps:["Geen zware training of extra kilometers","Beoordeel klachten opnieuw voor de volgende looptraining"],
+      intervalsDescription:"Rust na gemelde klachten."
+    };
+    return{
+      kind:"rest",workout,title:workout.name,
+      text:`Je dagboek meldt ${diarySignal.reason}. De coach adviseert vandaag rust in plaats van een nieuwe loopprikkel.`,
+      steps:workout.displaySteps
     };
   }
 
@@ -11526,7 +11593,7 @@ Recovery
     };
   }
 
-  if(loadMonitor.level==="elevated" || executionFeedback?.level==="elevated"){
+  if(loadMonitor.level==="elevated" || executionFeedback?.level==="elevated" || diarySignal.level==="elevated"){
     const currentIsLowLoad=
       currentWorkout &&
       !isHardWorkout(currentWorkout) &&
@@ -11538,7 +11605,7 @@ Recovery
         kind:"keep",
         workout:currentWorkout,
         title:currentWorkout.name,
-        text:"De belastbaarheid staat verhoogd door de monitor of Training Sync, maar je geplande training is al rustig. Houd hem bewust gemakkelijk en voeg geen extra volume toe.",
+        text:"De actuele herstel-, uitvoerings- of dagboeksignalen vragen aandacht, maar je geplande training is al rustig. Houd hem gemakkelijk en voeg geen extra volume toe.",
         steps:currentWorkout.displaySteps||[]
       };
     }
@@ -11567,7 +11634,7 @@ Recovery
       kind:currentWorkout?"replace":"new",
       workout,
       title:`Herstelloop ${km} km`,
-      text:"De belastbaarheidsmonitor of Training Sync geeft een verhoogd signaal. Daarom wordt een zware trainingsprikkel vandaag vervangen door een rustige herstelprikkel.",
+      text:`Een verhoogd herstel-, uitvoerings- of dagboeksignaal (${diarySignal.level==="elevated"?diarySignal.reason:"actuele belasting"}) maakt een rustige herstelprikkel vandaag passender dan zware training.`,
       steps:workout.displaySteps
     };
   }
@@ -12246,7 +12313,8 @@ function renderTodayCoach(){
     phase,
     availability,
     existing,
-    executionFeedback
+    executionFeedback,
+    latestDiaryRecoverySignal()
   );
 
   const score=document.getElementById("coachScore");
@@ -12388,7 +12456,8 @@ function renderTodayCoach(){
     existing,
     recommendation:pendingTodayAdvice,
     executionFeedback,
-    loadMonitor
+    loadMonitor,
+    diarySignal:latestDiaryRecoverySignal()
   });
 
   document.getElementById("todayRecommendationTitle").textContent=
@@ -12419,8 +12488,8 @@ function renderTodayCoach(){
           :"Training staat al goed"
         :pendingTodayAdvice.kind==="rest"
           ?(existing
-              ?"Vervang door mobiliteit"
-              :"Plan mobiliteit voor vandaag")
+              ?`Vervang door ${pendingTodayAdvice.workout.type==="Rest"?"rust":"mobiliteit"}`
+              :`Plan ${pendingTodayAdvice.workout.type==="Rest"?"rust":"mobiliteit"} voor vandaag`)
           :"Plan advies voor vandaag";
 
   renderCurrentTodayWorkout(existing);
@@ -12445,10 +12514,14 @@ function applyTodayRecommendation(){
     return;
   }
 
+  if(existing && workoutWasCompleted(date,existing)){
+    status.className="status error";
+    status.textContent="Deze training is al voltooid. De coach past alleen toekomstige trainingen aan.";
+    return;
+  }
+
   if(existing){
-    const replacement=pendingTodayAdvice.kind==="rest"
-      ? `De bestaande training "${existing.name}" vervangen door 15 minuten mobiliteit?`
-      : `De bestaande training "${existing.name}" vervangen door "${pendingTodayAdvice.workout.name}"?`;
+    const replacement=`De bestaande training "${existing.name}" vervangen door "${pendingTodayAdvice.workout.name}"?`;
 
     if(!confirm(replacement)){
       return;

@@ -436,6 +436,7 @@ function buildFullyAdaptiveCoachState(){
   const availability=todayAvailabilityInfo();
   const existing=currentTodayWorkout();
   const execution=buildAdaptiveExecutionFeedback();
+  const diarySignal=latestDiaryRecoverySignal();
 
   const recommendation=
     pendingTodayAdvice ||
@@ -445,7 +446,8 @@ function buildFullyAdaptiveCoachState(){
       phase,
       availability,
       existing,
-      execution
+      execution,
+      diarySignal
     );
 
   const dailyDecision=buildDailyDecision({
@@ -456,7 +458,8 @@ function buildFullyAdaptiveCoachState(){
     existing,
     recommendation,
     executionFeedback:execution,
-    loadMonitor:load
+    loadMonitor:load,
+    diarySignal
   });
 
   const week=

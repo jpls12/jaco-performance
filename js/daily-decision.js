@@ -109,7 +109,8 @@ function buildDailyDecision({
   existing,
   recommendation,
   executionFeedback,
-  loadMonitor
+  loadMonitor,
+  diarySignal
 }){
   const targetWorkout=recommendation?.workout || existing || null;
   const confidence=decisionConfidence(readiness,loadMonitor);
@@ -154,6 +155,8 @@ function buildDailyDecision({
     loadMonitor?.level==="unknown" ||
     executionFeedback?.level==="elevated" ||
     executionFeedback?.level==="attention" ||
+    diarySignal?.level==="elevated" ||
+    diarySignal?.level==="attention" ||
     confidence.level==="limited"
   ){
     state="control";
@@ -190,6 +193,10 @@ function buildDailyDecision({
     reasons.push(`Training Sync: ${executionFeedback.text}`);
   }else if(executionFeedback?.level==="stable"){
     reasons.push("Laatste betrouwbaar gekoppelde training past bij de planning.");
+  }
+
+  if(["attention","elevated"].includes(diarySignal?.level)){
+    reasons.push(`Recente check-in: ${diarySignal.reason}.`);
   }
 
   if(race){

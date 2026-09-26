@@ -11,7 +11,7 @@ function setup(entries={}){
   const elements={};
   const ids=['diaryDate','diaryRpe','diaryLegs','diaryEnergy','diaryEnjoyment',
     'diaryComplaint','diaryActualDistance','diaryActualDuration','diaryComplaintText',
-    'diaryNote','diaryExtra','diaryWorkoutContext','deleteDiaryEntry','diaryStatus'];
+    'diaryNote','diaryExtra','diaryWorkoutContext','deleteDiaryEntry','diaryStatus','diaryAdviceLink'];
   for(const id of ids) elements[id]={value:'',open:false,focused:false,focus(){this.focused=true}};
   elements.diaryDate.value='2026-09-26';
   const saved=[];
