@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.9.8 · Betrouwbare dagboekcheck-ins**
+
+Nieuwe check-ins beginnen met vijf lege kernscores. Zwaarte, benen, energie, trainingsplezier en klachten moeten bewust worden gekozen, inclusief de expliciete keuze 'Geen' bij klachten. Native formuliercontrole en een extra opslagcontrole voorkomen dat lege selecties als nul of neutraal in het coachadvies terechtkomen. Bestaande check-ins laden hun opgeslagen waarden zonder migratie; eventueel ontbrekende historische waarden blijven leeg tot ze worden ingevuld. Versies van app-shell en backupmetadata zijn verhoogd naar 10.9.8.
+
 **10.9.7 · Compact Coach Dagboek**
 
 De dagelijkse check-in toont de vijf kernscores en een direct coachsignaal. Afstand, duur, klachtlocatie en notitie staan onder Details toevoegen; trends, kracht- en mobiliteitslogboek en eerdere check-ins onder Voortgang en logboek. Bij een bestaande check-in met aanvullende gegevens opent het detailgedeelte automatisch, zodat die waarden zichtbaar en bewerkbaar blijven. De opslagvelden en coachberekeningen zijn ongewijzigd; app-shell en backupmetadata gebruiken 10.9.7.

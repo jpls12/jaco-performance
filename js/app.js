@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.9.7";
+const APP_VERSION = "10.9.8";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -1489,11 +1489,11 @@ function fillCoachDiaryForm(date){
   const workout=diaryWorkoutForDate(date);
 
   document.getElementById("diaryDate").value=date;
-  document.getElementById("diaryRpe").value=String(entry?.sessionRpe??5);
-  document.getElementById("diaryLegs").value=String(entry?.legs??3);
-  document.getElementById("diaryEnergy").value=String(entry?.energy??3);
-  document.getElementById("diaryEnjoyment").value=String(entry?.enjoyment??4);
-  document.getElementById("diaryComplaint").value=String(entry?.complaintSeverity??0);
+  document.getElementById("diaryRpe").value=String(entry?.sessionRpe??"");
+  document.getElementById("diaryLegs").value=String(entry?.legs??"");
+  document.getElementById("diaryEnergy").value=String(entry?.energy??"");
+  document.getElementById("diaryEnjoyment").value=String(entry?.enjoyment??"");
+  document.getElementById("diaryComplaint").value=String(entry?.complaintSeverity??"");
   document.getElementById("diaryActualDistance").value=
     entry?.actualDistanceKm??"";
   document.getElementById("diaryActualDuration").value=
@@ -1517,7 +1517,9 @@ function fillCoachDiaryForm(date){
   }
 
   document.getElementById("deleteDiaryEntry").disabled=!entry;
-  document.getElementById("diaryStatus").textContent="";
+  const status=document.getElementById("diaryStatus");
+  status.className="status";
+  status.textContent="";
 }
 
 function renderDiaryRecent(entries){
@@ -1591,10 +1593,34 @@ function renderCoachDiary(date=todayDateString()){
   renderDiaryRecent(twentyEight);
 }
 
+function diaryScore(id,min,max){
+  const raw=document.getElementById(id).value;
+  if(raw==="") return null;
+  const value=Number(raw);
+  return Number.isInteger(value) && value>=min && value<=max?value:null;
+}
+
 function saveCoachDiary(event){
   event.preventDefault();
   const date=document.getElementById("diaryDate").value;
   if(!date) return;
+
+  const scoreFields=[
+    ["diaryRpe",1,10],
+    ["diaryLegs",1,5],
+    ["diaryEnergy",1,5],
+    ["diaryEnjoyment",1,5],
+    ["diaryComplaint",0,3]
+  ];
+  const scores=scoreFields.map(([id,min,max])=>diaryScore(id,min,max));
+  const firstMissing=scores.findIndex(value=>value===null);
+  if(firstMissing!==-1){
+    const status=document.getElementById("diaryStatus");
+    status.className="status error";
+    status.textContent="Kies alle vijf scores voordat je de check-in opslaat.";
+    document.getElementById(scoreFields[firstMissing][0]).focus();
+    return;
+  }
 
   const workout=diaryWorkoutForDate(date);
   const actualDistanceRaw=document.getElementById("diaryActualDistance").value;
@@ -1612,11 +1638,11 @@ function saveCoachDiary(event){
       actualDistanceRaw===""?null:Number(actualDistanceRaw),
     actualDurationMinutes:
       actualDurationRaw===""?null:Number(actualDurationRaw),
-    sessionRpe:Number(document.getElementById("diaryRpe").value),
-    legs:Number(document.getElementById("diaryLegs").value),
-    energy:Number(document.getElementById("diaryEnergy").value),
-    enjoyment:Number(document.getElementById("diaryEnjoyment").value),
-    complaintSeverity:Number(document.getElementById("diaryComplaint").value),
+    sessionRpe:scores[0],
+    legs:scores[1],
+    energy:scores[2],
+    enjoyment:scores[3],
+    complaintSeverity:scores[4],
     complaintText:safe(document.getElementById("diaryComplaintText").value).trim(),
     note:safe(document.getElementById("diaryNote").value).trim(),
     savedAt:new Date().toISOString()

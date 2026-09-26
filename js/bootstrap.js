@@ -279,6 +279,25 @@ document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
 document.getElementById("refreshLoadMonitor").onclick=renderTodayCoach;
 document.getElementById("coachDiaryForm").onsubmit=saveCoachDiary;
+document.getElementById("coachDiaryForm").addEventListener("invalid",event=>{
+  if(document.getElementById("diaryExtra").contains(event.target)){
+    document.getElementById("diaryExtra").open=true;
+  }
+  const status=document.getElementById("diaryStatus");
+  status.className="status error";
+  status.textContent=event.target.matches("select")
+    ?"Kies alle vijf scores voordat je de check-in opslaat."
+    :"Controleer de gemarkeerde invoer voordat je opslaat.";
+},true);
+document.querySelectorAll("#coachDiaryForm select").forEach(select=>{
+  select.addEventListener("change",()=>{
+    const status=document.getElementById("diaryStatus");
+    if(status.classList.contains("error")){
+      status.className="status";
+      status.textContent="";
+    }
+  });
+});
 document.getElementById("diaryDate").onchange=event=>{
   renderCoachDiary(event.target.value);
 };
