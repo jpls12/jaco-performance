@@ -177,3 +177,65 @@ test('empty rolling horizon is identified as missing planning',()=>{
   assert.equal(proposal.changes.length,0);
   assert.equal(context.weekReplanStatusMeta(proposal).label,'Nog geen planning');
 });
+
+function automaticWeekFixture(){
+  const workouts={
+    '2026-09-25':{type:'Run',planType:'quality',name:'Intervals',distanceKm:10,rpe:'8/10'},
+    '2026-09-27':{type:'Race',name:'Wedstrijd',distanceKm:10}
+  };
+  const {context}=weekContext({level:'elevated',complaint:true,reason:'klachten'},
+    {workouts});
+  const custom={};
+  const uploaded={};
+  const done={};
+  const stored=new Map();
+  const elements={
+    autoWeekReplan:{checked:true},autoWeekReplanStatus:{textContent:''},
+    undoAutoWeekReplan:{hidden:true}
+  };
+  context.localStorage={
+    getItem:key=>stored.get(key)||null,
+    setItem:(key,value)=>stored.set(key,value),
+    removeItem:key=>stored.delete(key)
+  };
+  context.document={getElementById:id=>elements[id]||null};
+  context.customWorkouts=custom;
+  context.uploadedWorkouts=uploaded;
+  context.doneWorkouts=done;
+  context.STORAGE_KEY='workouts';
+  context.DONE_KEY='done';
+  context.UPLOAD_KEY='uploads';
+  context.allWorkouts=()=>({...workouts,...custom});
+  context.clearWorkoutMarkersForDate=date=>{delete uploaded[date];delete done[date];};
+  context.saveObject=(key,value)=>stored.set(key,JSON.stringify(value));
+  context.refreshAfterCalendarMutation=()=>{};
+  vm.runInContext('autoWeekReplanReady=true',context);
+  return{context,custom,uploaded,done,stored,elements};
+}
+
+test('automatic planner applies after loading and undo restores original calendar',()=>{
+  const {context,custom,elements}=automaticWeekFixture();
+  const proposal=context.buildAdaptiveWeekReplan();
+  assert.equal(context.applyAutomaticWeekReplan(proposal),true);
+  assert.equal(custom['2026-09-25'].type,'Rest');
+  assert.equal(custom['2026-09-27'],undefined);
+  assert.equal(elements.undoAutoWeekReplan.hidden,false);
+  context.undoAutomaticWeekReplan();
+  assert.equal(custom['2026-09-25'],undefined);
+  assert.equal(context.autoWeekReplanEnabled(),false);
+  assert.equal(elements.undoAutoWeekReplan.hidden,true);
+});
+
+test('automatic planner blocks exported sessions and undo refuses subsequent edits',()=>{
+  const {context,custom,uploaded,elements}=automaticWeekFixture();
+  uploaded['2026-09-25']={name:'Intervals'};
+  assert.equal(context.applyAutomaticWeekReplan(context.buildAdaptiveWeekReplan()),false);
+  assert.equal(custom['2026-09-25'],undefined);
+  assert.match(elements.autoWeekReplanStatus.textContent,/Intervals/);
+  delete uploaded['2026-09-25'];
+  assert.equal(context.applyAutomaticWeekReplan(context.buildAdaptiveWeekReplan()),true);
+  custom['2026-09-25']={type:'Run',name:'Handmatig'};
+  context.undoAutomaticWeekReplan();
+  assert.equal(custom['2026-09-25'].name,'Handmatig');
+  assert.match(elements.autoWeekReplanStatus.textContent,/Terugzetten gestopt/);
+});

@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.2 · Automatische veilige weekaanpassingen**
+
+De coach past zijn advies voor de komende zeven dagen automatisch toe nadat bij het openen de actuele gegevens zijn geladen, en bij nieuwe check-ins, synchronisatie of herberekening zolang de app actief is. De instelling staat standaard aan en is bij Dynamische planning uit te zetten. Wedstrijddagen, afgeronde trainingen en al naar Intervals verstuurde sessies worden niet automatisch aangepast; bij een blokkade blijft het voorstel zichtbaar voor handmatige beoordeling. De laatste automatische kalenderwijziging kan worden teruggezet zolang de betrokken trainingen niet opnieuw zijn gewijzigd, uitgevoerd of verstuurd. Terugzetten schakelt automatische aanpassing uit. De instelling en het herstelpunt worden lokaal op dit apparaat bewaard; export naar Intervals gebeurt niet automatisch. App-shell en backupmetadata gebruiken 10.10.2.
+
 **10.10.1 · Doorlopende 7-daagse planning**
 
 De adaptieve herschikker bekijkt voortaan de zeven dagen na vandaag, ook wanneer het venster een zondag passeert. Hij combineert recente uitgevoerde trainingen, dagboeksignalen, herstel, beschikbaarheid, wedstrijdvensters en de bestaande kalender; de nabije wedstrijdfocus en het A-hoofddoel worden naast het voorstel getoond. Zware prikkels worden ook over de weekgrens uit elkaar gehouden en bestaande zware sessies vlak bij een wedstrijd worden afgezwakt. Een gemiste kwaliteitstraining wordt niet ongemerkt de nieuwe week ingehaald. Zonder geplande trainingen meldt de app dat de planning ontbreekt; hij genereert geen nieuwe trainingsbelasting op basis van onvoldoende context. Wedstrijden en voltooide trainingen blijven beschermd, en toepassen vraagt bevestiging na een controle van het actuele voorstel. App-shell en backupmetadata gebruiken 10.10.1.

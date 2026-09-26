@@ -1,4 +1,134 @@
 let pendingWeekReplan=null;
+const AUTO_WEEK_REPLAN_KEY="jaco_auto_week_replan_v1";
+const AUTO_WEEK_REPLAN_UNDO_KEY="jaco_auto_week_replan_undo_v1";
+let autoWeekReplanReady=false;
+let autoWeekReplanApplying=false;
+
+function autoWeekReplanEnabled(){
+  try{return localStorage.getItem(AUTO_WEEK_REPLAN_KEY)!=="off";}
+  catch{return false;}
+}
+
+function autoWeekReplanUndoRecord(){
+  try{
+    const record=JSON.parse(localStorage.getItem(AUTO_WEEK_REPLAN_UNDO_KEY)||"null");
+    return record && Array.isArray(record.changes) && record.changes.length<=7
+      ?record:null;
+  }catch{return null;}
+}
+
+function autoWeekReplanSafety(proposal){
+  if(!proposal?.changes?.length) return "";
+  for(const change of proposal.changes){
+    const current=allWorkouts()[change.date]||null;
+    if(change.date<=todayDateString() || change.date>proposal.bounds.end ||
+      !change.after || current?.type==="Race" || change.after.type==="Race" ||
+      weekReplanProtection(change.date).kind==="race" ||
+      weekReplanIsDone(change.date,current)){
+      return "Een wedstrijddag of afgeronde training is betrokken. Bekijk het voorstel handmatig.";
+    }
+    if(weekReplanWorkoutSignature(current)!==weekReplanWorkoutSignature(change.before)){
+      return "De kalender is intussen gewijzigd. Herbereken het voorstel.";
+    }
+    if(uploadedWorkouts[change.date]){
+      return "Een betrokken training is al naar Intervals verstuurd. Controleer de wijziging en synchroniseer die zelf.";
+    }
+  }
+  return "";
+}
+
+function renderAutoWeekReplanControls(message=""){
+  const toggle=document.getElementById("autoWeekReplan");
+  const status=document.getElementById("autoWeekReplanStatus");
+  const undo=document.getElementById("undoAutoWeekReplan");
+  if(!toggle || !status || !undo) return;
+  toggle.checked=autoWeekReplanEnabled();
+  const record=autoWeekReplanUndoRecord();
+  undo.hidden=!record;
+  if(message) status.textContent=message;
+  else if(record) status.textContent=
+    `Laatste automatische aanpassing: ${record.changes.length} dag(en) op ${new Date(record.createdAt).toLocaleString("nl-NL")}.`;
+  else status.textContent=toggle.checked
+    ?"Automatisch actief zodra de actuele gegevens zijn geladen."
+    :"Automatisch aanpassen staat uit; je kunt het voorstel zelf toepassen.";
+}
+
+function setAutoWeekReplanEnabled(){
+  localStorage.setItem(AUTO_WEEK_REPLAN_KEY,
+    document.getElementById("autoWeekReplan").checked?"on":"off");
+  renderAutoWeekReplanControls();
+  if(autoWeekReplanEnabled()) refreshDerivedCoachViews();
+}
+
+function applyAutomaticWeekReplan(proposal){
+  if(!autoWeekReplanReady || autoWeekReplanApplying || !autoWeekReplanEnabled() ||
+    !proposal?.changes?.length) return false;
+  const reason=autoWeekReplanSafety(proposal);
+  if(reason){renderAutoWeekReplanControls(reason);return false;}
+
+  const changes=proposal.changes.map(change=>({
+    date:change.date,
+    hadCustom:Object.hasOwn(customWorkouts,change.date),
+    previousCustom:weekReplanClone(customWorkouts[change.date]),
+    previousDone:weekReplanClone(doneWorkouts[change.date]),
+    previousUpload:weekReplanClone(uploadedWorkouts[change.date]),
+    afterSignature:weekReplanWorkoutSignature(change.after),
+    afterSnapshot:weekReplanClone(change.after,change.date)
+  }));
+  const record={createdAt:new Date().toISOString(),changes};
+  autoWeekReplanApplying=true;
+  try{
+    // Save the recovery point before changing the calendar.
+    saveObject(AUTO_WEEK_REPLAN_UNDO_KEY,record);
+    proposal.changes.forEach(change=>{
+      clearWorkoutMarkersForDate(change.date);
+      customWorkouts[change.date]=weekReplanClone(change.after,change.date);
+    });
+    saveObject(STORAGE_KEY,customWorkouts);
+    saveObject(DONE_KEY,doneWorkouts);
+    saveObject(UPLOAD_KEY,uploadedWorkouts);
+    pendingWeekReplan=null;
+    refreshAfterCalendarMutation();
+    renderAutoWeekReplanControls(
+      `${changes.length} toekomstige dag(en) automatisch aangepast. Je kunt de laatste aanpassing terugzetten.`);
+    return true;
+  }finally{autoWeekReplanApplying=false;}
+}
+
+function undoAutomaticWeekReplan(){
+  const record=autoWeekReplanUndoRecord();
+  if(!record) return;
+  const conflict=record.changes.some(change=>{
+    const current=allWorkouts()[change.date]||null;
+    return change.date<=todayDateString() || current?.type==="Race" ||
+      weekReplanIsDone(change.date,current) || uploadedWorkouts[change.date] ||
+      weekReplanWorkoutSignature(current)!==change.afterSignature ||
+      JSON.stringify(customWorkouts[change.date])!==JSON.stringify(change.afterSnapshot);
+  });
+  if(conflict){
+    renderAutoWeekReplanControls("Terugzetten gestopt: een betrokken training is intussen gewijzigd, voltooid of verstuurd.");
+    return;
+  }
+  autoWeekReplanApplying=true;
+  try{
+    record.changes.forEach(change=>{
+      if(change.hadCustom) customWorkouts[change.date]=change.previousCustom;
+      else delete customWorkouts[change.date];
+      if(change.previousDone) doneWorkouts[change.date]=change.previousDone;
+      else delete doneWorkouts[change.date];
+      if(change.previousUpload) uploadedWorkouts[change.date]=change.previousUpload;
+      else delete uploadedWorkouts[change.date];
+    });
+    saveObject(STORAGE_KEY,customWorkouts);
+    saveObject(DONE_KEY,doneWorkouts);
+    saveObject(UPLOAD_KEY,uploadedWorkouts);
+    localStorage.setItem(AUTO_WEEK_REPLAN_KEY,"off");
+    localStorage.removeItem(AUTO_WEEK_REPLAN_UNDO_KEY);
+    pendingWeekReplan=null;
+    refreshAfterCalendarMutation();
+    renderAutoWeekReplanControls("Laatste wijziging teruggezet. Automatisch aanpassen staat uit; zet het weer aan wanneer je wilt.");
+  }finally{autoWeekReplanApplying=false;}
+}
 
 function weekReplanClone(workout,date=null){
   if(!workout) return null;
@@ -834,6 +964,8 @@ function renderAdaptiveWeekReplanner(){
   apply.textContent=proposal.changes.length
     ?`Pas ${proposal.changes.length} wijziging${proposal.changes.length===1?"":"en"} toe`
     :weekReplanHasPlanned(proposal)?"Planning staat goed":"Nog geen planning";
+
+  renderAutoWeekReplanControls();
 
   return proposal;
 }

@@ -350,6 +350,8 @@ document.getElementById("fullyAdaptivePrimaryAction").onclick=applyFullyAdaptive
 document.getElementById("applyTodayAdvice").onclick=applyTodayRecommendation;
 document.getElementById("refreshWeekReplan").onclick=refreshAdaptiveWeekReplanner;
 document.getElementById("applyWeekReplan").onclick=applyAdaptiveWeekReplan;
+document.getElementById("autoWeekReplan").onchange=setAutoWeekReplanEnabled;
+document.getElementById("undoAutoWeekReplan").onclick=undoAutomaticWeekReplan;
 document.getElementById("refreshDashboard").onclick=loadWellnessDashboard;
 document.getElementById("buildAdaptiveWeek").onclick=()=>{
   const status=document.getElementById("adaptiveWeekStatus");
@@ -582,6 +584,8 @@ async function initializeJacoPerformance(){
   }
 
   renderCoachDiary(todayDateString());
+  autoWeekReplanReady=true;
+  refreshDerivedCoachViews();
 }
 
 window.addEventListener("error",event=>{
