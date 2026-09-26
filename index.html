@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1080">
+  <link rel="manifest" href="/manifest.webmanifest?v=1091">
   <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="/icons/app-icon.svg">
-  <link rel="stylesheet" href="/css/app.css?v=1080">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png">
+  <link rel="stylesheet" href="/css/app.css?v=1091">
 </head>
 <body>
 <main>
@@ -53,6 +53,7 @@
 
 
   <section id="today" class="view active">
+    <article class="card"><h2>Kracht & mobiliteit vandaag</h2><div id="supportToday"></div><p class="help">Aanvullend op je hoofdtraining. Dagen aanpassen onder Weekplanning.</p></article>
 
     <article class="card daily-training-card" id="dailyTrainingCard">
       <div class="daily-training-head">
@@ -100,7 +101,7 @@
     </article>
 
     <article class="card">
-      <span class="v2-badge">Jaco Performance 10.8 · Adaptive Training Block Planner</span>
+      <span class="v2-badge">Jaco Performance 10.9.1 · Kracht & Mobiliteit</span>
       <p class="label" style="margin-top:14px">Dagelijkse coach</p>
 
       <div class="hero-score">
@@ -679,6 +680,7 @@
       </div>
 
       <p class="label diary-recent-label">Recente check-ins</p>
+      <h3>Kracht- en mobiliteitslogboek</h3><div id="supportDiary"></div>
       <div id="diaryRecent" class="diary-recent">
         <p class="help">Nog geen dagboekgegevens.</p>
       </div>
@@ -1372,6 +1374,7 @@
 
     <article class="card">
       <div id="workoutCard"><p class="subtitle">Trainingen laden…</p></div>
+      <h3>Aanvullende sessies op deze dag</h3><div id="supportCalendar"></div>
     </article>
 
 
@@ -2287,6 +2290,14 @@
       <p class="label">Voorbeeld van jouw week</p>
       <div id="planningPreview" class="saved-list"></div>
     </article>
+    <article class="card">
+      <h2>Vaste kracht & mobiliteit</h2>
+      <p class="help">Kracht en mobiliteit naast je looptraining, thuis zonder materiaal. Kies je voorkeursdagen en niveau. De planner gebruikt je beschikbare tijd en beschermt wedstrijden en herstel. Je kunt sessies begeleiden, registreren en afzonderlijk exporteren.</p>
+      <form id="supportSettingsForm"></form><p id="supportSettingsStatus" class="status" aria-live="polite"></p>
+      <label>Bekijk week van<input id="supportWeekDate" type="date"></label>
+      <div id="supportWeek"></div>
+      <h3>Jouw voortgang</h3><div id="supportHistory"></div>
+    </article>
   </section>
 
 
@@ -2612,7 +2623,7 @@
 
 
 <div id="guidedTrainingPlayer" class="guided-training-player" aria-hidden="true">
-  <div class="guided-training-shell" role="dialog" aria-modal="true" aria-labelledby="guidedTrainingName">
+  <div id="guidedTrainingDialog" class="guided-training-shell" role="dialog" aria-modal="true" aria-labelledby="guidedTrainingName" tabindex="-1">
     <div class="guided-training-topbar">
       <div>
         <span id="guidedTrainingType" class="pill">Training</span>
@@ -2632,7 +2643,7 @@
 
     <div class="guided-current-step">
       <span id="guidedTrainingStepLabel">Onderdeel 1/1</span>
-      <h3 id="guidedTrainingCurrentStep">Training uitvoeren</h3>
+      <h3 id="guidedTrainingCurrentStep" aria-live="polite">Training uitvoeren</h3>
       <p id="guidedTrainingNextStep" class="help"></p>
     </div>
 
@@ -2737,22 +2748,26 @@
   </div>
 </section>
 
-<script src="/js/app.js?v=1080" defer></script>
-<script src="/js/training-sync.js?v=1080" defer></script>
-<script src="/js/training-quality.js?v=1080" defer></script>
-<script src="/js/performance-model.js?v=1080" defer></script>
-<script src="/js/training-response.js?v=1080" defer></script>
-<script src="/js/session-progression.js?v=1080" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1080" defer></script>
-<script src="/js/race-readiness.js?v=1080" defer></script>
-<script src="/js/fuel-hydration.js?v=1080" defer></script>
-<script src="/js/race-strategy.js?v=1080" defer></script>
-<script src="/js/race-day.js?v=1080" defer></script>
-<script src="/js/race-debrief.js?v=1080" defer></script>
-<script src="/js/daily-decision.js?v=1080" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1080" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1080" defer></script>
-<script src="/js/bootstrap.js?v=1080" defer></script>
+<aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
+<div id="supportActionStatus" class="support-toast" role="status" hidden></div>
+<dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
+<script src="/js/app.js?v=1091" defer></script>
+<script src="/js/training-sync.js?v=1091" defer></script>
+<script src="/js/training-quality.js?v=1091" defer></script>
+<script src="/js/performance-model.js?v=1091" defer></script>
+<script src="/js/training-response.js?v=1091" defer></script>
+<script src="/js/session-progression.js?v=1091" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1091" defer></script>
+<script src="/js/race-readiness.js?v=1091" defer></script>
+<script src="/js/fuel-hydration.js?v=1091" defer></script>
+<script src="/js/race-strategy.js?v=1091" defer></script>
+<script src="/js/race-day.js?v=1091" defer></script>
+<script src="/js/race-debrief.js?v=1091" defer></script>
+<script src="/js/daily-decision.js?v=1091" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1091" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1091" defer></script>
+<script src="/js/support-training.js?v=1091" defer></script>
+<script src="/js/bootstrap.js?v=1091" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

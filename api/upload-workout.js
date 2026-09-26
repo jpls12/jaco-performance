@@ -34,6 +34,14 @@ function validateCustomWorkout(input) {
   const name = cleanText(input.name, 100);
   const uploadName = cleanText(input.uploadName || input.name, 120);
   const type = cleanText(input.type || "Run", 20);
+  const supportKind = input.supportKind;
+  if (supportKind !== undefined && (
+    !["strength", "mobility"].includes(supportKind) ||
+    (supportKind === "strength" && type !== "Strength") ||
+    (supportKind === "mobility" && type !== "Mobility")
+  )) {
+    throw new Error("Ongeldige aanvullende sessie-identiteit.");
+  }
   const description = cleanText(input.intervalsDescription, 5000);
 
   if (!isValidIsoDate(date)) {
@@ -46,7 +54,7 @@ function validateCustomWorkout(input) {
     throw new Error("De beschrijving van de training ontbreekt.");
   }
 
-  if (["Core", "Mobility"].includes(type) && !description.includes("- ")) {
+  if (["Core", "Strength", "Mobility"].includes(type) && !description.includes("- ")) {
     throw new Error(
       "Core- en mobiliteitstrainingen moeten minimaal één oefening bevatten."
     );
@@ -55,11 +63,11 @@ function validateCustomWorkout(input) {
   if (type === "Run" && !description.includes("- ")) {
     throw new Error("De Intervals.icu-opbouw van de hardlooptraining is ongeldig.");
   }
-  const allowedTypes = ["Run", "Core", "Mobility"];
+  const allowedTypes = ["Run", "Core", "Strength", "Mobility"];
 
   if (!allowedTypes.includes(type)) {
     throw new Error(
-      "Alleen hardlopen, core en mobiliteit kunnen momenteel worden geëxporteerd."
+      "Alleen hardlopen, kracht, core en mobiliteit kunnen momenteel worden geëxporteerd."
     );
   }
 
@@ -68,6 +76,7 @@ function validateCustomWorkout(input) {
     name,
     uploadName,
     type,
+    supportKind,
     intervalsDescription: description
   };
 }
@@ -77,6 +86,7 @@ function intervalsEventType(type) {
   const mapping = {
     Run: "Run",
     Core: "WeightTraining",
+    Strength: "WeightTraining",
     Mobility: "Yoga"
   };
 
@@ -156,7 +166,9 @@ export default async function handler(req, res) {
     return sendJson(res, 400, { error: error.message });
   }
 
-  const externalId = `jaco-performance-${workout.date}`;
+  const externalId = workout.supportKind
+    ? `jaco-performance-${workout.date}-support-${workout.supportKind}`
+    : `jaco-performance-${workout.date}`;
 
   const event = [{
     category: "WORKOUT",

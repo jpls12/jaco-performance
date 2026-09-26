@@ -7,7 +7,7 @@ function appRunsStandalone(){
 }
 
 function isIosWebBrowser(){
-  return /iphone|ipad|ipod/i.test(navigator.userAgent||"") &&
+  return (/iphone|ipad|ipod/i.test(navigator.userAgent||"") || (/Macintosh/i.test(navigator.userAgent||"") && navigator.maxTouchPoints>1)) &&
     !appRunsStandalone();
 }
 
@@ -74,7 +74,11 @@ function showInstallExperience(){
     Boolean(deferredPwaInstallPrompt);
 
   if(!installAvailable){
-    hideInstallExperience();
+    // Keep help reachable when the browser offers no automatic prompt.
+    const banner=document.getElementById("installAppBanner");
+    const menuInstall=document.getElementById("menuInstallApp");
+    if(banner) banner.hidden=true;
+    if(menuInstall) menuInstall.hidden=false;
     return;
   }
 
@@ -119,7 +123,12 @@ async function handleInstallApp(){
   const banner=document.getElementById("installAppBanner");
 
   if(banner) banner.hidden=false;
-  if(instructions) instructions.hidden=false;
+  if(instructions){
+    instructions.hidden=false;
+    instructions.textContent=isIosWebBrowser()
+      ?"Open de app-link in Safari. Tik op Deel → Zet op beginscherm → Voeg toe. Kies ‘Open als webapp’ als die optie verschijnt."
+      :"Open de app-link rechtstreeks in Chrome of Edge. Kies in het browsermenu ‘App installeren’ of ‘Toevoegen aan beginscherm’. Ontbreekt die optie? Controleer dat je de online HTTPS-link gebruikt en niet een preview met inlogscherm.";
+  }
 
   if(text){
     text.textContent=isIosWebBrowser()
@@ -447,11 +456,44 @@ document.addEventListener("visibilitychange",()=>{
 });
 
 document.addEventListener("keydown",event=>{
-  if(
-    event.key==="Escape" &&
-    document.getElementById("guidedTrainingPlayer")?.classList.contains("active")
-  ){
+  const player=document.getElementById("guidedTrainingPlayer");
+  const active=player?.classList.contains("active");
+  if(!active) return;
+
+  if(event.key==="Escape"){
     closeGuidedTrainingSession();
+    return;
+  }
+
+  if(event.key!=="Tab") return;
+
+  const focusable=[...player.querySelectorAll(
+    'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+  )].filter(element=>
+    element.getClientRects().length>0 &&
+    element.getAttribute("aria-hidden")!=="true"
+  );
+
+  const dialog=document.getElementById("guidedTrainingDialog");
+  if(!focusable.length){
+    event.preventDefault();
+    dialog?.focus();
+    return;
+  }
+
+  const first=focusable[0];
+  const last=focusable[focusable.length-1];
+  const current=document.activeElement;
+
+  if(!player.contains(current)){
+    event.preventDefault();
+    (event.shiftKey?last:first).focus();
+  }else if(event.shiftKey && current===first){
+    event.preventDefault();
+    last.focus();
+  }else if(!event.shiftKey && current===last){
+    event.preventDefault();
+    first.focus();
   }
 });
 window.addEventListener("focus",refreshDayBoundaryIfNeeded);

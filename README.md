@@ -4,9 +4,16 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.8 · Adaptive Training Block Planner**
+**10.9.1 · Kracht & Mobiliteit**
 
-10.8 trekt de adaptieve logica door van één week naar een blok van vier weken. De planner combineert seizoensfase, wedstrijdkalender, beschikbaarheid en 10.6/10.7-leerbewijs, maar gebruikt actuele readiness alleen voor week 1 en voorspelt geen toekomstig herstel.
+- Standaard twee kracht- en drie mobiliteitssessies per week naast de hoofdtraining. Instelbare dagen, aan/uit, Start/Standaard/Uitgebreid en krachtvarianten A/B, zonder materiaal.
+- Planning houdt rekening met beschikbare minuten, wedstrijden, lange/intensieve trainingen, afstand tussen krachtsessies en actuele herstel-/klachtensignalen. Automatische verplaatsing zoekt alleen een passende resterende dag in dezelfde week; lukt dat niet, dan blijft de reden zichtbaar. Rond weekgrenzen is de controle bewust conservatief.
+- Begeleide sessie met uitvoeringsinstructies, rondes, handmatige oefeningsovergangen, pauze- en rusttimer. Een lopende sessie bewaart haar eigen oefeningssnapshot en kan na herladen in dezelfde browsertab gepauzeerd worden hervat. Geen GPS of automatische progressie.
+- Logboek met werkelijke minuten, optionele RPE en klachten, gedeeltelijke uitvoering en notities. Weekoverzicht en Coach Dagboek tonen dezelfde historie. Minuten × RPE wordt apart getoond en nooit bij Intervals.icu CTL/ATL opgeteld. Ontbrekende waarden blijven onbekend.
+- Downloadbaar tekstrecept en expliciete Intervals.icu-export met eigen stabiele ID per datum én soort. Exporteren wijzigt de identiteit van de hoofdtraining niet. De bestaande serverroute en pincodecontrole blijven verplicht.
+- Instellingen, voltooiing, overslaan en exportstatus gebruiken afzonderlijke `jp_support_*_v1`-sleutels en gaan mee in Backup & Herstel. De actieve timer gebruikt alleen sessionStorage en zit niet in backups. De bestaande automatische core-toevoeging staat uit zolang deze aanvullende planning actief is.
+
+Validatie: `node --test tests/*.test.cjs` en JavaScript-syntaxcontrole. Voor productie blijven een echte mobiele/PWA-bedieningstest en een gecontroleerde Intervals.icu-export nodig. De hoofdtrainingsdialoog en Wake Lock-beveiliging uit PR #35 zijn in deze gecombineerde code behouden.
 
 ## Architectuur
 
@@ -117,6 +124,15 @@ gecontroleerd en daarna naar `main` gemerged. Vercel deployt vervolgens vanuit
 
 Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
+
+## 10.8.1 Stability & UX Hardening
+
+- Fullscreen trainingssessies verplaatsen focus naar de dialoog en herstellen de oorspronkelijke focus na sluiten.
+- Tab- en Shift+Tab-focus blijven binnen de actieve trainingsdialoog, ook als focus onverwacht buiten de dialoog terechtkomt.
+- Wake Lock serialiseert aanvragen en ruimt een laat voltooide aanvraag op wanneer de sessie intussen is gepauzeerd of gesloten.
+- Dynamische aria-labels in de weekstrip worden veilig als HTML-attribuut ontsnapt.
+- Backupmetadata gebruikt één centrale actieve appversie.
+- De bestaande completion-identity-check en alle 10.8-planner- en data-integriteitsregels blijven behouden.
 
 
 
