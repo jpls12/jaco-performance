@@ -821,11 +821,13 @@ async function applyFullyAdaptiveCoachPriority(){
   const action=state.primaryAction.kind;
 
   if(action==="today"){
+    document.getElementById("coachTechnical")?.setAttribute("open","");
     applyTodayRecommendation();
     return;
   }
 
   if(action==="week"){
+    document.getElementById("coachTechnical")?.setAttribute("open","");
     applyAdaptiveWeekReplan();
     return;
   }
