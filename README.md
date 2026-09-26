@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.9.7 · Compact Coach Dagboek**
+
+De dagelijkse check-in toont de vijf kernscores en een direct coachsignaal. Afstand, duur, klachtlocatie en notitie staan onder Details toevoegen; trends, kracht- en mobiliteitslogboek en eerdere check-ins onder Voortgang en logboek. Bij een bestaande check-in met aanvullende gegevens opent het detailgedeelte automatisch, zodat die waarden zichtbaar en bewerkbaar blijven. De opslagvelden en coachberekeningen zijn ongewijzigd; app-shell en backupmetadata gebruiken 10.9.7.
+
 **10.9.6 · Merk en rustige dagen**
 
 Het app-icoon gebruikt nu dezelfde JP-kleuren en monogram als de appheader, met nieuwe SVG- en PNG-formaten voor browser, Android en iPhone. Op dagen zonder aanvullende sessie toont Vandaag een compacte, duidelijke lege toestand met toegang tot Weekplanning. Bestaande sessies en voltooiingen blijven onaangetast. Manifest, app-shell en backupmetadata gebruiken 10.9.6. Bestaande geïnstalleerde iconen worden afhankelijk van het besturingssysteem niet altijd automatisch vernieuwd.

@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.9.6";
+const APP_VERSION = "10.9.7";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -1501,6 +1501,10 @@ function fillCoachDiaryForm(date){
   document.getElementById("diaryComplaintText").value=
     entry?.complaintText||"";
   document.getElementById("diaryNote").value=entry?.note||"";
+  if(entry && (entry.actualDistanceKm!=null || entry.actualDurationMinutes!=null ||
+      entry.complaintText || entry.note)){
+    document.getElementById("diaryExtra").open=true;
+  }
 
   const context=document.getElementById("diaryWorkoutContext");
   if(workout){
