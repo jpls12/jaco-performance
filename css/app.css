@@ -2875,7 +2875,7 @@ h3{font-weight:730}
 .tabs .tab.active{background:#244759;border-color:#538a9c;color:#f5fbfe;box-shadow:0 3px 12px rgba(0,0,0,.15)}
 .tabs .tab:hover{background:#1a3849;border-color:#3d6f83;color:#f5fbfe}
 button{background:var(--green);color:#0b281d;font-weight:780;letter-spacing:.005em;border-radius:11px}
-button:not(:disabled):hover:not(.secondary):not(.tab):not(.mobile-nav-button):not(.app-menu-item){background:#9beabb}
+button:not(:disabled):hover:not(.secondary):not(.tab):not(.mobile-nav-button):not(.app-menu-item){filter:brightness(1.06)}
 button.secondary{background:#20384a;border-color:#55758a;color:#f2f8fc}
 button.secondary:hover{background:#2a4a5f;border-color:#80a4ba}
 button:disabled{opacity:.55}
