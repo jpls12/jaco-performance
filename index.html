@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1097">
-  <link rel="icon" href="/icons/app-icon.svg?v=1097" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1097">
-  <link rel="stylesheet" href="/css/app.css?v=1097">
+  <link rel="manifest" href="/manifest.webmanifest?v=1098">
+  <link rel="icon" href="/icons/app-icon.svg?v=1098" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1098">
+  <link rel="stylesheet" href="/css/app.css?v=1098">
 </head>
 <body>
 <main>
@@ -594,15 +594,17 @@
         <div id="diaryWorkoutContext" class="diary-workout-context">
           Geen training voor deze datum gevonden.
         </div>
+        <p class="help diary-score-help">Kies alle vijf scores bewust. Niets wordt vooraf ingevuld.</p>
 
         <div class="diary-input-grid">
           <label>Zwaarte · RPE
-            <select id="diaryRpe">
+            <select id="diaryRpe" required>
+              <option value="" selected disabled>Kies zwaarte</option>
               <option value="1">1 · zeer licht</option>
               <option value="2">2</option>
               <option value="3">3 · licht</option>
               <option value="4">4</option>
-              <option value="5" selected>5 · gemiddeld</option>
+              <option value="5">5 · gemiddeld</option>
               <option value="6">6</option>
               <option value="7">7 · stevig</option>
               <option value="8">8 · zwaar</option>
@@ -612,38 +614,42 @@
           </label>
 
           <label>Benen
-            <select id="diaryLegs">
+            <select id="diaryLegs" required>
+              <option value="" selected disabled>Kies benen</option>
               <option value="1">1 · zeer fris</option>
               <option value="2">2 · goed</option>
-              <option value="3" selected>3 · neutraal</option>
+              <option value="3">3 · neutraal</option>
               <option value="4">4 · zwaar</option>
               <option value="5">5 · zeer zwaar</option>
             </select>
           </label>
 
           <label>Energie
-            <select id="diaryEnergy">
+            <select id="diaryEnergy" required>
+              <option value="" selected disabled>Kies energie</option>
               <option value="1">1 · zeer laag</option>
               <option value="2">2 · laag</option>
-              <option value="3" selected>3 · normaal</option>
+              <option value="3">3 · normaal</option>
               <option value="4">4 · goed</option>
               <option value="5">5 · zeer goed</option>
             </select>
           </label>
 
           <label>Trainingsplezier
-            <select id="diaryEnjoyment">
+            <select id="diaryEnjoyment" required>
+              <option value="" selected disabled>Kies plezier</option>
               <option value="1">1 · slecht</option>
               <option value="2">2</option>
               <option value="3">3 · neutraal</option>
-              <option value="4" selected>4 · goed</option>
+              <option value="4">4 · goed</option>
               <option value="5">5 · uitstekend</option>
             </select>
           </label>
 
           <label>Klachten
-            <select id="diaryComplaint">
-              <option value="0" selected>Geen</option>
+            <select id="diaryComplaint" required>
+              <option value="" selected disabled>Kies klachten</option>
+              <option value="0">Geen</option>
               <option value="1">Licht</option>
               <option value="2">Duidelijk</option>
               <option value="3">Sterk</option>
@@ -2806,23 +2812,23 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1097" defer></script>
-<script src="/js/training-sync.js?v=1097" defer></script>
-<script src="/js/training-quality.js?v=1097" defer></script>
-<script src="/js/performance-model.js?v=1097" defer></script>
-<script src="/js/training-response.js?v=1097" defer></script>
-<script src="/js/session-progression.js?v=1097" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1097" defer></script>
-<script src="/js/race-readiness.js?v=1097" defer></script>
-<script src="/js/fuel-hydration.js?v=1097" defer></script>
-<script src="/js/race-strategy.js?v=1097" defer></script>
-<script src="/js/race-day.js?v=1097" defer></script>
-<script src="/js/race-debrief.js?v=1097" defer></script>
-<script src="/js/daily-decision.js?v=1097" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1097" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1097" defer></script>
-<script src="/js/support-training.js?v=1097" defer></script>
-<script src="/js/bootstrap.js?v=1097" defer></script>
+<script src="/js/app.js?v=1098" defer></script>
+<script src="/js/training-sync.js?v=1098" defer></script>
+<script src="/js/training-quality.js?v=1098" defer></script>
+<script src="/js/performance-model.js?v=1098" defer></script>
+<script src="/js/training-response.js?v=1098" defer></script>
+<script src="/js/session-progression.js?v=1098" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1098" defer></script>
+<script src="/js/race-readiness.js?v=1098" defer></script>
+<script src="/js/fuel-hydration.js?v=1098" defer></script>
+<script src="/js/race-strategy.js?v=1098" defer></script>
+<script src="/js/race-day.js?v=1098" defer></script>
+<script src="/js/race-debrief.js?v=1098" defer></script>
+<script src="/js/daily-decision.js?v=1098" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1098" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1098" defer></script>
+<script src="/js/support-training.js?v=1098" defer></script>
+<script src="/js/bootstrap.js?v=1098" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

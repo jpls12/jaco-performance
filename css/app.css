@@ -2942,8 +2942,10 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .coach-diary-card #loadTodayDiary{flex:0 0 auto;min-height:40px}
 .diary-date-label{max-width:260px;margin-top:14px}
 .coach-diary-card .diary-workout-context{margin:10px 0 14px;padding:10px 12px;background:var(--surface-soft);border-color:#365267}
+.diary-score-help{margin:0 0 -2px;font-size:.83rem}
 .coach-diary-card .diary-input-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .coach-diary-card .diary-input-grid label{min-width:0}
+.coach-diary-card .diary-input-grid select:invalid{color:var(--muted)}
 .diary-fold{margin-top:14px;border:1px solid #3d5e71;border-radius:13px;background:#142b39;overflow:hidden}
 .diary-fold>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;color:var(--text)}
 .diary-fold>summary::-webkit-details-marker{display:none}
