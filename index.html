@@ -2623,7 +2623,7 @@
 
 
 <div id="guidedTrainingPlayer" class="guided-training-player" aria-hidden="true">
-  <div class="guided-training-shell" role="dialog" aria-modal="true" aria-labelledby="guidedTrainingName">
+  <div id="guidedTrainingDialog" class="guided-training-shell" role="dialog" aria-modal="true" aria-labelledby="guidedTrainingName" tabindex="-1">
     <div class="guided-training-topbar">
       <div>
         <span id="guidedTrainingType" class="pill">Training</span>
@@ -2643,7 +2643,7 @@
 
     <div class="guided-current-step">
       <span id="guidedTrainingStepLabel">Onderdeel 1/1</span>
-      <h3 id="guidedTrainingCurrentStep">Training uitvoeren</h3>
+      <h3 id="guidedTrainingCurrentStep" aria-live="polite">Training uitvoeren</h3>
       <p id="guidedTrainingNextStep" class="help"></p>
     </div>
 

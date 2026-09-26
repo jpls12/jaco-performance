@@ -610,6 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
+const APP_VERSION = "10.9.1";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -2498,7 +2499,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.9.1",
+    appVersion:APP_VERSION,
     createdAt:new Date().toISOString(),
     data
   };
@@ -3327,6 +3328,14 @@ function allWorkouts(){
 }
 function safe(value){
   return String(value ?? "").replace(/[<>]/g,"");
+}
+function escapeHtmlAttribute(value){
+  return String(value ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#39;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;");
 }
 function ymd(date){
   const y=date.getFullYear();
@@ -11645,7 +11654,7 @@ function renderTodayWeekStrip(){
 
     return`
       <button type="button" class="${classes}" onclick="openTodayWeekDate('${date}')"
-        aria-label="${safe(fullDate.format(parsed))}${workout?` · ${safe(workout.name)}`:""}">
+        aria-label="${escapeHtmlAttribute(fullDate.format(parsed))}${workout?` · ${escapeHtmlAttribute(workout.name)}`:""}">
         <small>${safe(shortDay.format(parsed).replace(".",""))}</small>
         <strong>${parsed.getDate()}</strong>
         <span class="week-dot"></span>
@@ -11784,7 +11793,9 @@ let guidedTrainingSession={
   pauseStartedAt:null,
   pausedMs:0,
   intervalId:null,
-  wakeLock:null
+  wakeLock:null,
+  wakeLockRequest:null,
+  returnFocus:null
 };
 
 function guidedSessionElapsedSeconds(){
@@ -11809,20 +11820,61 @@ function formatGuidedElapsed(seconds){
 
 async function requestGuidedWakeLock(){
   if(!("wakeLock" in navigator)) return;
+
+  const player=document.getElementById("guidedTrainingPlayer");
+  if(
+    !player?.classList.contains("active") ||
+    guidedTrainingSession.pauseStartedAt ||
+    guidedTrainingSession.wakeLock?.released===false
+  ){
+    return;
+  }
+
+  if(guidedTrainingSession.wakeLockRequest){
+    return guidedTrainingSession.wakeLockRequest;
+  }
+
+  let request=null;
   try{
-    guidedTrainingSession.wakeLock=await navigator.wakeLock.request("screen");
+    request=navigator.wakeLock.request("screen");
+    guidedTrainingSession.wakeLockRequest=request;
+
+    const sentinel=await request;
+    const requestIsCurrent=guidedTrainingSession.wakeLockRequest===request;
+    const sessionIsActive=
+      player.classList.contains("active") &&
+      !guidedTrainingSession.pauseStartedAt;
+
+    if(!requestIsCurrent || !sessionIsActive){
+      await sentinel.release().catch(()=>{});
+      return;
+    }
+
+    guidedTrainingSession.wakeLock=sentinel;
+    sentinel.addEventListener("release",()=>{
+      if(guidedTrainingSession.wakeLock===sentinel){
+        guidedTrainingSession.wakeLock=null;
+      }
+    });
   }catch(error){
     console.warn("Scherm actief houden lukte niet:",error);
+  }finally{
+    if(guidedTrainingSession.wakeLockRequest===request){
+      guidedTrainingSession.wakeLockRequest=null;
+    }
   }
 }
 
 function releaseGuidedWakeLock(){
-  try{
-    guidedTrainingSession.wakeLock?.release();
-  }catch{
-    // Browser kan de wake lock zelf al hebben vrijgegeven.
-  }
+  const sentinel=guidedTrainingSession.wakeLock;
   guidedTrainingSession.wakeLock=null;
+  guidedTrainingSession.wakeLockRequest=null;
+
+  if(sentinel && !sentinel.released){
+    Promise.resolve(sentinel.release()).catch(()=>{
+      // Browser kan de wake lock zelf al hebben vrijgegeven.
+    });
+  }
 }
 
 function renderGuidedTrainingSession(){
@@ -11897,6 +11949,10 @@ function startTodayTrainingExperience(){
   guidedTrainingSession.startedAt=Date.now();
   guidedTrainingSession.pauseStartedAt=null;
   guidedTrainingSession.pausedMs=0;
+  guidedTrainingSession.returnFocus=
+    document.activeElement instanceof HTMLElement
+      ?document.activeElement
+      :null;
 
   const player=document.getElementById("guidedTrainingPlayer");
   player.classList.add("active");
@@ -11909,6 +11965,12 @@ function startTodayTrainingExperience(){
   renderGuidedTrainingSession();
   startGuidedTrainingClock();
   requestGuidedWakeLock();
+
+  requestAnimationFrame(()=>{
+    document.getElementById("closeGuidedTraining")?.focus({
+      preventScroll:true
+    });
+  });
 }
 
 function closeGuidedTrainingSession(force=false){
@@ -11930,6 +11992,26 @@ function closeGuidedTrainingSession(force=false){
   player.classList.remove("active");
   player.setAttribute("aria-hidden","true");
   document.body.style.overflow="";
+
+  const returnFocus=guidedTrainingSession.returnFocus;
+  guidedTrainingSession.date=null;
+  guidedTrainingSession.workout=null;
+  guidedTrainingSession.steps=[];
+  guidedTrainingSession.index=0;
+  guidedTrainingSession.startedAt=null;
+  guidedTrainingSession.pauseStartedAt=null;
+  guidedTrainingSession.pausedMs=0;
+  guidedTrainingSession.returnFocus=null;
+
+  if(returnFocus?.isConnected){
+    requestAnimationFrame(()=>{
+      try{
+        returnFocus.focus({preventScroll:true});
+      }catch{
+        returnFocus.focus();
+      }
+    });
+  }
 }
 
 function previousGuidedTrainingStep(){

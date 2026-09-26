@@ -13,7 +13,7 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 - Downloadbaar tekstrecept en expliciete Intervals.icu-export met eigen stabiele ID per datum én soort. Exporteren wijzigt de identiteit van de hoofdtraining niet. De bestaande serverroute en pincodecontrole blijven verplicht.
 - Instellingen, voltooiing, overslaan en exportstatus gebruiken afzonderlijke `jp_support_*_v1`-sleutels en gaan mee in Backup & Herstel. De actieve timer gebruikt alleen sessionStorage en zit niet in backups. De bestaande automatische core-toevoeging staat uit zolang deze aanvullende planning actief is.
 
-Validatie: `node --test tests/*.test.cjs` en JavaScript-syntaxcontrole. Voor productie blijven een echte mobiele/PWA-bedieningstest en een gecontroleerde Intervals.icu-export nodig. PR #35 bevat afzonderlijke hardening van de bestaande hoofdtrainingsdialoog/Wake Lock en moet eveneens worden beoordeeld; deze uitbreiding vervangt die niet.
+Validatie: `node --test tests/*.test.cjs` en JavaScript-syntaxcontrole. Voor productie blijven een echte mobiele/PWA-bedieningstest en een gecontroleerde Intervals.icu-export nodig. De hoofdtrainingsdialoog en Wake Lock-beveiliging uit PR #35 zijn in deze gecombineerde code behouden.
 
 ## Architectuur
 
@@ -124,6 +124,15 @@ gecontroleerd en daarna naar `main` gemerged. Vercel deployt vervolgens vanuit
 
 Nieuwe functionaliteit hoort pas na deze stabilisatielaag verder te bouwen op
 de bestaande modules.
+
+## 10.8.1 Stability & UX Hardening
+
+- Fullscreen trainingssessies verplaatsen focus naar de dialoog en herstellen de oorspronkelijke focus na sluiten.
+- Tab- en Shift+Tab-focus blijven binnen de actieve trainingsdialoog, ook als focus onverwacht buiten de dialoog terechtkomt.
+- Wake Lock serialiseert aanvragen en ruimt een laat voltooide aanvraag op wanneer de sessie intussen is gepauzeerd of gesloten.
+- Dynamische aria-labels in de weekstrip worden veilig als HTML-attribuut ontsnapt.
+- Backupmetadata gebruikt één centrale actieve appversie.
+- De bestaande completion-identity-check en alle 10.8-planner- en data-integriteitsregels blijven behouden.
 
 
 
