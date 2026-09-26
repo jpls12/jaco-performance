@@ -51,25 +51,31 @@ test('day advice preserves a finished workout and race; complaint proposes rest 
   assert.equal(context.createTodayRecommendation(...args.slice(0,4),{...run,type:'Race'},args[5]).kind,'keep');
 });
 
-function weekContext(diary){
-  const workouts={
+function weekContext(diary,options={}){
+  const today=options.today||'2026-09-24';
+  const workouts=options.workouts||{
     '2026-09-25':{date:'2026-09-25',type:'Run',planType:'quality',name:'Intervals',distanceKm:10,rpe:'8/10'},
     '2026-09-26':{date:'2026-09-26',type:'Run',planType:'easy',name:'Rustig 8 km',distanceKm:8,rpe:'3/10'},
     '2026-09-27':{date:'2026-09-27',type:'Race',name:'Wedstrijd',distanceKm:10}
   };
   const context=vm.createContext({
-    todayDateString:()=> '2026-09-24',mondayOf:()=> '2026-09-21',addDays,
-    allWorkouts:()=>workouts,doneWorkouts:{},races:{},
+    todayDateString:()=>today,
+    mondayOf:date=>addDays(date,-((new Date(date+'T12:00:00Z').getUTCDay()+6)%7)),addDays,
+    allWorkouts:()=>workouts,doneWorkouts:options.doneWorkouts||{},races:options.races||{},
     completionMarkerMatches:()=>false,trainingExecutionForDate:()=>({matched:false}),
     calendarDayDifference:days,dateGapDays:(a,b)=>Math.abs(days(a,b)),signedDateGapDays:days,
-    determineReadiness:()=>({level:'unknown',sufficientData:false}),getWellnessSnapshot:()=>({}),
+    determineReadiness:()=>options.readiness||({level:'unknown',sufficientData:false}),getWellnessSnapshot:()=>({}),
     buildLoadMonitor:()=>({level:'stable'}),buildAdaptiveExecutionFeedback:()=>({level:'unknown'}),
+    getRaceFocus:()=>options.focusRace||null,getPrimaryARace:()=>options.primaryGoal||null,
+    classifyRacePhase:()=>({phase:'general'}),
     latestDiaryRecoverySignal:()=>diary,
-    getProfile:()=>({availability:{},z2Hr:140}),defaultAvailability:()=>({}),
-    DAY_KEYS:['mon','tue','wed','thu','fri','sat','sun'],weekdayIndexFromDate:()=>4,
+    getProfile:()=>({availability:options.availability||{},z2Hr:140}),
+    defaultAvailability:()=>Object.fromEntries(['mon','tue','wed','thu','fri','sat','sun'].map(key=>[key,{available:true,maxMinutes:90}])),
+    DAY_KEYS:['mon','tue','wed','thu','fri','sat','sun'],
+    weekdayIndexFromDate:date=>(new Date(date+'T12:00:00Z').getUTCDay()+6)%7,
     fitsTime:()=>true,isHardWorkout:w=>w?.planType==='quality',isLongWorkout:()=>false,
     finiteNumberOrNull:v=>v==null||v===''?null:Number(v),
-    raceTaperDays:()=>7,raceRecoveryDays:()=>2,
+    raceTaperDays:race=>race.priority==='C'?0:7,raceRecoveryDays:()=>2,
     document:{getElementById:()=>({className:'',textContent:''})},
     confirm:()=>{throw Error('Stale proposal must not ask for confirmation');},
     saveObject:()=>{throw Error('Stale proposal must not write');}
@@ -96,4 +102,78 @@ test('changed feedback invalidates a previously shown week proposal before apply
   vm.runInContext('renderAdaptiveWeekReplanner=()=>{}',context);
   context.applyAdaptiveWeekReplan();
   assert.match(status.textContent,/veranderd door nieuwe gegevens/);
+});
+
+test('Sunday check-in adjusts Monday across the week boundary and preserves the goal race',()=>{
+  const goal={name:'Halve marathon Amsterdam',date:'2026-10-18',priority:'A'};
+  const focus={name:'Testwedstrijd',date:'2026-10-03',priority:'C'};
+  const workouts={
+    '2026-09-28':{type:'Run',planType:'quality',name:'Drempel',distanceKm:12,rpe:'8/10'},
+    '2026-09-29':{type:'Run',planType:'easy',name:'Easy',distanceKm:8,rpe:'3/10'},
+    '2026-10-03':{type:'Race',name:'Testwedstrijd',distanceKm:5}
+  };
+  const {proposal}=weekContext({level:'elevated',complaint:true,reason:'duidelijke klachten'},
+    {today:'2026-09-27',workouts,focusRace:focus,primaryGoal:goal});
+  assert.equal(proposal.bounds.weekEnd,'2026-09-27');
+  assert.equal(proposal.bounds.end,'2026-10-04');
+  assert.equal(proposal.schedule['2026-09-28'].type,'Rest');
+  assert.equal(proposal.schedule['2026-10-03'].type,'Race');
+  assert.equal(proposal.focusRace.name,focus.name);
+  assert.equal(proposal.primaryGoal.name,goal.name);
+});
+
+test('Saturday quality keeps Sunday and Monday from becoming back-to-back stress',()=>{
+  const workouts={
+    '2026-09-26':{type:'Run',planType:'quality',name:'Zware zaterdag',distanceKm:13},
+    '2026-09-27':{type:'Run',planType:'quality',name:'Zware zondag',distanceKm:10},
+    '2026-09-28':{type:'Run',planType:'easy',name:'Rustig maandag',distanceKm:7}
+  };
+  const {proposal}=weekContext({level:'stable',complaint:false,reason:''},
+    {today:'2026-09-26',workouts});
+  assert.notEqual(proposal.schedule['2026-09-27'].planType,'quality');
+  assert.equal(proposal.schedule['2026-09-28'].planType,'quality');
+});
+
+test('availability may move an easy run from Sunday to Monday without inventing load',()=>{
+  const workouts={
+    '2026-09-27':{type:'Run',planType:'easy',name:'Easy zondag',distanceKm:8},
+    '2026-09-28':{type:'Rest',planType:'rest',name:'Rust maandag'}
+  };
+  const {proposal}=weekContext({level:'stable',complaint:false,reason:''},{
+    today:'2026-09-26',workouts,
+    availability:{sun:{available:false,maxMinutes:0}}
+  });
+  assert.equal(proposal.schedule['2026-09-27'].type,'Rest');
+  assert.equal(proposal.schedule['2026-09-28'].name,'Easy zondag');
+});
+
+test('missed quality does not cross into the new week; nearby race remains protected',()=>{
+  const missed={
+    '2026-09-26':{type:'Run',planType:'quality',name:'Gemist interval',distanceKm:10},
+    '2026-09-28':{type:'Run',planType:'easy',name:'Easy maandag',distanceKm:8}
+  };
+  const {proposal}=weekContext({level:'stable',complaint:false,reason:''},{
+    today:'2026-09-27',workouts:missed,
+    readiness:{level:'good',sufficientData:true,score:85}
+  });
+  assert.equal(proposal.schedule['2026-09-28'].name,'Easy maandag');
+  assert.equal(proposal.changes.length,0);
+
+  const raceWorkouts={
+    '2026-10-02':{type:'Run',planType:'quality',name:'Vrijdag hard',distanceKm:10},
+    '2026-10-03':{type:'Race',name:'C-race',distanceKm:5}
+  };
+  const raceProposal=weekContext({level:'stable',complaint:false,reason:''},{
+    today:'2026-09-27',workouts:raceWorkouts
+  }).proposal;
+  assert.equal(raceProposal.schedule['2026-10-02'].planType,'recovery');
+  assert.equal(raceProposal.schedule['2026-10-03'].type,'Race');
+});
+
+test('empty rolling horizon is identified as missing planning',()=>{
+  const {context,proposal}=weekContext({level:'unknown',complaint:false,reason:''},{
+    today:'2026-09-27',workouts:{}
+  });
+  assert.equal(proposal.changes.length,0);
+  assert.equal(context.weekReplanStatusMeta(proposal).label,'Nog geen planning');
 });

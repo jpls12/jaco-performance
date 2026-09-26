@@ -237,9 +237,9 @@ function fullyAdaptiveCoachPriority({
     return{
       level:"week",
       cls:"adjust",
-      label:"WEEK AANPASSEN",
-      headline:"De rest van de week vraagt herschikking",
-      summary:"Belasting en weekstructuur geven samen aanleiding tot een toekomstige kalenderwijziging."
+      label:"PLANNING AANPASSEN",
+      headline:"De komende dagen vragen herschikking",
+      summary:"Belasting en je doelwedstrijd geven aanleiding tot een toekomstige kalenderwijziging."
     };
   }
 
@@ -247,8 +247,8 @@ function fullyAdaptiveCoachPriority({
     return{
       level:"week",
       cls:"control",
-      label:"WEEK BIJSTUREN",
-      headline:"De week kan veiliger of slimmer worden verdeeld",
+      label:"PLANNING BIJSTUREN",
+      headline:"De komende dagen kunnen veiliger worden verdeeld",
       summary:"Er staan toekomstige aanpassingen klaar, maar vandaag hoeft niet per se te veranderen."
     };
   }
@@ -297,7 +297,7 @@ function fullyAdaptiveCoachPrimaryAction({
   if(week?.changes?.length){
     return{
       kind:"week",
-      label:`Pas ${week.changes.length} weekwijziging${week.changes.length===1?"":"en"} toe`,
+      label:`Pas ${week.changes.length} planwijziging${week.changes.length===1?"":"en"} toe`,
       text:"Wedstrijden blijven beschermd en je bevestigt de wijziging nog één keer."
     };
   }
@@ -743,7 +743,7 @@ function renderFullyAdaptiveCoach(){
   document.getElementById("fullyAdaptiveWeek").innerHTML=`
     <strong>${state.week.changes.length
       ?`${state.week.changes.length} wijziging${state.week.changes.length===1?"":"en"}`
-      :"Week staat goed"}</strong>
+      :weekReplanHasPlanned(state.week)?"Planning staat goed":"Nog geen planning"}</strong>
     <span>${safe(state.week.stress?.level||"onbekend")}</span>
   `;
 
