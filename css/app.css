@@ -2933,6 +2933,49 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .recommendation-title{font-weight:780;letter-spacing:-.025em}
 .today-week-day{background:var(--surface-soft);border-color:#3b596b}
 .today-week-day.today{background:#234859;border-color:#87c5db}
+
+/* Coach Dagboek: snelle check-in, met verdieping op verzoek. */
+.coach-diary-card{background:var(--panel);border-color:#426b7b}
+.coach-diary-card .ai-generator-head{align-items:flex-start;gap:12px}
+.coach-diary-card .ai-generator-head h2{margin-bottom:3px}
+.coach-diary-card .ai-generator-head .help{margin:0}
+.coach-diary-card #loadTodayDiary{flex:0 0 auto;min-height:40px}
+.diary-date-label{max-width:260px;margin-top:14px}
+.coach-diary-card .diary-workout-context{margin:10px 0 14px;padding:10px 12px;background:var(--surface-soft);border-color:#365267}
+.coach-diary-card .diary-input-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.coach-diary-card .diary-input-grid label{min-width:0}
+.diary-fold{margin-top:14px;border:1px solid #3d5e71;border-radius:13px;background:#142b39;overflow:hidden}
+.diary-fold>summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;color:var(--text)}
+.diary-fold>summary::-webkit-details-marker{display:none}
+.diary-fold>summary strong,.diary-fold>summary small{display:block}
+.diary-fold>summary strong{font-size:.92rem}
+.diary-fold>summary small{font-size:.78rem;color:var(--muted);font-weight:400;margin-top:2px}
+.diary-fold>summary>span:last-child{font-size:1.3rem;line-height:1;transition:transform .18s ease}
+.diary-fold[open]>summary>span:last-child{transform:rotate(180deg)}
+.diary-fold>summary:hover{background:#1b394a}
+.diary-fold>summary:focus-visible{outline:3px solid #93d9f3;outline-offset:-3px}
+.diary-extra-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 14px 14px}
+.diary-extra-fields label{min-width:0}
+.diary-extra-fields label:nth-last-child(-n+2){grid-column:1/-1}
+.diary-actions{display:flex;align-items:center;gap:12px;margin-top:14px;flex-wrap:wrap}
+.diary-actions #saveDiaryEntry{width:auto;min-width:180px}
+.diary-actions #deleteDiaryEntry{width:auto;background:transparent;border-color:transparent;color:var(--muted);font-size:.83rem}
+.diary-actions #deleteDiaryEntry:not(:disabled):hover{color:var(--text);border-color:#55758a}
+.diary-coach-result{margin-top:16px}
+.diary-coach-result h3{margin-bottom:5px}
+.diary-coach-result .help{margin:0}
+.diary-history-content{padding:0 14px 14px}
+.diary-history-content .diary-summary-grid{margin-top:0}
+.diary-log-heading{font-size:1rem;margin:18px 0 9px}
+@media(max-width:700px){
+  .coach-diary-card .diary-input-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:420px){
+  .coach-diary-card .diary-input-grid{gap:8px}
+  .diary-extra-fields{grid-template-columns:1fr}
+  .diary-actions #saveDiaryEntry{width:100%}
+}
+@media(prefers-reduced-motion:reduce){.diary-fold>summary>span:last-child{transition:none}}
 #supportDialog::backdrop{background:rgba(2,9,14,.8)}
 .app-menu-item>span svg{width:25px;height:25px;display:block}
 .app-menu-item strong{font-weight:760}

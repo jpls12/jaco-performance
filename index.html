@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1096">
-  <link rel="icon" href="/icons/app-icon.svg?v=1096" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1096">
-  <link rel="stylesheet" href="/css/app.css?v=1096">
+  <link rel="manifest" href="/manifest.webmanifest?v=1097">
+  <link rel="icon" href="/icons/app-icon.svg?v=1097" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1097">
+  <link rel="stylesheet" href="/css/app.css?v=1097">
 </head>
 <body>
 <main>
@@ -577,12 +577,9 @@
     <article class="card coach-diary-card" id="coachDiaryCard">
       <div class="ai-generator-head">
         <div>
-          <p class="label">Performance 7.7 · Coach Dagboek</p>
-          <h2>Hoe voelde je training?</h2>
-          <p class="help">
-            Leg je eigen ervaring naast de cijfers uit Intervals.icu. Alleen ingevulde
-            dagboekdata wordt meegewogen; ontbrekende feedback wordt niet geschat.
-          </p>
+          <p class="label">Coach Dagboek</p>
+          <h2>Jouw check-in</h2>
+          <p class="help">Leg in een minuut vast hoe de training voelde.</p>
         </div>
         <button id="loadTodayDiary" class="secondary" type="button" style="width:auto">
           Vandaag
@@ -590,7 +587,7 @@
       </div>
 
       <form id="coachDiaryForm">
-        <label>Datum
+        <label class="diary-date-label">Datum
           <input id="diaryDate" type="date" required>
         </label>
 
@@ -599,7 +596,7 @@
         </div>
 
         <div class="diary-input-grid">
-          <label>Sessie-RPE
+          <label>Zwaarte · RPE
             <select id="diaryRpe">
               <option value="1">1 · zeer licht</option>
               <option value="2">2</option>
@@ -644,7 +641,7 @@
             </select>
           </label>
 
-          <label>Klachten tijdens/na training
+          <label>Klachten
             <select id="diaryComplaint">
               <option value="0" selected>Geen</option>
               <option value="1">Licht</option>
@@ -652,67 +649,74 @@
               <option value="3">Sterk</option>
             </select>
           </label>
-
-          <label>Werkelijke afstand (km)
-            <input id="diaryActualDistance" type="number" min="0" step="0.1" placeholder="optioneel">
-          </label>
-
-          <label>Werkelijke duur (min)
-            <input id="diaryActualDuration" type="number" min="0" step="1" placeholder="optioneel">
-          </label>
         </div>
 
-        <label>Waar voelde je klachten? <span class="help">(optioneel)</span>
-          <input id="diaryComplaintText" type="text" maxlength="160" placeholder="Bijv. rechterkuit, lichte stijfheid">
-        </label>
+        <details id="diaryExtra" class="diary-fold">
+          <summary><span><strong>Details toevoegen</strong><small>Afstand, duur en notities · optioneel</small></span><span aria-hidden="true">⌄</span></summary>
+          <div class="diary-extra-fields">
+            <label>Werkelijke afstand (km)
+              <input id="diaryActualDistance" type="number" min="0" step="0.1" placeholder="optioneel">
+            </label>
+            <label>Werkelijke duur (min)
+              <input id="diaryActualDuration" type="number" min="0" step="1" placeholder="optioneel">
+            </label>
+            <label>Waar voelde je klachten? <span class="help">(optioneel)</span>
+              <input id="diaryComplaintText" type="text" maxlength="160" placeholder="Bijv. rechterkuit, lichte stijfheid">
+            </label>
+            <label>Notitie <span class="help">(optioneel)</span>
+              <textarea id="diaryNote" rows="3" maxlength="500" placeholder="Bijv. eerste blok zwaar, daarna kwam ik goed in het ritme."></textarea>
+            </label>
+          </div>
+        </details>
 
-        <label>Notitie <span class="help">(optioneel)</span>
-          <textarea id="diaryNote" rows="3" maxlength="500" placeholder="Bijv. eerste blok zwaar, daarna kwam ik goed in het ritme."></textarea>
-        </label>
-
-        <div class="today-actions">
+        <div class="diary-actions">
           <button id="saveDiaryEntry" type="submit">Sla check-in op</button>
           <button id="deleteDiaryEntry" class="secondary" type="button" disabled>Verwijder check-in</button>
         </div>
-        <p id="diaryStatus" class="status"></p>
+        <p id="diaryStatus" class="status" role="status"></p>
       </form>
 
-      <div class="diary-summary-grid">
-        <div class="today-metric">
-          <span>Check-ins 7 d</span>
-          <strong id="diary7Count">—</strong>
-          <small>ingevulde trainingen</small>
-        </div>
-        <div class="today-metric">
-          <span>Gem. RPE 7 d</span>
-          <strong id="diary7Rpe">—</strong>
-          <small>ervaren zwaarte</small>
-        </div>
-        <div class="today-metric">
-          <span>Zware benen 7 d</span>
-          <strong id="diary7Heavy">—</strong>
-          <small>score 4–5</small>
-        </div>
-        <div class="today-metric">
-          <span>Plezier 28 d</span>
-          <strong id="diary28Enjoyment">—</strong>
-          <small>gemiddelde /5</small>
-        </div>
-      </div>
-
-      <div class="coach-box">
-        <p class="label">Subjectieve coachinput</p>
+      <div class="coach-box diary-coach-result">
+        <p class="label">Coachsignaal</p>
         <h3 id="diaryCoachHeadline">Nog geen recente check-in</h3>
         <p class="help" id="diaryCoachConclusion">
           Vul na een training je korte check-in in. De coach gebruikt dit naast, niet in plaats van, je hersteldata.
         </p>
       </div>
 
-      <p class="label diary-recent-label">Recente check-ins</p>
-      <h3>Kracht- en mobiliteitslogboek</h3><div id="supportDiary"></div>
-      <div id="diaryRecent" class="diary-recent">
-        <p class="help">Nog geen dagboekgegevens.</p>
-      </div>
+      <details id="diaryHistory" class="diary-fold diary-history">
+        <summary><span><strong>Voortgang en logboek</strong><small>Trends, kracht en mobiliteit, eerdere check-ins</small></span><span aria-hidden="true">⌄</span></summary>
+        <div class="diary-history-content">
+          <div class="diary-summary-grid">
+            <div class="today-metric">
+              <span>Check-ins 7 d</span>
+              <strong id="diary7Count">—</strong>
+              <small>ingevulde trainingen</small>
+            </div>
+            <div class="today-metric">
+              <span>Gem. RPE 7 d</span>
+              <strong id="diary7Rpe">—</strong>
+              <small>ervaren zwaarte</small>
+            </div>
+            <div class="today-metric">
+              <span>Zware benen 7 d</span>
+              <strong id="diary7Heavy">—</strong>
+              <small>score 4–5</small>
+            </div>
+            <div class="today-metric">
+              <span>Plezier 28 d</span>
+              <strong id="diary28Enjoyment">—</strong>
+              <small>gemiddelde /5</small>
+            </div>
+          </div>
+          <h3 class="diary-log-heading">Kracht- en mobiliteitslogboek</h3>
+          <div id="supportDiary"></div>
+          <h3 class="diary-log-heading">Recente check-ins</h3>
+          <div id="diaryRecent" class="diary-recent">
+            <p class="help">Nog geen dagboekgegevens.</p>
+          </div>
+        </div>
+      </details>
     </article>
 
     <details id="todayMore" class="today-more">
@@ -2802,23 +2806,23 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1096" defer></script>
-<script src="/js/training-sync.js?v=1096" defer></script>
-<script src="/js/training-quality.js?v=1096" defer></script>
-<script src="/js/performance-model.js?v=1096" defer></script>
-<script src="/js/training-response.js?v=1096" defer></script>
-<script src="/js/session-progression.js?v=1096" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1096" defer></script>
-<script src="/js/race-readiness.js?v=1096" defer></script>
-<script src="/js/fuel-hydration.js?v=1096" defer></script>
-<script src="/js/race-strategy.js?v=1096" defer></script>
-<script src="/js/race-day.js?v=1096" defer></script>
-<script src="/js/race-debrief.js?v=1096" defer></script>
-<script src="/js/daily-decision.js?v=1096" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1096" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1096" defer></script>
-<script src="/js/support-training.js?v=1096" defer></script>
-<script src="/js/bootstrap.js?v=1096" defer></script>
+<script src="/js/app.js?v=1097" defer></script>
+<script src="/js/training-sync.js?v=1097" defer></script>
+<script src="/js/training-quality.js?v=1097" defer></script>
+<script src="/js/performance-model.js?v=1097" defer></script>
+<script src="/js/training-response.js?v=1097" defer></script>
+<script src="/js/session-progression.js?v=1097" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1097" defer></script>
+<script src="/js/race-readiness.js?v=1097" defer></script>
+<script src="/js/fuel-hydration.js?v=1097" defer></script>
+<script src="/js/race-strategy.js?v=1097" defer></script>
+<script src="/js/race-day.js?v=1097" defer></script>
+<script src="/js/race-debrief.js?v=1097" defer></script>
+<script src="/js/daily-decision.js?v=1097" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1097" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1097" defer></script>
+<script src="/js/support-training.js?v=1097" defer></script>
+<script src="/js/bootstrap.js?v=1097" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
