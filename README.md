@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.0 · Dagboekgestuurde coachreactie**
+
+Een recente check-in (vandaag of de twee voorgaande kalenderdagen) voedt nu direct het dagadvies en het voorstel voor de resterende week. Hoge RPE alleen is geen herstelalarm; RPE in combinatie met zware benen/lage energie en duidelijke klachten geven een conservatief signaal. Bij duidelijke klachten stelt de dagcoach rust voor en wordt een nabije kwaliteitstraining in het weekvoorstel niet later die week ingehaald. Bij verhoogde inspanning zonder klachten krijgt herstel of meer ruimte tussen zware sessies voorrang. Wedstrijden en afgeronde trainingen blijven beschermd; de app herberekent voorstellen na opslaan, maar kalenderwijzigingen vragen nog expliciete bevestiging. De huidige weekplanner kijkt alleen tot het einde van de lopende week en maakt niet autonoom een volledig nieuw wedstrijdschema. App-shell en backupmetadata gebruiken 10.10.0.
+
 **10.9.9 · Dagboektrends per check-in**
 
 Het uitklapbare dagboekoverzicht toont de laatste maximaal zeven check-ins uit de afgelopen 28 dagen als compacte kolommen voor ervaren zwaarte (RPE), energie en klachten, met datums en exacte scores. Ontbrekende scores krijgen een streepje; expliciet 'Geen klachten' blijft 0 en is zichtbaar als groen punt. Er worden geen waarden voor dagen zonder check-in ingevuld of geïnterpoleerd. De bestaande samenvattingen, coachbeslissingen en opgeslagen data blijven behouden. App-shell en backupmetadata gebruiken 10.9.9.

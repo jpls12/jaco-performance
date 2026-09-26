@@ -131,6 +131,7 @@ function weekReplanStressLevel(){
   const readiness=determineReadiness(getWellnessSnapshot());
   const load=buildLoadMonitor();
   const execution=buildAdaptiveExecutionFeedback();
+  const diary=latestDiaryRecoverySignal();
 
   let level="stable";
   const reasons=[];
@@ -163,7 +164,15 @@ function weekReplanStressLevel(){
     reasons.push("laatste uitvoering wijkt af van planning");
   }
 
-  return{level,reasons,readiness,load,execution};
+  if(diary.level==="elevated"){
+    level="elevated";
+    reasons.push(`coachdagboek: ${diary.reason}`);
+  }else if(diary.level==="attention"){
+    if(level!=="elevated") level="attention";
+    reasons.push(`coachdagboek: ${diary.reason}`);
+  }
+
+  return{level,reasons,readiness,load,execution,diary};
 }
 
 function weekReplanRecoveryWorkout(original,date,reason){
@@ -509,14 +518,17 @@ function buildAdaptiveWeekReplan(){
       const threshold=stress.level==="elevated"?2:1;
 
       if(daysAway>0 && daysAway<=threshold){
-        const swap=weekReplanFindLaterSwap(
-          date,
-          workout,
-          schedule,
-          bounds
-        );
+        const swap=stress.diary?.complaint
+          ?null
+          :weekReplanFindLaterSwap(date,workout,schedule,bounds);
 
-        if(swap){
+        if(stress.diary?.complaint){
+          schedule[date]=weekReplanRestWorkout(
+            date,
+            `Klachten gemeld: ${stress.diary.reason}`
+          );
+          notes.push("De zware training wordt bij duidelijke klachten niet later deze week ingehaald.");
+        }else if(swap){
           weekReplanMove(
             schedule,
             date,
@@ -781,7 +793,23 @@ function refreshAdaptiveWeekReplanner(){
 
 function applyAdaptiveWeekReplan(){
   const status=document.getElementById("weekReplannerApplyStatus");
-  const proposal=pendingWeekReplan || buildAdaptiveWeekReplan();
+  const shown=pendingWeekReplan;
+  const proposal=buildAdaptiveWeekReplan();
+  const signature=plan=>JSON.stringify((plan?.changes||[]).map(change=>[
+    change.date,
+    weekReplanWorkoutSignature(change.before),
+    weekReplanWorkoutSignature(change.after),
+    change.reason
+  ]));
+
+  if(!shown || shown.bounds.today!==proposal.bounds.today ||
+    shown.stress.level!==proposal.stress.level ||
+    signature(shown)!==signature(proposal)){
+    renderAdaptiveWeekReplanner();
+    status.className="status";
+    status.textContent="Het weekvoorstel is veranderd door nieuwe gegevens. Bekijk de actuele wijzigingen en pas ze daarna toe.";
+    return;
+  }
 
   if(!proposal.changes.length){
     status.className="status";
@@ -792,6 +820,12 @@ function applyAdaptiveWeekReplan(){
   if(proposal.changes.some(change=>change.before?.type==="Race")){
     status.className="status error";
     status.textContent="Veiligheidsstop: een wedstrijd zou worden gewijzigd. Er is niets toegepast.";
+    return;
+  }
+
+  if(proposal.changes.some(change=>weekReplanIsDone(change.date,change.before))){
+    status.className="status error";
+    status.textContent="Een betrokken training is inmiddels voltooid. Herbereken de week voordat je wijzigingen toepast.";
     return;
   }
 
