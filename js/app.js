@@ -1549,6 +1549,7 @@ function renderDiaryRecent(entries){
 }
 
 function renderCoachDiary(date=todayDateString()){
+  if(typeof renderSupportHistory==="function") renderSupportHistory();
   const seven=coachDiaryEntries(7);
   const twentyEight=coachDiaryEntries(28);
   const context=buildDiaryContext();
@@ -2497,7 +2498,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.9.0",
+    appVersion:"10.9.1",
     createdAt:new Date().toISOString(),
     data
   };
@@ -2590,7 +2591,7 @@ function validateRaceBackupObject(value){
 }
 
 function validateKnownBackupContents(key,value){
-  if(key==="jp_support_settings_v1" || key==="jp_support_done_v1"){
+  if(["jp_support_settings_v1","jp_support_done_v1","jp_support_skip_v1","jp_support_upload_v1"].includes(key)){
     validateSupportBackup(key,value);
     return;
   }
@@ -2681,7 +2682,9 @@ function validateBackupPayload(input){
       HM_AMSTERDAM_RACEWEEK_BACKUP_KEY,
       "jp_race_simulations_v1",
       "jp_support_settings_v1",
-      "jp_support_done_v1"
+      "jp_support_done_v1",
+      "jp_support_skip_v1",
+      "jp_support_upload_v1"
     ]);
 
     if(objectValuedKeys.has(key)){
@@ -8848,7 +8851,7 @@ function workoutWasCompleted(date,workout){
 }
 
 function completedWorkoutEntriesBetween(minDaysAgo,maxDaysAgo){
-  return Object.entries(allWorkouts())
+  const entries=Object.entries(allWorkouts())
     .map(([date,workout])=>({date,workout}))
     .filter(item=>{
       if(!item.workout) return false;
@@ -8858,6 +8861,8 @@ function completedWorkoutEntriesBetween(minDaysAgo,maxDaysAgo){
       const age=calendarDayDifference(todayDateString(),item.date);
       return age!==null && age>=minDaysAgo && age<=maxDaysAgo;
     });
+  return typeof supportCompletedEntries==="function"
+    ?entries.concat(supportCompletedEntries(minDaysAgo,maxDaysAgo)):entries;
 }
 
 function completedWorkoutEntries(days){
@@ -9158,18 +9163,30 @@ function buildLoadMonitor(){
     });
   }
 
+  const supplementary=typeof supportLoadSummary==="function"?supportLoadSummary():null;
+  if(supplementary?.count){
+    signals.push({state:supplementary.recentPain?"bad":supplementary.recentHard?"warn":"good",icon:"+",
+      text:`Aanvullende sessies: ${supplementary.count} in 7 dagen; ${supplementary.measuredCount} met werkelijke duur (${Math.round(supplementary.minutes)} min). `+
+        (supplementary.load===null?"sRPE onbekend.":`${Math.round(supplementary.load)} sRPE-eenheden uit ${supplementary.rpeCount} sessies; apart van CTL/ATL.`)});
+    if(supplementary.recentPain) highFlags.push("support-pain");
+    else if(supplementary.recentHard) attentionFlags.push("support-hard");
+  }
+
   const availableSignals=[
     atlCtl!==null,
     volumeRatio!==null,
     hard.sessions>0,
     longRunShare!==null,
     readiness.sufficientData,
-    diary.level!=="unknown"
+    diary.level!=="unknown",
+    Boolean(supplementary?.rpeCount || supplementary?.recentPain)
   ].filter(Boolean).length;
 
   let level="stable";
 
-  if(availableSignals<2){
+  if(supplementary?.recentPain){
+    level="elevated";
+  }else if(availableSignals<2){
     level="unknown";
   }else if(highFlags.length){
     level="elevated";
@@ -9211,7 +9228,7 @@ function buildLoadMonitor(){
     adviceText,
     signals,
     availableSignals,
-    totalSignalSlots:6,
+    totalSignalSlots:7,
     metrics:{
       atlCtl,
       runKm7:Math.round(runKm7*10)/10,
@@ -9313,16 +9330,7 @@ function renderLoadMonitor(prebuiltResult=null){
 }
 
 function historicalWorkoutEntries(days){
-  return Object.entries(allWorkouts())
-    .map(([date,workout])=>({date,workout}))
-    .filter(item=>{
-      if(!item.workout) return false;
-      if(item.workout.type==="Rest") return false;
-      if(!workoutWasCompleted(item.date,item.workout)) return false;
-
-      const age=calendarDayDifference(todayDateString(),item.date);
-      return age!==null && age>=0 && age<days;
-    });
+  return completedWorkoutEntriesBetween(0,Math.max(0,days-1));
 }
 
 function historySummary(days){

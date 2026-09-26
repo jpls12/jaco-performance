@@ -7,7 +7,7 @@ function appRunsStandalone(){
 }
 
 function isIosWebBrowser(){
-  return /iphone|ipad|ipod/i.test(navigator.userAgent||"") &&
+  return (/iphone|ipad|ipod/i.test(navigator.userAgent||"") || (/Macintosh/i.test(navigator.userAgent||"") && navigator.maxTouchPoints>1)) &&
     !appRunsStandalone();
 }
 
@@ -74,7 +74,11 @@ function showInstallExperience(){
     Boolean(deferredPwaInstallPrompt);
 
   if(!installAvailable){
-    hideInstallExperience();
+    // Keep help reachable when the browser offers no automatic prompt.
+    const banner=document.getElementById("installAppBanner");
+    const menuInstall=document.getElementById("menuInstallApp");
+    if(banner) banner.hidden=true;
+    if(menuInstall) menuInstall.hidden=false;
     return;
   }
 
@@ -119,7 +123,12 @@ async function handleInstallApp(){
   const banner=document.getElementById("installAppBanner");
 
   if(banner) banner.hidden=false;
-  if(instructions) instructions.hidden=false;
+  if(instructions){
+    instructions.hidden=false;
+    instructions.textContent=isIosWebBrowser()
+      ?"Open de app-link in Safari. Tik op Deel → Zet op beginscherm → Voeg toe. Kies ‘Open als webapp’ als die optie verschijnt."
+      :"Open de app-link rechtstreeks in Chrome of Edge. Kies in het browsermenu ‘App installeren’ of ‘Toevoegen aan beginscherm’. Ontbreekt die optie? Controleer dat je de online HTTPS-link gebruikt en niet een preview met inlogscherm.";
+  }
 
   if(text){
     text.textContent=isIosWebBrowser()
