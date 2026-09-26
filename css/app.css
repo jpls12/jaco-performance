@@ -3027,3 +3027,6 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
   .support-empty>div{flex:1 1 calc(100% - 48px)}
   .support-empty button{margin:0 0 0 43px}
 }
+.auto-week-replan-control{display:flex;align-items:center;gap:.65rem;margin:1rem 0 .35rem;font-weight:650;cursor:pointer}
+.auto-week-replan-control input{width:1.1rem;height:1.1rem;flex:none;accent-color:var(--accent,#2f7668)}
+#undoAutoWeekReplan:not([hidden]){margin:.4rem 0 .75rem}
