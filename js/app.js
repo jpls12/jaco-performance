@@ -2497,7 +2497,7 @@ function buildLocalBackupPayload(){
   return{
     format:BACKUP_FORMAT,
     schemaVersion:BACKUP_SCHEMA_VERSION,
-    appVersion:"10.8.0",
+    appVersion:"10.9.0",
     createdAt:new Date().toISOString(),
     data
   };
@@ -2590,6 +2590,10 @@ function validateRaceBackupObject(value){
 }
 
 function validateKnownBackupContents(key,value){
+  if(key==="jp_support_settings_v1" || key==="jp_support_done_v1"){
+    validateSupportBackup(key,value);
+    return;
+  }
   if(key===STORAGE_KEY){
     validateDateKeyedBackupObject(value,"Trainingen",{requireWorkoutObject:true});
     return;
@@ -2675,7 +2679,9 @@ function validateBackupPayload(input){
       DIARY_KEY,
       HM_AMSTERDAM_BACKUP_KEY,
       HM_AMSTERDAM_RACEWEEK_BACKUP_KEY,
-      "jp_race_simulations_v1"
+      "jp_race_simulations_v1",
+      "jp_support_settings_v1",
+      "jp_support_done_v1"
     ]);
 
     if(objectValuedKeys.has(key)){
@@ -3431,6 +3437,7 @@ function renderMonth(){
 }
 
 function renderSelected(){
+  if(typeof renderSupportTraining==="function") renderSupportTraining();
   const workout=allWorkouts()[selectedDate];
   const card=document.getElementById("workoutCard");
 
@@ -7854,7 +7861,7 @@ function scheduleByAvailability(workouts,startDate=nextMonday(),daysOverride=nul
   }
 
   const p=getProfile();
-  if(p.autoCore){
+  if(p.autoCore && !(typeof supportSettings==="function" && supportSettings().enabled)){
     const supportDay=days.find(d=>
       !used.has(d.index) &&
       ["core","mobiliteit","rustig"].includes(d.preference)
@@ -11668,6 +11675,7 @@ function dailyTrainingSourceLabel(date,workout){
 }
 
 function renderCurrentTodayWorkout(workout){
+  if(typeof renderSupportTraining==="function") renderSupportTraining();
   renderTodayWeekStrip();
 
   const statusBadge=document.getElementById("todayTrainingStatus");
@@ -12830,6 +12838,7 @@ function savePlanning(event){
 }
 
 function renderPlanningPreview(){
+  if(typeof renderSupportTraining==="function") renderSupportTraining();
   const box=document.getElementById("planningPreview");
   if(!box) return;
 

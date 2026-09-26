@@ -4,7 +4,13 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
-**10.8 · Adaptive Training Block Planner**
+**10.9 · Kracht & Mobiliteit**
+
+Vaste aanvullende thuisoefeningen naast de hoofdtraining: standaard tweemaal kracht en driemaal mobiliteit, met instelbare weekdagen. Vandaag, Kalender (geselecteerde dag) en Weekplanning tonen dezelfde sessies en voltooiingsstatus. Oefeningen hebben herhalingen/tijden en uitvoeringsinstructies.
+
+Aanvullende sessies gebruiken resterende beschikbare minuten, slaan wedstrijddagen over en onderdrukken kracht binnen twee dagen vóór/na races of vóór een geplande lange/intensieve training. Niet-passende sessies blijven met reden zichtbaar en worden niet automatisch naar een andere dag verplaatst. De oude automatische core-toevoeging is uitgeschakeld zolang deze nieuwe planning actief is.
+
+Instellingen en voltooide sessies worden onder `jp_support_settings_v1` en `jp_support_done_v1` bewaard en gaan mee met Backup & Herstel. Dit is een aanvullende weeklaag: geen wijziging van hoofdtrainingen of hun completion-identiteit, geen Intervals-export en nog geen opname in trainingsbelasting/Coach Dagboek. Test: `node --test tests/support-training.test.cjs`.
 
 10.8 trekt de adaptieve logica door van één week naar een blok van vier weken. De planner combineert seizoensfase, wedstrijdkalender, beschikbaarheid en 10.6/10.7-leerbewijs, maar gebruikt actuele readiness alleen voor week 1 en voorspelt geen toekomstig herstel.
 
