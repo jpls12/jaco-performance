@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.9.5 · Visuele identiteit**
+
+Een consistent visueel systeem voor Vandaag, Dashboard, Weekplanning en mobiele navigatie: herkenbare JP-merkheader, rustige nachtblauwe oppervlakken, één accentkleur voor primaire acties, leesbare typografie en afstanden, uniforme kaarten/velden/statussen en vectoriconen voor trainingstypen. De iconen zijn vaste SVG-markup per type en verwerken geen workouttekst. Trainingslogica blijft ongewijzigd; cache en backupmetadata zijn verhoogd naar 10.9.5.
+
 **10.9.4 · Coachadvies in één oogopslag**
 
 Het hoofdadvies en de primaire coachactie zijn direct zichtbaar. De onderbouwing en gedetailleerde analyses openen op verzoek in afzonderlijke secties; de berekeningen, knoppen en data blijven in de pagina aanwezig. Het Dashboard toont herstel en trends direct, terwijl de twee weekvoorstelmakers onder één duidelijke ingang staan. De app-shell en backupmetadata gebruiken 10.9.4.

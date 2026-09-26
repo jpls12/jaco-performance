@@ -2805,3 +2805,135 @@ input::placeholder,textarea::placeholder{color:#a4b5c9}
 @media(prefers-reduced-motion:reduce){
   .coach-technical>summary>span:last-child,.dashboard-planners>summary>span:last-child{transition:none}
 }
+
+/* 10.9.5 · Jaco visual system */
+:root{
+  --bg:#0a141e;
+  --panel:#132330;
+  --panel2:#1a3040;
+  --line:#344b5d;
+  --text:#f2f7fa;
+  --muted:#b5c5cf;
+  --green:#75dba1;
+  --blue:#8bcfee;
+  --orange:#ffc47d;
+  --red:#ff9494;
+  --surface-raised:#182b3a;
+  --surface-soft:#10202d;
+  --shadow-card:0 16px 40px rgba(2,9,16,.18)
+}
+html{scroll-behavior:smooth}
+body{
+  background:radial-gradient(ellipse 650px 320px at 50% -160px,rgba(85,150,177,.16),transparent 76%),var(--bg);
+  color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  font-size:15px;line-height:1.55;letter-spacing:.005em;
+  -webkit-font-smoothing:antialiased
+}
+main{max-width:1000px}
+.app-header{
+  display:flex;align-items:center;gap:15px;
+  margin:5px 0 22px;padding:2px 2px 19px;border-bottom:1px solid var(--line)
+}
+.brand-mark{
+  position:relative;display:grid;place-items:center;flex:0 0 52px;width:52px;height:52px;
+  border-radius:15px;background:#244b54;border:1px solid #5a9a99;
+  color:#effffb;font-size:1.05rem;font-weight:900;letter-spacing:-.065em;
+  box-shadow:0 8px 24px rgba(1,10,14,.2)
+}
+.brand-mark-dot{position:absolute;width:7px;height:7px;border-radius:50%;background:var(--green);right:8px;top:8px}
+.brand-copy .eyebrow{margin:0 0 1px;color:#9fd9e8;font-size:.66rem;letter-spacing:.13em}
+.brand-copy h1{font-size:1.4rem;line-height:1.15;margin:0;letter-spacing:-.035em}
+.brand-copy .subtitle{font-size:.82rem;margin:2px 0 0;color:var(--muted)}
+h2,h3{color:#f5fafc;letter-spacing:-.025em}
+h2{font-weight:760}
+h3{font-weight:730}
+.label,.eyebrow{color:var(--blue);letter-spacing:.105em}
+.help,.subtitle{color:var(--muted);line-height:1.55}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  padding:clamp(17px,2.4vw,24px);margin:15px 0;box-shadow:var(--shadow-card)
+}
+.card .label{margin-bottom:8px}
+.daily-training-card{
+  background:linear-gradient(150deg,#183645,#142b39 56%,#132330);
+  border-color:#5b8997;box-shadow:0 18px 45px rgba(1,12,18,.28)
+}
+.support-today-card{
+  background:linear-gradient(150deg,#18352f,#152b32 58%,#132330);border-color:#4a8069
+}
+.today-intro,.view-intro{margin-top:24px;margin-bottom:20px}
+.today-intro h2,.view-intro h2{letter-spacing:-.04em}
+.tabs{
+  display:flex;gap:3px;overflow-x:auto;white-space:nowrap;
+  margin:0 0 21px;padding:5px;background:#10202c;border:1px solid #30495a;border-radius:15px;
+  scrollbar-width:thin
+}
+.tabs .tab{
+  flex:0 0 auto;min-height:40px;padding:9px 12px;border:1px solid transparent;
+  border-radius:10px;background:transparent;color:#b5c7d1;font-size:.86rem;font-weight:720
+}
+.tabs .tab.active{background:#244759;border-color:#538a9c;color:#f5fbfe;box-shadow:0 3px 12px rgba(0,0,0,.15)}
+.tabs .tab:hover{background:#1a3849;border-color:#3d6f83;color:#f5fbfe}
+button{background:var(--green);color:#0b281d;font-weight:780;letter-spacing:.005em;border-radius:11px}
+button:not(:disabled):hover:not(.secondary):not(.tab):not(.mobile-nav-button):not(.app-menu-item){filter:brightness(1.06)}
+button.secondary{background:#20384a;border-color:#55758a;color:#f2f8fc}
+button.secondary:hover{background:#2a4a5f;border-color:#80a4ba}
+button:disabled{opacity:.55}
+input,select,textarea{
+  background:#102430;border-color:#4b697a;color:var(--text);border-radius:11px
+}
+input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3px rgba(100,185,216,.15)}
+.pill,.readiness-badge,.daily-training-status{font-weight:750;letter-spacing:.015em}
+.daily-training-hero,.daily-training-stats>div,.today-metric,.metric-card,
+.profile-chip,.saved-row,.support-session,.support-summary{
+  background:var(--surface-soft);border-color:#365267;box-shadow:none
+}
+.daily-training-hero{border-radius:14px;padding:18px}
+.daily-training-icon{
+  background:#224858;color:#9fdded;border:1px solid #477f91;
+  border-radius:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)
+}
+.daily-training-icon svg{width:33px;height:33px;display:block}
+.daily-training-icon[data-type="Race"]{color:#ffc1a7;background:#553d40;border-color:#a97970}
+.daily-training-icon[data-type="Strength"],.daily-training-icon[data-type="Core"]{color:#b8e7a4;background:#2d493d;border-color:#6d9474}
+.daily-training-icon[data-type="Rest"],.daily-training-icon[data-type="Mobility"]{color:#a6cfef;background:#25425d;border-color:#6589a7}
+.daily-training-stats>div,.today-metric,.metric-card{border-radius:12px;padding:13px}
+.metric-card strong,.today-metric strong{font-variant-numeric:tabular-nums;letter-spacing:-.025em}
+.support-session{background:#152c35;border-radius:14px}
+.support-session.is-done{border-color:#69bc8c}
+.support-session.is-blocked{border-left-color:var(--orange)}
+.today-shortcuts a,.view-jumps a{background:#1a3545;border-color:#4c7689;color:#e4f5fc}
+.today-shortcuts a:hover,.view-jumps a:hover{background:#285063}
+.coach-box{background:#183b37;border-color:#4d7c69}
+.mobile-bottom-nav{background:rgba(9,23,32,.97);border-top-color:#36576a}
+.mobile-bottom-nav .mobile-nav-button.active{background:#244a59;color:#f5fcff}
+.app-menu-sheet{background:#122634;border-color:#4a7184}
+.app-menu-item{background:#1b3545;border-color:#41677a}
+#supportDialog{background:#132634;border-color:#4c7183}
+.coach-evidence>summary,.coach-technical>summary,.dashboard-planners>summary,
+.today-more>summary{background:#1b394a;border-color:#4b7388;color:#effaff}
+@media(max-width:650px){
+  main{padding-left:calc(14px + env(safe-area-inset-left));padding-right:calc(14px + env(safe-area-inset-right))}
+  .app-header{gap:12px;margin:0 0 13px;padding-bottom:13px}
+  .brand-mark{flex-basis:43px;width:43px;height:43px;border-radius:12px;font-size:.95rem}
+  .brand-copy h1{font-size:1.22rem}
+  .brand-copy .eyebrow{font-size:.6rem}
+  .brand-copy .subtitle{font-size:.76rem}
+  .today-intro,.view-intro{margin-top:17px}
+  .card{padding:17px;margin:13px 0}
+  .daily-training-hero{padding:14px}
+  .mobile-bottom-nav .mobile-nav-button{min-height:58px}
+}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+.today-card-icon svg{width:20px;height:20px}
+.score-ring::before{background:var(--surface-soft);border-color:#527083}
+.score-ring strong{font-variant-numeric:tabular-nums;letter-spacing:-.045em}
+.reason-item,.week-plan-row,.availability-row,.profile-chip{background:var(--surface-soft);border-color:#365267}
+.recommendation-card{background:#1b3936;border-color:#588672}
+.recommendation-title{font-weight:780;letter-spacing:-.025em}
+.today-week-day{background:var(--surface-soft);border-color:#3b596b}
+.today-week-day.today{background:#234859;border-color:#87c5db}
+#supportDialog::backdrop{background:rgba(2,9,14,.8)}
+.app-menu-item>span svg{width:25px;height:25px;display:block}
+.app-menu-item strong{font-weight:760}
+.app-menu-item small{color:#b3c8d3}

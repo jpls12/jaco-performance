@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.9.4";
+const APP_VERSION = "10.9.5";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -11663,16 +11663,16 @@ function renderTodayWeekStrip(){
 }
 
 function dailyTrainingIcon(type){
-  const icons={
-    Run:"🏃",
-    Race:"🏁",
-    Core:"◈",
-    Mobility:"↔",
-    Strength:"◆",
-    Swim:"≈",
-    Rest:"☾"
+  const paths={
+    Run:'<circle cx="13" cy="5" r="2"/><path d="m7 20 3-5 2-4 4 2 3 4M4 12l5-3 3 2 3-4 4 1M9 15l-4 5"/>',
+    Race:'<path d="M5 21V3m1 1h13l-3 4 3 4H6"/>',
+    Core:'<path d="M12 2 5 6v12l7 4 7-4V6Z"/><path d="M12 7v10M8 12h8"/>',
+    Mobility:'<path d="M4 8h15m-4-4 4 4-4 4M20 16H5m4-4-4 4 4 4"/>',
+    Strength:'<path d="M3 9v6m3-8v10m3-6h6m3-4v10m3-8v6M6 12h3m6 0h3"/>',
+    Swim:'<path d="M2 16c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2M4 11l4-3 4 3 4-5 3 3"/>',
+    Rest:'<path d="M20 15.5A8 8 0 0 1 8.5 4 8 8 0 1 0 20 15.5Z"/>'
   };
-  return icons[type]||"●";
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[type]||paths.Run}</svg>`;
 }
 
 function dailyTrainingSourceLabel(date,workout){
@@ -11716,7 +11716,8 @@ function renderCurrentTodayWorkout(workout){
   if(!workout){
     statusBadge.className="daily-training-status rest";
     statusBadge.textContent="Geen training";
-    icon.textContent="○";
+    icon.innerHTML=dailyTrainingIcon("Rest");
+    icon.dataset.type="Rest";
     type.textContent="Vrije dag";
     title.textContent="Geen training gepland";
     subtitle.textContent="Je kalender is vandaag leeg. Gebruik de coach als je een passende training wilt plannen.";
@@ -11741,7 +11742,8 @@ function renderCurrentTodayWorkout(workout){
   statusBadge.className=`daily-training-status ${done?"done":isRace?"race":isRest?"rest":"planned"}`;
   statusBadge.textContent=done?"Voltooid":isRace?"Wedstrijd":isRest?"Rustdag":"Gepland";
 
-  icon.textContent=dailyTrainingIcon(workout.type);
+  icon.innerHTML=dailyTrainingIcon(workout.type);
+  icon.dataset.type=workout.type;
   type.textContent=typeInfo.label;
   title.textContent=workout.name;
   subtitle.textContent=
