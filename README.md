@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.9 · Wekelijkse beschikbaarheid**
+
+In Jaco Performance verschijnt op het dashboard en in de mobiele Planning-navigatie een herinnering zolang de beschikbaarheid voor de huidige week, of op zondag de komende week, nog niet is opgeslagen. Onder Weekplanning kies je per dag 0–300 minuten met een schuifbalk; 0 is rust. De instelling geldt alleen voor de gekozen kalenderweek en valt daarbuiten terug op het vaste ritme. Bestaande trainingen worden door de automatische weekcoach getoetst op tijd, recent uitgevoerde trainingen, herstel en wedstrijden. Als de volgende week nog geen reguliere trainingen bevat, kan de app na het laden van actuele data passende sessies richting het doel inplannen; wedstrijden en bestaande sessies blijven beschermd. Een sessie die de beschikbare tijd overschrijdt wordt niet automatisch toegevoegd. De herinnering verschijnt bij het openen van de app; voor pushmeldingen terwijl de app gesloten is zijn een abonnementenopslag en een geplande Web Push-verzending nodig. App-shell en backupmetadata gebruiken 10.10.9.
+
 **10.10.8 · RPE-voorstel uit hartslag**
 
 De RPE-balk start bij nieuwe activiteitbeoordelingen op een indicatie uit de gemiddelde hartslag, de zone 2-bovengrens en maximale hartslag uit het profiel. Ongeldige of ontbrekende hartslag levert geen voorstel op en gebruikt de neutrale startwaarde 5. De uitleg onder de balk maakt de herkomst zichtbaar. RPE blijft subjectief: de sporter kan de balk direct aanpassen en een eerder opgeslagen beoordeling krijgt altijd voorrang. App-shell en backupmetadata gebruiken 10.10.8.

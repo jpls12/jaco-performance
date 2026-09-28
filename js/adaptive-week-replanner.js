@@ -224,6 +224,7 @@ function weekReplanProtection(date){
 }
 
 function weekReplanAvailability(date){
+  if(typeof availabilityForDate==="function") return availabilityForDate(date);
   const p=getProfile();
   const availability={...defaultAvailability(),...(p.availability||{})};
   const index=weekdayIndexFromDate(date);

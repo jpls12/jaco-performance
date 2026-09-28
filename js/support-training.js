@@ -79,6 +79,10 @@ function validateSupportBackup(key,value){
 }
 
 function supportSessionsForDate(date,settings,workouts,raceList,availability){
+  if(typeof availabilityForDate==="function"){
+    const day=availabilityForDate(date);
+    availability={...availability,[DAY_KEYS[weekdayIndexFromDate(date)]]:day};
+  }
   const index=(new Date(date+"T12:00:00").getDay()+6)%7;
   const sessions=[];
   let remaining=Number(availability[DAY_KEYS[index]]?.maxMinutes)||0;

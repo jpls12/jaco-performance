@@ -3052,6 +3052,21 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 #activityRpe{display:block;width:100%;margin:.8rem 0 .25rem;accent-color:var(--green);min-height:32px;cursor:pointer}
 .activity-rpe-ends{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem}
 .activity-rpe-hint{margin:.45rem 0 0;font-size:.78rem;line-height:1.4;color:var(--muted)}
+.weekly-availability-prompt{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0;padding:1rem;border:1px solid #40866f;border-radius:14px;background:#173b37}
+.weekly-availability-prompt[hidden]{display:none}.weekly-availability-prompt p{margin:.3rem 0 0;font-size:.85rem;line-height:1.4}
+.weekly-availability-prompt button{width:auto;min-width:max-content}
+.mobile-nav-button[data-mobile-view="planning"]{position:relative}
+.weekly-availability-badge{position:absolute;top:3px;right:22%;width:9px;height:9px;border-radius:50%;background:#ffad5d;box-shadow:0 0 0 2px #0a141e}
+.weekly-availability-badge[hidden]{display:none}
+.weekly-availability-form{padding:1rem;margin:1rem 0;border:1px solid #376a68;border-radius:16px;background:#142d3b}
+.weekly-availability-head{display:flex;align-items:end;justify-content:space-between;gap:1rem}
+.weekly-availability-head h3{margin:0}.weekly-availability-head p{margin:.4rem 0}.weekly-availability-head label{min-width:175px;font-size:.8rem}
+.weekly-availability-days{display:grid;gap:.45rem;margin:1rem 0}
+.weekly-availability-day{display:grid;grid-template-columns:105px minmax(0,1fr) 58px;align-items:center;gap:.7rem;padding:.65rem .75rem;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.weekly-availability-day>span{font-weight:650}.weekly-availability-day input{width:100%;accent-color:var(--green);cursor:pointer}
+.weekly-availability-day output{text-align:right;font-variant-numeric:tabular-nums;color:#9df0c1;font-weight:700}
+.weekly-defaults{margin-top:1rem}.weekly-defaults>summary{cursor:pointer;font-weight:650}
+@media(max-width:650px){.weekly-availability-prompt,.weekly-availability-head{flex-direction:column;align-items:stretch}.weekly-availability-prompt button{width:100%}.weekly-availability-day{grid-template-columns:82px minmax(0,1fr) 50px;gap:.4rem;padding:.6rem}.weekly-availability-day output{font-size:.83rem}}
 .activity-feeling{border:0;padding:0;margin:1rem 0 0;min-width:0}
 .activity-feeling legend{font-weight:650;margin-bottom:.5rem}
 .activity-feeling-options{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.35rem}

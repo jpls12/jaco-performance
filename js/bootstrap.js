@@ -393,6 +393,16 @@ document.getElementById("restoreSafetyBackup").onclick=restoreLastSafetyBackup;
 document.getElementById("profileForm").onsubmit=saveProfile;
 document.getElementById("fuelHydrationForm").onsubmit=saveFuelHydrationProfile;
 document.getElementById("planningForm").onsubmit=savePlanning;
+document.getElementById("weeklyAvailabilityForm").onsubmit=saveWeeklyAvailability;
+document.getElementById("weeklyAvailabilityDate").onchange=()=>{
+  renderWeeklyAvailabilityEditor();
+  renderPlanningPreview();
+};
+document.getElementById("weeklyAvailabilityDays").oninput=updateWeeklyAvailabilityValue;
+document.getElementById("openWeeklyAvailability").onclick=()=>{
+  navigateAppView("planning");
+  document.getElementById("planningAvailability").scrollIntoView({behavior:"smooth",block:"start"});
+};
 document.getElementById("buildFullSeasonSchedule").onclick=buildFullSeasonSchedulePreview;
 document.getElementById("applyFullSeasonSchedule").onclick=applyFullSeasonSchedule;
 document.getElementById("removeFullSeasonSchedule").onclick=removeFullSeasonSchedule;
@@ -480,6 +490,12 @@ function refreshDayBoundaryIfNeeded(){
   renderMonth();
   renderSelected();
   renderCoachDiary(current);
+  const weekDate=document.getElementById("weeklyAvailabilityDate");
+  if(weekDate && weekDate.value<weeklyAvailabilityStart()){
+    weekDate.value=weeklyAvailabilityStart();
+    renderWeeklyAvailabilityEditor();
+  }
+  renderWeeklyAvailabilityPrompt();
   refreshDerivedCoachViews();
 }
 
@@ -558,6 +574,10 @@ async function initializeJacoPerformance(){
   fillProfileForm();
   fillFuelHydrationForm();
   fillPlanningForm();
+  if(location.hash==="#planningAvailability"){
+    navigateAppView("planning");
+    document.getElementById("planningAvailability").scrollIntoView({block:"start"});
+  }
   renderProfileSummary();
   renderBackupManager();
   renderPendingBackupImport();
