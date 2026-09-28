@@ -4,7 +4,9 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 
 const app=fs.readFileSync('js/app.js','utf8');
-const weekly=app.slice(app.indexOf('function weeklyAvailabilityStart('),
+const weekly=app.slice(app.indexOf('const WEEKLY_PLAN_UNDO_KEY='),
+  app.indexOf('function defaultAvailability('))+
+  app.slice(app.indexOf('function weeklyAvailabilityStart('),
   app.indexOf('function availabilityPreferenceOptions('));
 const availableDays=app.slice(app.indexOf('function availableDaysForPlanner('),
   app.indexOf('function workoutDurationEstimate('));
@@ -83,7 +85,8 @@ test('saving seven days persists the week and refreshes the coach',()=>{
     PROFILE_KEY:'jp_profile_v1',resetGeneratedPlannerPreviews:()=>{},
     renderWeeklyAvailabilityEditor:()=>{},renderWeeklyAvailabilityPrompt:()=>{},
     renderPlanningPreview:()=>{},renderFullSeasonSchedulePreview:()=>{},
-    refreshDerivedCoachViews:()=>{refreshes++;},nextMonday:()=> '2026-10-05'
+    refreshDerivedCoachViews:()=>{refreshes++;},nextMonday:()=> '2026-10-05',
+    autoWeekReplanEnabled:()=>true
   });
   vm.runInContext('let profile={};',ctx);
   ctx.saveWeeklyAvailability({preventDefault(){}});
@@ -109,6 +112,7 @@ test('a new week adds only fitting sessions and protects race days',()=>{
     renderWeeklyAvailabilityPrompt:()=>{},renderPlanningPreview:()=>{},
     renderFullSeasonSchedulePreview:()=>{},refreshDerivedCoachViews:()=>{},
     refreshAfterCalendarMutation:()=>{},nextMonday:()=> '2026-10-05',
+    autoWeekReplanEnabled:()=>true,
     allWorkouts:()=>({'2026-10-09':{type:'Race',name:'Wedstrijd'}}),
     weekPlanningContext:()=>({start:'2026-10-05'}),
     racesInRange:()=>[{date:'2026-10-09'}],seasonBlockForWeek:()=>null,
@@ -123,8 +127,80 @@ test('a new week adds only fitting sessions and protects race days',()=>{
   });
   vm.runInContext('let profile={}; let autoWeekReplanReady=true; let customWorkouts={};',ctx);
   ctx.saveWeeklyAvailability({preventDefault(){}});
-  assert.deepEqual(stored,['jp_profile_v1','jp_custom_workouts_v1']);
+  assert.deepEqual(stored,['jp_profile_v1','jp_weekly_plan_undo_v1','jp_custom_workouts_v1']);
   assert.match(status.textContent,/1 trainingen/);
   assert.match(status.textContent,/1 sessie\(s\) pasten niet/);
   assert.equal(vm.runInContext('Object.keys(customWorkouts).join(",")',ctx),'2026-10-06');
+});
+
+test('automatic planning respects the coach switch',()=>{
+  let profile={};
+  const status={className:'',textContent:''};
+  const fields=Object.fromEntries(keys.map(key=>[`weekly-minutes-${key}`,{value:'90'}]));
+  const ctx=contextFor(profile);
+  Object.assign(ctx,{
+    getProfile:()=>profile,
+    document:{getElementById:id=>id==='weeklyAvailabilityDate'?{value:'2026-10-05'}:
+      id==='weeklyAvailabilityStatus'?status:fields[id]},
+    saveObject:(key,value)=>{if(key==='profile') profile=value;},PROFILE_KEY:'profile',
+    resetGeneratedPlannerPreviews:()=>{},renderWeeklyAvailabilityEditor:()=>{},
+    renderWeeklyAvailabilityPrompt:()=>{},renderPlanningPreview:()=>{},
+    renderFullSeasonSchedulePreview:()=>{},refreshDerivedCoachViews:()=>{},
+    nextMonday:()=> '2026-10-05',autoWeekReplanEnabled:()=>false,
+    allWorkouts:()=>({})
+  });
+  vm.runInContext('let profile={}; let autoWeekReplanReady=true;',ctx);
+  ctx.saveWeeklyAvailability({preventDefault(){}});
+  assert.match(status.textContent,/Automatisch aanpassen staat uit/);
+});
+
+test('week overview marks a session that exceeds the saved time',()=>{
+  const ctx=contextFor({weeklyAvailability:{'2026-10-05':{
+    mon:0,tue:45,wed:0,thu:0,fri:0,sat:0,sun:0
+  }}});
+  ctx.allWorkouts=()=>({'2026-10-06':{name:'Duurloop',type:'Run',durationMinutes:70}});
+  ctx.estimatedWorkoutMinutes=workout=>workout.durationMinutes;
+  const rows=ctx.weeklyPlanRows('2026-10-05');
+  assert.equal(rows[1].state,'tijdconflict');
+  assert.equal(rows[1].availableMinutes,45);
+  assert.equal(rows[0].state,'geen training');
+});
+
+test('undo removes only untouched generated sessions and pauses automatic changes',()=>{
+  const data=new Map();
+  const workout={name:'Rustige duurloop',type:'Run',date:'2026-10-06'};
+  data.set('jp_weekly_plan_undo_v1',JSON.stringify({changes:[{date:'2026-10-06',workout}]}));
+  const ctx=contextFor({});
+  const custom={'2026-10-06':{...workout}};
+  const undoStatus={textContent:''},button={hidden:true};
+  Object.assign(ctx,{
+    localStorage:{getItem:key=>data.get(key)||null,setItem:(key,value)=>data.set(key,value),
+      removeItem:key=>data.delete(key)},
+    document:{getElementById:id=>({undoWeeklyPlan:button,weeklyPlanUndoStatus:undoStatus})[id]},
+    allWorkouts:()=>custom,doneWorkouts:{},uploadedWorkouts:{},
+    saveObject:()=>{},STORAGE_KEY:'workouts',AUTO_WEEK_REPLAN_KEY:'auto',
+    refreshAfterCalendarMutation:()=>{},renderWeeklyPlanSummary:()=>{}
+  });
+  vm.runInContext('let customWorkouts={"2026-10-06":{name:"Rustige duurloop",type:"Run",date:"2026-10-06"}};',ctx);
+  ctx.allWorkouts=()=>vm.runInContext('customWorkouts',ctx);
+  ctx.undoWeeklyPlan();
+  assert.equal(vm.runInContext('customWorkouts["2026-10-06"]',ctx),undefined);
+  assert.equal(data.get('auto'),'off');
+  assert.equal(data.has('jp_weekly_plan_undo_v1'),false);
+});
+
+test('undo refuses to remove an edited session',()=>{
+  const workout={name:'Rustige duurloop',type:'Run',date:'2026-10-06'};
+  const data=new Map([['jp_weekly_plan_undo_v1',JSON.stringify({changes:[{date:'2026-10-06',workout}]})]]);
+  const status={textContent:''};
+  const ctx=contextFor({});
+  Object.assign(ctx,{
+    localStorage:{getItem:key=>data.get(key)||null,removeItem:key=>data.delete(key)},
+    document:{getElementById:id=>({undoWeeklyPlan:{hidden:false},weeklyPlanUndoStatus:status})[id]},
+    doneWorkouts:{},uploadedWorkouts:{},allWorkouts:()=>vm.runInContext('customWorkouts',ctx)
+  });
+  vm.runInContext('let customWorkouts={"2026-10-06":{name:"Aangepaste training",type:"Run",date:"2026-10-06"}};',ctx);
+  ctx.undoWeeklyPlan();
+  assert.match(status.textContent,/Terugzetten gestopt/);
+  assert.equal(data.has('jp_weekly_plan_undo_v1'),true);
 });

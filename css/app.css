@@ -3066,6 +3066,13 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .weekly-availability-day>span{font-weight:650}.weekly-availability-day input{width:100%;accent-color:var(--green);cursor:pointer}
 .weekly-availability-day output{text-align:right;font-variant-numeric:tabular-nums;color:#9df0c1;font-weight:700}
 .weekly-defaults{margin-top:1rem}.weekly-defaults>summary{cursor:pointer;font-weight:650}
+.weekly-plan-summary{margin:1rem 0;padding:1rem;border:1px solid var(--line);border-radius:15px;background:var(--panel)}
+.weekly-plan-summary h3{margin:0 0 .35rem}.weekly-plan-summary .help{margin:.2rem 0 .85rem}
+.weekly-plan-rows{display:grid;gap:.4rem}.weekly-plan-row{display:grid;grid-template-columns:minmax(120px,1fr) minmax(0,2fr);gap:.7rem;padding:.65rem .75rem;border-radius:10px;background:var(--panel2)}
+.weekly-plan-row>div{display:grid;gap:.15rem;min-width:0}.weekly-plan-row small{color:var(--muted);font-size:.77rem}.weekly-plan-row span{overflow-wrap:anywhere}
+.weekly-plan-row.conflict{border:1px solid var(--orange)}.weekly-plan-row.conflict small:last-child{color:var(--orange)}
+#undoWeeklyPlan:not([hidden]){width:auto;margin:.2rem 0}
+@media(max-width:480px){.weekly-plan-row{grid-template-columns:1fr;gap:.25rem}}
 @media(max-width:650px){.weekly-availability-prompt,.weekly-availability-head{flex-direction:column;align-items:stretch}.weekly-availability-prompt button{width:100%}.weekly-availability-day{grid-template-columns:82px minmax(0,1fr) 50px;gap:.4rem;padding:.6rem}.weekly-availability-day output{font-size:.83rem}}
 .activity-feeling{border:0;padding:0;margin:1rem 0 0;min-width:0}
 .activity-feeling legend{font-weight:650;margin-bottom:.5rem}
