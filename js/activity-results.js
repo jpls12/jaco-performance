@@ -66,16 +66,18 @@ function activityReviewInsight(activity,review){
     coachDiary[activity.date].source!=="activity_reviews";
   let tone="steady",title="Reactie genoteerd";
   let explanation="Geen duidelijk herstelalarm in deze beoordeling. De coach combineert dit met je overige gegevens.";
-  if(review.complaintSeverity>=2){
+  if(review.complaintSeverity!=null && review.complaintSeverity>=2){
     tone="caution";title="Klachten vragen aandacht";
     explanation="Je meldde duidelijke klachten. Controleer het actuele coachadvies voordat je de volgende zware training uitvoert.";
-  }else if(review.sessionRpe>=8 && review.legs>=4 && review.energy<=2){
+  }else if(review.sessionRpe>=8 && review.legs!=null && review.legs>=4 &&
+    review.energy!=null && review.energy<=2){
     tone="caution";title="Zware trainingsrespons";
     explanation="De combinatie van hoge zwaarte, zware benen en lage energie is een herstelsignaal voor de coach.";
   }else if(review.sessionRpe>=8){
     tone="attention";title="Zware training voltooid";
     explanation="Je gaf een hoge RPE op zonder extra klachten- of vermoeidheidssignaal in deze beoordeling. De coach weegt de overige daggegevens mee.";
-  }else if(review.legs>=4 || review.energy<=2){
+  }else if((review.legs!=null && review.legs>=4) ||
+    (review.energy!=null && review.energy<=2)){
     tone="attention";title="Herstel in de gaten houden";
     explanation="Je benen of energie vragen aandacht. De coach gebruikt de volledige dagcontext voor het vervolg.";
   }
@@ -83,7 +85,7 @@ function activityReviewInsight(activity,review){
     tone,title,explanation,
     coach:manual
       ?"Er is ook een handmatige dag-check-in. Die blijft leidend voor het coachadvies; pas die aan als dit resultaat je dagbeeld verandert."
-      :"Deze beoordeling is verwerkt in het dagboeksignaal. Bij meerdere trainingen op één dag gebruikt de coach de hoogste zwaarte en klachten en de laagste energie."
+      :"Deze beoordeling is verwerkt in het dagboeksignaal. Bij meerdere trainingen op één dag gebruikt de coach de zwaarste bekende inspanning en klachten en de laagste bekende energie."
   };
 }
 
@@ -284,8 +286,8 @@ function renderActivityResultDetail(activity){
   if(!detail) return;
   const review=activityReviews[activity.id]||{};
   const metric=(label,value)=>`<div><span>${label}</span><strong>${safe(value)}</strong></div>`;
-  const scoreSelect=(id,label,max,min=1)=>`<label>${label}<select name="${id}" required>
-    <option value="">Kies</option>${Array.from({length:max-min+1},(_,i)=>{
+  const scoreSelect=(id,label,max,min=1)=>`<label>${label}<select name="${id}">
+    <option value="">Niet ingevuld</option>${Array.from({length:max-min+1},(_,i)=>{
       const value=i+min;
       return `<option value="${value}"${review[id]===value?" selected":""}>${value}${value===0?" · geen":""}</option>`;
     }).join("")}</select></label>`;
@@ -330,14 +332,26 @@ function renderActivityResultDetail(activity){
     </details>
     <form id="activityReviewForm" data-activity-id="${escapeHtmlAttribute(activity.id)}">
       <h4>Hoe voelde deze training?</h4>
-      <p class="help">Je beoordeling wordt per activiteit bewaard en helpt het coachadvies. Vul alle vijf scores bewust in.</p>
-      <div class="activity-review-grid">
-        ${scoreSelect("sessionRpe","Zwaarte · RPE",10)}
-        ${scoreSelect("legs","Benen · 1 fris, 5 zwaar",5)}
-        ${scoreSelect("energy","Energie · 1 laag, 5 hoog",5)}
-        ${scoreSelect("enjoyment","Plezier · 1 laag, 5 hoog",5)}
-        ${scoreSelect("complaintSeverity","Klachten · 0 geen, 3 sterk",3,0)}
+      <p class="help">Twee snelle keuzes per training. Extra details kun je toevoegen als ze belangrijk zijn.</p>
+      <div class="activity-review-quick">
+        <label class="activity-rpe-label" for="activityRpe">Zwaarte · RPE <output id="activityRpeValue" for="activityRpe">${safe(review.sessionRpe??5)}/10</output></label>
+        <input id="activityRpe" name="sessionRpe" type="range" min="1" max="10" step="1" value="${safe(review.sessionRpe??5)}">
+        <div class="activity-rpe-ends"><span>Heel licht</span><span>Maximaal</span></div>
+        <fieldset class="activity-feeling"><legend>Hoe voelde je je?</legend>
+          <div class="activity-feeling-options">${[
+            [1,"😫","Uitgeput"],[2,"😕","Matig"],[3,"😐","Oké"],
+            [4,"🙂","Goed"],[5,"😁","Top"]
+          ].map(([value,emoji,label])=>`<label><input type="radio" name="energy" value="${value}"${review.energy===value?" checked":""} required><span><span aria-hidden="true">${emoji}</span><small>${label}</small></span></label>`).join("")}</div>
+        </fieldset>
       </div>
+      <details class="activity-review-extra"${review.savedAt && [review.legs,review.enjoyment,review.complaintSeverity].some(value=>value!=null)?" open":""}>
+        <summary>Extra details (optioneel)</summary>
+        <div class="activity-review-grid">
+          ${scoreSelect("legs","Benen · 1 fris, 5 zwaar",5)}
+          ${scoreSelect("enjoyment","Plezier · 1 laag, 5 hoog",5)}
+          ${scoreSelect("complaintSeverity","Klachten · 0 geen, 3 sterk",3,0)}
+        </div>
+      </details>
       <label>Opmerking (optioneel)<textarea name="note" rows="2" maxlength="500" placeholder="Bijv. laatste blok zwaar, kuit licht gevoelig">${safe(review.note||"")}</textarea></label>
       <div class="today-actions"><button type="submit">${review.savedAt?"Beoordeling bijwerken":"Beoordeling opslaan"}</button>
         <button type="button" class="secondary" id="openResultDiary">Open dagboek</button>
@@ -411,8 +425,10 @@ function deriveActivityDiary(date){
   const latest=reviews.slice().sort((a,b)=>String(b.startDateLocal||"").localeCompare(
     String(a.startDateLocal||"")))[0];
   const workout=diaryWorkoutForDate(date);
-  const max=key=>Math.max(...reviews.map(item=>item[key]));
-  const min=key=>Math.min(...reviews.map(item=>item[key]));
+  const known=key=>reviews.map(item=>finiteNumberOrNull(item[key]))
+    .filter(value=>value!==null);
+  const max=key=>known(key).length?Math.max(...known(key)):null;
+  const min=key=>known(key).length?Math.min(...known(key)):null;
   return{
     date,source:"activity_reviews",activityIds:reviews.map(item=>item.activityId),
     workoutName:latest.name,workoutType:latest.type,
@@ -436,8 +452,9 @@ function saveActivityReview(event){
     ["enjoyment",1,5],["complaintSeverity",0,3]
   ]){
     const raw=form.elements[key].value;
-    const value=Number(raw);
-    if(raw==="" || !Number.isInteger(value) || value<min || value>max){
+    const value=raw==="" || raw==null?null:Number(raw);
+    if((value===null && ["sessionRpe","energy"].includes(key)) ||
+      (value!==null && (!Number.isInteger(value) || value<min || value>max))){
       form.elements[key].focus();
       return;
     }
@@ -462,7 +479,7 @@ function saveActivityReview(event){
   if(status){
     status.className="status ok";
     status.textContent=mirrored
-      ?"Beoordeling opgeslagen. Het coachadvies is opnieuw berekend; bij meerdere trainingen gebruikt de dagcoach de zwaarste belasting en klachten, en de laagste energie."
+      ?"Beoordeling opgeslagen. Het coachadvies is opnieuw berekend met je RPE, gevoel en eventuele extra details."
       :"Beoordeling opgeslagen. Je bestaande handmatige dagcheck-in blijft leidend voor het coachadvies.";
   }
 }

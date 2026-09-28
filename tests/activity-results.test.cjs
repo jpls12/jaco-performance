@@ -90,7 +90,8 @@ function resultsContext(){
   });
   vm.runInContext(fs.readFileSync('js/activity-results.js','utf8'),context);
   const submit=(id,scores)=>{
-    const elements=Object.fromEntries(Object.entries({...scores,note:''})
+    const elements=Object.fromEntries(Object.entries({legs:'',enjoyment:'',
+      complaintSeverity:'',...scores,note:''})
       .map(([key,value])=>[key,{value:String(value),focus(){}}]));
     context.saveActivityReview({preventDefault(){},target:{
       dataset:{activityId:id},elements
@@ -109,6 +110,22 @@ test('separate activity reviews give the day coach conservative combined feedbac
   assert.equal(diary['2026-09-26'].energy,2);
   assert.equal(diary['2026-09-26'].complaintSeverity,2);
   assert.equal(diary['2026-09-26'].workoutName,'Intervals');
+});
+
+test('quick review needs only RPE and feeling, leaving optional signals unknown',()=>{
+  const {context,diary,store,submit,activities}=resultsContext();
+  submit('i1',{sessionRpe:8,energy:2});
+  const review=store.jp_activity_reviews_v1.i1;
+  assert.equal(review.sessionRpe,8);
+  assert.equal(review.energy,2);
+  assert.equal(review.legs,null);
+  assert.equal(review.complaintSeverity,null);
+  assert.equal(diary['2026-09-26'].legs,null);
+  assert.equal(diary['2026-09-26'].complaintSeverity,null);
+  assert.equal(context.activityReviewInsight(activities.i1,review).tone,'attention');
+  submit('i2',{sessionRpe:3,energy:5,complaintSeverity:0});
+  assert.equal(diary['2026-09-26'].complaintSeverity,0);
+  assert.equal(diary['2026-09-26'].energy,2);
 });
 
 test('manual day check-in is never overwritten by activity review',()=>{
@@ -145,10 +162,20 @@ test('backup validates per-activity scores and IDs',()=>{
   const valid={i1:{activityId:'i1',date:'2026-09-26',sessionRpe:8,legs:3,
     energy:2,enjoyment:4,complaintSeverity:0,note:''}};
   assert.doesNotThrow(()=>context.validateKnownBackupContents('jp_activity_reviews_v1',valid));
+  assert.doesNotThrow(()=>context.validateKnownBackupContents('jp_activity_reviews_v1',{
+    i1:{...valid.i1,legs:null,enjoyment:null,complaintSeverity:null}
+  }));
   assert.throws(()=>context.validateKnownBackupContents('jp_activity_reviews_v1',{
     i1:{...valid.i1,energy:'2'}
   }),/ongeldige gegevens/);
   assert.match(app,/DIARY_KEY,\s*"jp_activity_reviews_v1"/);
+});
+
+test('review form offers a slider, five feelings and optional details',()=>{
+  const code=fs.readFileSync('js/activity-results.js','utf8');
+  assert.match(code,/type="range" min="1" max="10"/);
+  assert.match(code,/name="energy" value="\$\{value\}"/);
+  assert.match(code,/Extra details \(optioneel\)/);
 });
 
 test('route preview uses a bounded map with attribution and no map without GPS',()=>{

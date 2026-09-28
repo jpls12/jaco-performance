@@ -343,6 +343,12 @@ document.getElementById("copyActivitySyncDiagnostics").onclick=copyActivitySyncD
 document.getElementById("activityResultsList").onclick=handleActivityResultClick;
 document.getElementById("refreshActivityResults").onclick=()=>syncCompletedActivities();
 document.getElementById("activityResultDetail").onclick=handleActivityResultClick;
+document.getElementById("activityResultDetail").oninput=event=>{
+  if(event.target.id==="activityRpe"){
+    const output=document.getElementById("activityRpeValue");
+    if(output) output.textContent=`${event.target.value}/10`;
+  }
+};
 document.getElementById("activityResultDetail").onsubmit=event=>{
   if(event.target.id==="activityReviewForm") saveActivityReview(event);
 };

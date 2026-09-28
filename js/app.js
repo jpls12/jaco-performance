@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.6";
+const APP_VERSION = "10.10.7";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -2719,10 +2719,12 @@ function validateKnownBackupContents(key,value){
       if(!/^[A-Za-z0-9_-]{1,80}$/.test(id) ||
         !isPlainBackupObject(review) || review.activityId!==id ||
         calendarDayNumber(review.date)===null ||
-        [["sessionRpe",1,10],["legs",1,5],["energy",1,5],
-          ["enjoyment",1,5],["complaintSeverity",0,3]].some(
+        [["sessionRpe",1,10],["energy",1,5]].some(
           ([field,min,max])=>!Number.isInteger(review[field]) ||
             review[field]<min || review[field]>max
+        ) || [["legs",1,5],["enjoyment",1,5],["complaintSeverity",0,3]].some(
+          ([field,min,max])=>review[field]!==null && review[field]!==undefined &&
+            (!Number.isInteger(review[field]) || review[field]<min || review[field]>max)
         ) || typeof review.note!=="string" || review.note.length>500){
         throw new Error(`Beoordeling ${id} bevat ongeldige gegevens.`);
       }

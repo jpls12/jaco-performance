@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.7 · Snelle activiteitbeoordeling**
+
+Beoordeel een uitgevoerde training met een RPE-schuifbalk (1–10) en één van vijf smileys voor je gevoel/energie. Benen, plezier, klachten en een notitie zijn optioneel onder extra details. Ontbrekende scores blijven onbekend in de dagcoach en backup; bestaande beoordelingen blijven bewerkbaar. App-shell en backupmetadata gebruiken 10.10.7.
+
 **10.10.6 · Weekoverzicht met betrouwbare datadekking**
 
 Uitgevoerde trainingen tonen een doorlopend overzicht van zeven dagen: aantal activiteiten, gemeten hardloopkilometers, bekende beweegtijd, beoordelingen en hardloopkilometers per dag. Ontbrekende afstanden of een onvolledig syncbereik worden als ontbrekende data weergegeven en niet als rust of nul kilometer geïnterpreteerd. Alleen bekende trainingsbelasting wordt opgeteld en de actuele wedstrijdfocus wordt als context getoond zonder een voorspelling uit ongelijksoortige sessies af te leiden. De resultaatkaart en coachduiding gebruiken nu het donkere app-thema met leesbaar contrast. App-shell en backupmetadata gebruiken 10.10.6.
