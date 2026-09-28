@@ -76,7 +76,8 @@ function normalizeSyncedActivity(activity){
     weightedAverageWatts:finiteNumberOrNull(activity.weightedAverageWatts),
     trainingLoad:finiteNumberOrNull(activity.trainingLoad),
     intensity:finiteNumberOrNull(activity.intensity),
-    perceivedExertion:finiteNumberOrNull(activity.perceivedExertion)
+    perceivedExertion:finiteNumberOrNull(activity.perceivedExertion),
+    hasGps:typeof activity.hasGps==="boolean"?activity.hasGps:null
   };
 }
 
@@ -833,6 +834,7 @@ function renderActivitySyncStatus(){
     .join("");
 
   renderActivitySyncDiagnostics();
+  if(typeof renderActivityResults==="function") renderActivityResults();
 }
 
 async function syncCompletedActivities({silent=false,render=true}={}){

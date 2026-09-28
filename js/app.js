@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.2";
+const APP_VERSION = "10.10.3";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -1746,7 +1746,7 @@ function saveCoachDiary(event){
 
   const status=document.getElementById("diaryStatus");
   status.className="status ok";
-  status.textContent="Check-in opgeslagen. Het dag- en weekadvies is opnieuw berekend; kalenderwijzigingen vragen je bevestiging.";
+  status.textContent="Check-in opgeslagen. Het dag- en weekadvies is opnieuw berekend; veilige weekaanpassingen volgen de instelling voor automatische planning.";
   document.getElementById("diaryAdviceLink").hidden=false;
 }
 
@@ -2714,6 +2714,21 @@ function validateRaceBackupObject(value){
 }
 
 function validateKnownBackupContents(key,value){
+  if(key==="jp_activity_reviews_v1"){
+    for(const [id,review] of Object.entries(value)){
+      if(!/^[A-Za-z0-9_-]{1,80}$/.test(id) ||
+        !isPlainBackupObject(review) || review.activityId!==id ||
+        calendarDayNumber(review.date)===null ||
+        [["sessionRpe",1,10],["legs",1,5],["energy",1,5],
+          ["enjoyment",1,5],["complaintSeverity",0,3]].some(
+          ([field,min,max])=>!Number.isInteger(review[field]) ||
+            review[field]<min || review[field]>max
+        ) || typeof review.note!=="string" || review.note.length>500){
+        throw new Error(`Beoordeling ${id} bevat ongeldige gegevens.`);
+      }
+    }
+    return;
+  }
   if(["jp_support_settings_v1","jp_support_done_v1","jp_support_skip_v1","jp_support_upload_v1"].includes(key)){
     validateSupportBackup(key,value);
     return;
@@ -2801,6 +2816,7 @@ function validateBackupPayload(input){
       RACES_KEY,
       PROFILE_KEY,
       DIARY_KEY,
+      "jp_activity_reviews_v1",
       HM_AMSTERDAM_BACKUP_KEY,
       HM_AMSTERDAM_RACEWEEK_BACKUP_KEY,
       "jp_race_simulations_v1",

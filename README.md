@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.3 · Trainingsresultaten en beoordeling**
+
+Training Sync toont nu recente uitgevoerde activiteiten afzonderlijk met afstand, beweegtijd, tempo, gemiddelde hartslag, hoogtemeters en trainingsbelasting. Bij beschikbaar GPS wordt de route op aanvraag als schematische routekaart getoond; routepunten worden niet in de lokale opslag bewaard. Elke activiteit krijgt een eigen beoordeling met vijf bewuste scores en een optionele opmerking, ook wanneer meerdere trainingen op één dag zijn gedaan. De dagcoach gebruikt dan conservatief de zwaarste inspanning/klachten en laagste energie; een bestaande handmatige dagcheck-in blijft leidend. Beoordelingen zijn bewerkbaar, verwijderbaar en onderdeel van de lokale backup. App-shell en backupmetadata gebruiken 10.10.3.
+
 **10.10.2 · Automatische veilige weekaanpassingen**
 
 De coach past zijn advies voor de komende zeven dagen automatisch toe nadat bij het openen de actuele gegevens zijn geladen, en bij nieuwe check-ins, synchronisatie of herberekening zolang de app actief is. De instelling staat standaard aan en is bij Dynamische planning uit te zetten. Wedstrijddagen, afgeronde trainingen en al naar Intervals verstuurde sessies worden niet automatisch aangepast; bij een blokkade blijft het voorstel zichtbaar voor handmatige beoordeling. De laatste automatische kalenderwijziging kan worden teruggezet zolang de betrokken trainingen niet opnieuw zijn gewijzigd, uitgevoerd of verstuurd. Terugzetten schakelt automatische aanpassing uit. De instelling en het herstelpunt worden lokaal op dit apparaat bewaard; export naar Intervals gebeurt niet automatisch. App-shell en backupmetadata gebruiken 10.10.2.
