@@ -306,10 +306,10 @@ function weekReplanStressLevel(){
 
   if(diary.level==="elevated"){
     level="elevated";
-    reasons.push(`coachdagboek: ${diary.reason}`);
+    reasons.push(`trainingsfeedback: ${diary.reason}`);
   }else if(diary.level==="attention"){
     if(level!=="elevated") level="attention";
-    reasons.push(`coachdagboek: ${diary.reason}`);
+    reasons.push(`trainingsfeedback: ${diary.reason}`);
   }
 
   return{level,reasons,readiness,load,execution,diary};

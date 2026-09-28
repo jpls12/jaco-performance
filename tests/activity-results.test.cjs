@@ -3,6 +3,17 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const vm=require('node:vm');
 
+test('one visible place to review training; old check-ins stay in backup',()=>{
+  const html=fs.readFileSync('index.html','utf8');
+  const bootstrap=fs.readFileSync('js/bootstrap.js','utf8');
+  const results=fs.readFileSync('js/activity-results.js','utf8');
+  assert.match(html,/id="activityReviewForm"|id="activityResultsCard"/);
+  assert.doesNotMatch(html,/id="coachDiaryCard"|id="coachDiaryForm"|href="#coachDiaryCard"/);
+  assert.doesNotMatch(bootstrap,/getElementById\("coachDiaryForm"\)/);
+  assert.doesNotMatch(results,/id="openResultDiary"/);
+  assert.match(html,/id="backupCurrentDiary"/);
+});
+
 const routeCode=fs.readFileSync('api/intervals-activity-route.js','utf8')
   .replace('export function normalizeRouteStreams','function normalizeRouteStreams')
   .replace('export default async function handler','async function handler');
@@ -128,12 +139,12 @@ test('quick review needs only RPE and feeling, leaving optional signals unknown'
   assert.equal(diary['2026-09-26'].energy,2);
 });
 
-test('manual day check-in is never overwritten by activity review',()=>{
+test('old manual day check-in is preserved while a new review updates advice',()=>{
   const {diary,status,submit}=resultsContext();
   diary['2026-09-26']={sessionRpe:7,note:'Eigen beoordeling'};
   submit('i1',{sessionRpe:9,legs:5,energy:1,enjoyment:1,complaintSeverity:3});
   assert.equal(diary['2026-09-26'].sessionRpe,7);
-  assert.match(status.textContent,/handmatige dagcheck-in/);
+  assert.match(status.textContent,/coachadvies is opnieuw berekend/);
 });
 
 test('deleting one of two ratings keeps the remaining daily signal',()=>{
@@ -248,7 +259,7 @@ test('review insight distinguishes high RPE from a combined recovery signal',()=
   assert.equal(context.activityReviewInsight(activities.i1,heavy).tone,'caution');
   assert.equal(context.activityReviewInsight(activities.i1,{...base,complaintSeverity:2}).tone,'caution');
   diary['2026-09-26']={sessionRpe:5,note:'handmatig'};
-  assert.match(context.activityReviewInsight(activities.i1,base).coach,/handmatige dag-check-in/);
+  assert.match(context.activityReviewInsight(activities.i1,base).coach,/telt mee voor het coachadvies/);
   assert.equal(context.activityReviewInsight(activities.i1,null).title,'Nog niet beoordeeld');
 });
 

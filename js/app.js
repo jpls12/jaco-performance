@@ -443,7 +443,7 @@ function saveCompletedVisualWorkout(){
 
   closeVisualWorkoutPlayer();
   selectedDate=date;
-  openDiaryForDate(date);
+  // Een afgeronde kracht- of mobiliteitssessie blijft in de trainingshistorie.
 }
 
 document.addEventListener("visibilitychange",()=>{
@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.16";
+const APP_VERSION = "10.10.17";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -1359,8 +1359,22 @@ function diaryNumber(value){
   return finiteNumberOrNull(value);
 }
 
+function effectiveCoachDiary(){
+  const entries={...coachDiary};
+  if(typeof activityReviews==="undefined" || typeof deriveActivityDiary!=="function"){
+    return entries;
+  }
+  const dates=new Set(Object.values(activityReviews)
+    .map(review=>review?.date).filter(Boolean));
+  for(const date of dates){
+    const derived=deriveActivityDiary(date);
+    if(derived) entries[date]=derived;
+  }
+  return entries;
+}
+
 function coachDiaryEntries(days=28){
-  return Object.entries(coachDiary)
+  return Object.entries(effectiveCoachDiary())
     .map(([date,entry])=>({
       date,
       entry,
@@ -1382,7 +1396,7 @@ function diaryAverage(items,key){
   return values.reduce((sum,value)=>sum+value,0)/values.length;
 }
 
-function latestDiaryRecoverySignal(entries=coachDiary,today=todayDateString()){
+function latestDiaryRecoverySignal(entries=effectiveCoachDiary(),today=todayDateString()){
   const latest=Object.entries(entries||{})
     .filter(([date,entry])=>{
       const age=calendarDayDifference(today,date);
@@ -1439,7 +1453,7 @@ function buildDiaryContext(){
     return{
       level:"unknown",
       entries:0,
-      reasons:["geen recente dagboekcheck-in"],
+      reasons:["geen recente trainingsbeoordeling"],
       latest:null
     };
   }
@@ -1645,6 +1659,7 @@ function renderDiaryTrends(entries){
 }
 
 function renderCoachDiary(date=todayDateString()){
+  if(!document.getElementById("coachDiaryForm")) return;
   if(typeof renderSupportHistory==="function") renderSupportHistory();
   const seven=coachDiaryEntries(7);
   const twentyEight=coachDiaryEntries(28);
@@ -1918,7 +1933,7 @@ function coachChatResponse(message){
 
   if(feelGood){
     if(context.diary.level==="elevated"){
-      response="Je voelt je vandaag goed, maar je recente dagboekfeedback bevat een verhoogd subjectief belastingssignaal. Ik zou daarom niet automatisch extra intensiteit toevoegen.";
+      response="Je voelt je vandaag goed, maar je recente trainingsbeoordeling bevat een verhoogd belastingssignaal. Ik zou daarom niet automatisch extra intensiteit toevoegen.";
       workout=createGeneratorWorkout("easy",context);
       return{response,workout};
     }
@@ -1944,8 +1959,8 @@ function coachChatResponse(message){
     :"onvoldoende actuele hersteldata voor een coachscore";
 
   const diaryText=context.diary.level==="unknown"
-    ?"geen recente dagboekfeedback"
-    :`dagboekstatus ${diaryStatusLabel(context.diary.level)}`;
+    ?"geen recente trainingsbeoordeling"
+    :`trainingsfeedback ${diaryStatusLabel(context.diary.level)}`;
 
   response=`Ik combineer je bericht met ${recoveryText}, ${diaryText}${context.race?`, ${context.race.name} over ${context.phase.days} dagen`:""} en je huidige beschikbaarheid. Voor een concrete wijziging kun je aangeven hoeveel tijd je hebt, hoe je benen voelen of welke training je wilt verplaatsen.`;
   return{response,workout:null};
@@ -3219,7 +3234,7 @@ function applySelectedBackupImport(){
 
   const confirmed=confirm(
     `Backup importeren via ‘${action}’?\n\n`+
-    `${summary.workouts} trainingen · ${summary.races} wedstrijden · ${summary.diary} dagboekitems.\n\n`+
+    `${summary.workouts} trainingen · ${summary.races} wedstrijden · ${summary.diary} eerdere check-ins.\n\n`+
     "De huidige data wordt eerst automatisch als veiligheidskopie bewaard."
   );
 
@@ -3634,12 +3649,6 @@ function renderSelected(){
         ${done?"Markeer als gepland":"Markeer als voltooid"}
       </button>
 
-      ${done?`
-        <button class="secondary" type="button" onclick="openDiaryForDate('${selectedDate}')">
-          ${coachDiary[selectedDate]?"Bekijk coachdagboek":"Vul coachdagboek in"}
-        </button>
-      `:""}
-
       <button class="secondary" type="button" onclick="uploadSelected()"
         ${trainingTypeInfo(workout.type).uploadable ? "" : "disabled"}>
         ${trainingTypeInfo(workout.type).uploadable
@@ -3689,9 +3698,6 @@ function toggleDone(){
   renderSelected();
   refreshDerivedCoachViews();
 
-  if(isNowDone){
-    openDiaryForDate(selectedDate);
-  }
 }
 
 async function uploadSelected(){
@@ -9647,26 +9653,26 @@ function buildLoadMonitor(){
     signals.push({
       state:"bad",
       icon:"!",
-      text:`Coachdagboek: ${diary.reasons.join(", ")}.`
+      text:`Trainingsfeedback: ${diary.reasons.join(", ")}.`
     });
   }else if(diary.level==="attention"){
     attentionFlags.push("diary");
     signals.push({
       state:"warn",
       icon:"!",
-      text:`Coachdagboek vraagt aandacht: ${diary.reasons.join(", ")}.`
+      text:`Trainingsfeedback vraagt aandacht: ${diary.reasons.join(", ")}.`
     });
   }else if(diary.level==="stable"){
     signals.push({
       state:"good",
       icon:"✓",
-      text:"Coachdagboek geeft geen terugkerend subjectief belastingssignaal."
+      text:"Trainingsbeoordelingen geven geen terugkerend subjectief belastingssignaal."
     });
   }else{
     signals.push({
       state:"warn",
       icon:"?",
-      text:"Coachdagboek niet meegewogen: geen recente check-in."
+      text:"Trainingsfeedback niet meegewogen: geen recente beoordeling."
     });
   }
 
@@ -9971,19 +9977,19 @@ function buildCoachIntelligence(){
     signals.push({
       state:"bad",
       icon:"!",
-      text:`Recente dagboekfeedback is verhoogd: ${diary.reasons.join(", ")}.`
+      text:`Recente trainingsfeedback is verhoogd: ${diary.reasons.join(", ")}.`
     });
   }else if(diary.level==="attention"){
     signals.push({
       state:"warn",
       icon:"!",
-      text:`Recente dagboekfeedback vraagt aandacht: ${diary.reasons.join(", ")}.`
+      text:`Recente trainingsfeedback vraagt aandacht: ${diary.reasons.join(", ")}.`
     });
   }else if(diary.level==="stable"){
     signals.push({
       state:"good",
       icon:"✓",
-      text:"Recente dagboekfeedback is stabiel."
+      text:"Recente trainingsfeedback is stabiel."
     });
   }
 
@@ -11869,7 +11875,7 @@ function createTodayRecommendation(readiness,race,phase,availability,currentWork
     };
     return{
       kind:"rest",workout,title:workout.name,
-      text:`Je dagboek meldt ${diarySignal.reason}. De coach adviseert vandaag rust in plaats van een nieuwe loopprikkel.`,
+      text:`Je trainingsfeedback meldt ${diarySignal.reason}. De coach adviseert vandaag rust in plaats van een nieuwe loopprikkel.`,
       steps:workout.displaySteps
     };
   }
@@ -11978,7 +11984,7 @@ Recovery
         kind:"keep",
         workout:currentWorkout,
         title:currentWorkout.name,
-        text:"De actuele herstel-, uitvoerings- of dagboeksignalen vragen aandacht, maar je geplande training is al rustig. Houd hem gemakkelijk en voeg geen extra volume toe.",
+        text:"De actuele herstel-, uitvoerings- of trainingssignalen vragen aandacht, maar je geplande training is al rustig. Houd hem gemakkelijk en voeg geen extra volume toe.",
         steps:currentWorkout.displaySteps||[]
       };
     }
@@ -12007,7 +12013,7 @@ Recovery
       kind:currentWorkout?"replace":"new",
       workout,
       title:`Herstelloop ${km} km`,
-      text:`Een verhoogd herstel-, uitvoerings- of dagboeksignaal (${diarySignal.level==="elevated"?diarySignal.reason:"actuele belasting"}) maakt een rustige herstelprikkel vandaag passender dan zware training.`,
+      text:`Een verhoogd herstel-, uitvoerings- of trainingssignaal (${diarySignal.level==="elevated"?diarySignal.reason:"actuele belasting"}) maakt een rustige herstelprikkel vandaag passender dan zware training.`,
       steps:workout.displaySteps
     };
   }
@@ -12577,9 +12583,6 @@ function completeTodayTrainingFromCard(){
   if(!workout) return;
 
   if(workoutWasCompleted(date,workout)){
-    if(workout.type!=="Rest"){
-      openDiaryForDate(date);
-    }
     return;
   }
 
@@ -12590,9 +12593,6 @@ function completeTodayTrainingFromCard(){
   saveObject(DONE_KEY,doneWorkouts);
   refreshAfterCalendarMutation();
 
-  if(workout.type!=="Rest"){
-    openDiaryForDate(date);
-  }
 }
 
 function finishGuidedTrainingSession(){
@@ -12618,23 +12618,12 @@ function finishGuidedTrainingSession(){
   const confirmed=confirm(`"${sessionWorkout.name}" afronden en als voltooid markeren?`);
   if(!confirmed) return;
 
-  const elapsedMinutes=Math.max(
-    1,
-    Math.round(guidedSessionElapsedSeconds()/60)
-  );
-
   markWorkoutCompleted(date,current);
   saveObject(DONE_KEY,doneWorkouts);
   closeGuidedTrainingSession(true);
   refreshAfterCalendarMutation();
 
   selectedDate=date;
-  openDiaryForDate(date);
-
-  const durationField=document.getElementById("diaryActualDuration");
-  if(durationField && !durationField.value){
-    durationField.value=String(elapsedMinutes);
-  }
 }
 
 function openTodayTrainingCalendar(){
@@ -12799,7 +12788,7 @@ function renderTodayCoach(){
     reasonRows.push({
       cls:diary.level==="stable"?"good":diary.level==="attention"?"warn":"bad",
       icon:diary.level==="stable"?"✓":diary.level==="attention"?"!":"×",
-      text:`Coachdagboek: ${diaryStatusLabel(diary.level)} · ${diary.reasons.join(", ")}.`
+      text:`Trainingsfeedback: ${diaryStatusLabel(diary.level)} · ${diary.reasons.join(", ")}.`
     });
   }
 

@@ -31,6 +31,19 @@ test('recent diary uses combined feedback; planned hard effort alone stays stabl
   assert.equal(signal({'2026-09-27':{sessionRpe:9,legs:5,energy:1,complaintSeverity:3}}).level,'unknown');
 });
 
+test('activity review takes priority without deleting an older manual check-in',()=>{
+  const legacy={'2026-09-26':{sessionRpe:3,legs:1,energy:5,complaintSeverity:0,note:'Oud'}};
+  const reviews={i1:{date:'2026-09-26',sessionRpe:9,legs:5,energy:1,complaintSeverity:2}};
+  const context=vm.createContext({coachDiary:legacy,activityReviews:reviews,
+    deriveActivityDiary:date=>Object.values(reviews).find(review=>review.date===date),
+    calendarDayDifference:days});
+  vm.runInContext(numberCode+signalCode,context);
+  assert.equal(context.latestDiaryRecoverySignal(undefined,'2026-09-26').level,'elevated');
+  delete reviews.i1;
+  assert.equal(context.latestDiaryRecoverySignal(undefined,'2026-09-26').level,'stable');
+  assert.equal(legacy['2026-09-26'].note,'Oud');
+});
+
 test('day advice preserves a finished workout and race; complaint proposes rest otherwise',()=>{
   let completed=false;
   const context=vm.createContext({
