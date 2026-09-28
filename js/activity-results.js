@@ -96,10 +96,81 @@ function filterActivityResults(activities,filter){
         :syncedSportFamily(activity.type)===filter));
 }
 
+function activityWeekSummary(activities,reviews,today,meta){
+  const start=addDays(today,-6);
+  const rows=activities.filter(activity=>activity?.date>=start && activity.date<=today);
+  const run=rows.filter(activity=>syncedSportFamily(activity.type)==="run");
+  const known=(items,key)=>items.map(item=>finiteNumberOrNull(item[key]))
+    .filter(value=>value!==null && value>=0);
+  const distances=known(run,"distanceKm");
+  const minutes=known(rows,"durationMinutes");
+  const loads=known(rows,"trainingLoad");
+  const rated=rows.filter(activity=>reviews[activity.id]);
+  const days=Array.from({length:7},(_,index)=>{
+    const date=addDays(start,index);
+    const daily=run.filter(activity=>activity.date===date);
+    return{date,runKm:known(daily,"distanceKm").reduce((a,b)=>a+b,0),
+      missing:daily.some(activity=>finiteNumberOrNull(activity.distanceKm)===null),
+      covered:Boolean(meta?.fetchedAt && meta.oldest && meta.newest &&
+        date>=meta.oldest && date<=meta.newest)};
+  });
+  return{
+    start,today,activities:rows.length,runCount:run.length,
+    runKm:distances.reduce((a,b)=>a+b,0),runDistanceCount:distances.length,
+    minutes:minutes.reduce((a,b)=>a+b,0),durationCount:minutes.length,
+    load:loads.reduce((a,b)=>a+b,0),loadCount:loads.length,
+    rated:rated.length,
+    complaints:rated.filter(activity=>Number(reviews[activity.id].complaintSeverity)>=2).length,
+    covered:Boolean(meta?.fetchedAt && meta.oldest<=start && meta.newest>=today),
+    fetchedAt:meta?.fetchedAt||null,days
+  };
+}
+
+function renderActivityWeekReport(){
+  const box=document.getElementById("activityWeekReport");
+  if(!box) return;
+  const summary=activityWeekSummary(Object.values(syncedActivities),activityReviews,
+    todayDateString(),activitySyncMeta);
+  if(!summary.fetchedAt){
+    box.innerHTML='<p class="help">Weekoverzicht verschijnt na de eerste Training Sync.</p>';
+    return;
+  }
+  const maxKm=Math.max(1,...summary.days.map(item=>item.runKm));
+  const metric=(label,value,note)=>`<div><span>${label}</span><strong>${value}</strong><small>${note}</small></div>`;
+  const race=getRaceFocus();
+  box.innerHTML=`<div class="activity-week-head">
+    <div><p class="label">Laatste 7 dagen</p><h3>Uitgevoerd en beoordeeld</h3></div>
+    <small>${safe(summary.start)} t/m ${safe(summary.today)}</small>
+  </div>
+  <div class="activity-week-metrics">
+    ${metric("Activiteiten",summary.activities,"uit Intervals.icu")}
+    ${metric("Hardlopen",summary.runDistanceCount || !summary.runCount?`${summary.runKm.toFixed(1)} km`:"—",
+      `${summary.runDistanceCount}/${summary.runCount} met afstand`)}
+    ${metric("Beweegtijd",summary.durationCount?`${Math.round(summary.minutes)} min`:"—",
+      `${summary.durationCount}/${summary.activities} met duur`)}
+    ${metric("Beoordeeld",`${summary.rated}/${summary.activities}`,
+      summary.complaints?`${summary.complaints} met duidelijke klachten`:"per activiteit")}
+  </div>
+  <div class="activity-week-bars" role="img" aria-label="Hardloopafstand per dag: ${summary.days.map(day=>`${day.date} ${!day.covered?"geen syncdekking":day.missing && day.runKm===0?"afstand ontbreekt":`${day.runKm.toFixed(1)} kilometer${day.missing?" en ontbrekende afstand":""}`}`).join("; ")}">
+    ${summary.days.map(day=>{
+      const height=Math.round(day.runKm/maxKm*100);
+      const label=new Date(day.date+"T12:00:00").toLocaleDateString("nl-NL",{weekday:"short"});
+      return `<div class="activity-week-day" title="${safe(day.date)}: ${day.covered?`${day.runKm.toFixed(1)} km${day.missing?" · onvolledige afstand":""}`:"geen syncdekking"}">
+        <strong>${day.covered && (!day.missing || day.runKm>0)?`${day.runKm.toFixed(1)}${day.missing?"*":""}`:"—"}</strong>
+        <span class="activity-week-track"><span style="height:${day.covered?height:0}%"></span></span>
+        <small>${safe(label)}</small>
+      </div>`;
+    }).join("")}
+  </div>
+  <p class="activity-week-caption">Balken tonen alleen geregistreerde hardloopkilometers; * betekent dat een afstand ontbreekt. ${summary.loadCount?`Bekende trainingsbelasting: ${Math.round(summary.load)} (${summary.loadCount}/${summary.activities} activiteiten met waarde). `:"Geen belastingsdata beschikbaar. "}${summary.covered?"Syncbereik omvat deze zeven dagen.":"Het syncbereik omvat niet alle zeven dagen; ontbrekende dagen zijn geen rustdagen."}</p>
+  ${race?`<p class="activity-week-goal">Wedstrijdfocus: <strong>${safe(race.name)}</strong> · ${safe(race.date)}. Het weekoverzicht is een terugblik; het actuele coachadvies bepaalt de volgende training.</p>`:""}`;
+}
+
 function renderActivityResults(){
   const list=document.getElementById("activityResultsList");
   const detail=document.getElementById("activityResultDetail");
   if(!list || !detail) return;
+  renderActivityWeekReport();
   const activities=recentActivityResults();
   const filters=[
     ["all","Alles"],["unreviewed","Te beoordelen"],["run","Lopen"],["ride","Fietsen"],
