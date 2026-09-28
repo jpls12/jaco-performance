@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.8";
+const APP_VERSION = "10.10.9";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -2065,11 +2065,11 @@ function isLongWorkout(workout){
 
 function smartWeekContext(){
   const profileData=getProfile();
-  const availability=availableDaysForPlanner();
+  const start=nextMonday();
+  const availability=availableDaysForPlanner(start);
   const readiness=determineReadiness(getWellnessSnapshot());
   const race=getRaceFocus();
   const phase=classifyRacePhase(race);
-  const start=nextMonday();
   const end=addDays(start,6);
   const weekRaces=racesInRange(start,end);
   const seasonBlock=seasonBlockForWeek(start);
@@ -7771,6 +7771,135 @@ function defaultAvailability(){
   };
 }
 
+function weeklyAvailabilityStart(today=todayDateString()){
+  return weekdayIndexFromDate(today)===6?addDays(today,1):mondayOf(today);
+}
+
+function availabilityForDate(date,profileData=getProfile()){
+  const index=weekdayIndexFromDate(date);
+  const key=DAY_KEYS[index];
+  const base={...defaultAvailability()[key],...(profileData.availability?.[key]||{})};
+  const minutes=profileData.weeklyAvailability?.[mondayOf(date)]?.[key];
+  if(!Number.isInteger(minutes) || minutes<0 || minutes>300) return{key,index,...base};
+  return{key,index,...base,available:minutes>0,maxMinutes:minutes,
+    preference:minutes>0 && base.preference==="rust"?"rustig":base.preference};
+}
+
+function weeklyAvailabilityComplete(start,profileData=getProfile()){
+  const days=profileData.weeklyAvailability?.[start];
+  return Boolean(days && DAY_KEYS.every(key=>
+    Number.isInteger(days[key]) && days[key]>=0 && days[key]<=300));
+}
+
+function renderWeeklyAvailabilityPrompt(){
+  const box=document.getElementById("weeklyAvailabilityPrompt");
+  if(!box) return;
+  const start=weeklyAvailabilityStart();
+  const saved=weeklyAvailabilityComplete(start);
+  box.hidden=saved;
+  const badge=document.getElementById("weeklyAvailabilityBadge");
+  if(badge) badge.hidden=saved;
+  if(!saved) document.getElementById("weeklyAvailabilityPromptText").textContent=
+    `Week ${start} t/m ${addDays(start,6)}: geef per dag je tijd door. De coach weegt je trainingen, herstel en wedstrijden mee.`;
+}
+
+function renderWeeklyAvailabilityEditor({keepValues=false}={}){
+  const dateField=document.getElementById("weeklyAvailabilityDate");
+  const root=document.getElementById("weeklyAvailabilityDays");
+  if(!dateField || !root) return;
+  const start=mondayOf(dateField.value||weeklyAvailabilityStart());
+  dateField.value=start;
+  const saved=getProfile().weeklyAvailability?.[start];
+  if(keepValues && root.dataset.week===start) return;
+  root.dataset.week=start;
+  root.innerHTML=DAY_KEYS.map((key,index)=>{
+    const day=availabilityForDate(addDays(start,index));
+    const minutes=saved?.[key]??(day.available?day.maxMinutes:0);
+    const value=Math.max(0,Math.min(300,Number(minutes)||0));
+    return `<label class="weekly-availability-day" for="weekly-minutes-${key}">
+      <span>${DAY_NAMES[index]}</span>
+      <input id="weekly-minutes-${key}" name="${key}" type="range" min="0" max="300" step="5" value="${value}" aria-label="${DAY_NAMES[index]} maximaal beschikbare minuten">
+      <output for="weekly-minutes-${key}">${value?`${Math.floor(value/60)}:${String(value%60).padStart(2,"0")}`:"Rust"}</output>
+    </label>`;
+  }).join("");
+}
+
+function updateWeeklyAvailabilityValue(event){
+  const input=event.target;
+  if(!input.matches?.('#weeklyAvailabilityDays input[type="range"]')) return;
+  const minutes=Number(input.value);
+  input.nextElementSibling.textContent=minutes
+    ?`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,"0")}`:"Rust";
+}
+
+function saveWeeklyAvailability(event){
+  event.preventDefault();
+  const status=document.getElementById("weeklyAvailabilityStatus");
+  const start=mondayOf(document.getElementById("weeklyAvailabilityDate").value);
+  const current=mondayOf(todayDateString());
+  if(start<current || start>addDays(current,56)){
+    status.className="status error";
+    status.textContent="Kies een week vanaf deze week, maximaal acht weken vooruit.";
+    return;
+  }
+  const days={};
+  for(const key of DAY_KEYS){
+    const input=document.getElementById(`weekly-minutes-${key}`);
+    const minutes=Number(input?.value);
+    if(!Number.isInteger(minutes) || minutes<0 || minutes>300){
+      status.className="status error";
+      status.textContent="Controleer de beschikbare tijd per dag.";
+      return;
+    }
+    days[key]=minutes;
+  }
+  const existing=getProfile().weeklyAvailability||{};
+  const weeklyAvailability=Object.fromEntries(Object.entries(existing)
+    .filter(([week])=>week>=current && week<=addDays(current,56)));
+  weeklyAvailability[start]=days;
+  profile={...getProfile(),weeklyAvailability};
+  saveObject(PROFILE_KEY,profile);
+  resetGeneratedPlannerPreviews();
+  renderWeeklyAvailabilityEditor();
+  renderWeeklyAvailabilityPrompt();
+  renderPlanningPreview();
+  renderFullSeasonSchedulePreview();
+
+  let added=0;
+  let timeConflicts=0;
+  if((start===nextMonday() || (start===current && todayDateString()===current)) &&
+    typeof autoWeekReplanReady!=="undefined" && autoWeekReplanReady &&
+    !DAY_KEYS.some((_,index)=>{
+      const workout=allWorkouts()[addDays(start,index)];
+      return workout && workout.type!=="Rest" && workout.type!=="Race";
+    })){
+    const context=weekPlanningContext();
+    context.start=start;
+    context.end=addDays(start,6);
+    context.availability=availableDaysForPlanner(start);
+    context.weekRaces=racesInRange(start,context.end);
+    context.seasonBlock=seasonBlockForWeek(start);
+    const recentLoad=buildLoadMonitor();
+    if(recentLoad.level==="elevated") context.seasonLoadFactor=.75;
+    else if(recentLoad.level==="attention") context.seasonLoadFactor=.9;
+    const option=assignAiWeekToAvailability(context,createUnscheduledAiWeek(context,0),0);
+    for(const workout of option.workouts){
+      const day=availabilityForDate(workout.date);
+      if(workout.date<=todayDateString() || allWorkouts()[workout.date] || !day.available) continue;
+      if(estimatedWorkoutMinutes(workout)>day.maxMinutes){timeConflicts++;continue;}
+      customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
+      added++;
+    }
+    if(added) saveObject(STORAGE_KEY,customWorkouts);
+  }
+  if(added) refreshAfterCalendarMutation();
+  else refreshDerivedCoachViews();
+  status.className="status ok";
+  status.textContent=added
+    ?`Week opgeslagen. ${added} trainingen richting je doel ingepland op basis van bekende herstel- en trainingsdata en je wedstrijden.${timeConflicts?` ${timeConflicts} sessie(s) pasten niet binnen je tijd en zijn niet ingepland.`:""}`
+    :"Week opgeslagen. De coach heeft de bestaande trainingen met je beschikbaarheid vergeleken. Bekijk het actuele weekadvies voor eventuele conflicten.";
+}
+
 function availabilityPreferenceOptions(selected){
   const options=[
     ["rust","Rust"],
@@ -7868,15 +7997,9 @@ function readAvailabilityForm(){
   ]));
 }
 
-function availableDaysForPlanner(){
-  const p=getProfile();
-  const availability={...defaultAvailability(),...(p.availability||{})};
-
-  return DAY_KEYS.map((key,index)=>({
-    key,
-    index,
-    ...availability[key]
-  })).filter(day=>day.available);
+function availableDaysForPlanner(weekStart=nextMonday()){
+  return DAY_KEYS.map((_,index)=>availabilityForDate(addDays(weekStart,index)))
+    .filter(day=>day.available && day.maxMinutes>=35);
 }
 
 function workoutDurationEstimate(type,km){
@@ -7957,7 +8080,7 @@ function makeCoreWorkout(date,minutes=15,priority="could"){
 }
 
 function scheduleByAvailability(workouts,startDate=nextMonday(),daysOverride=null){
-  const days=daysOverride || availableDaysForPlanner();
+  const days=daysOverride || availableDaysForPlanner(startDate);
   if(!days.length) return [];
 
   const start=startDate;
@@ -9821,7 +9944,7 @@ function fullSeasonWeekContext(weekStart,targetRace,weekIndex,cutbackEnabled){
 
   return{
     profile:getProfile(),
-    availability:availableDaysForPlanner(),
+    availability:availableDaysForPlanner(weekStart),
     readiness:fullSeasonReadiness(weekIndex),
     race,
     phase:seasonPhaseToLegacyPhase(seasonBlock,race),
@@ -10205,12 +10328,12 @@ function removeFullSeasonSchedule(){
 
 function weekPlanningContext(){
   const profileData=getProfile();
-  const availability=availableDaysForPlanner();
+  const start=nextMonday();
+  const availability=availableDaysForPlanner(start);
   const readiness=determineReadiness(getWellnessSnapshot());
   const race=getRaceFocus();
   const phase=classifyRacePhase(race);
   const diary=buildDiaryContext();
-  const start=nextMonday();
   const end=addDays(start,6);
   const weekRaces=racesInRange(start,end);
   const seasonBlock=seasonBlockForWeek(start);
@@ -11459,12 +11582,7 @@ function renderPerformanceEngine(){
 }
 
 function todayAvailabilityInfo(){
-  const p=getProfile();
-  const availability={...defaultAvailability(),...(p.availability||{})};
-  const jsDay=new Date().getDay();
-  const mondayIndex=(jsDay+6)%7;
-  const key=DAY_KEYS[mondayIndex];
-  return {key,index:mondayIndex,...availability[key]};
+  return availabilityForDate(todayDateString());
 }
 
 function todayDateString(){
@@ -13069,6 +13187,9 @@ function fillPlanningForm(){
   document.getElementById("profileLongRunDay").value=String(p.longRunDay ?? 5);
   document.getElementById("profileAutoCore").checked=p.autoCore !== false;
   renderAvailabilityEditor();
+  const weekDate=document.getElementById("weeklyAvailabilityDate");
+  if(weekDate){weekDate.value=weeklyAvailabilityStart();renderWeeklyAvailabilityEditor();}
+  renderWeeklyAvailabilityPrompt();
   renderPlanningPreview();
 }
 
@@ -13104,11 +13225,10 @@ function renderPlanningPreview(){
   const box=document.getElementById("planningPreview");
   if(!box) return;
 
-  const p=getProfile();
-  const availability={...defaultAvailability(),...(p.availability||{})};
+  const weekStart=mondayOf(document.getElementById("weeklyAvailabilityDate")?.value||weeklyAvailabilityStart());
 
   box.innerHTML=DAY_KEYS.map((key,index)=>{
-    const day=availability[key];
+    const day=availabilityForDate(addDays(weekStart,index));
     const available=Boolean(day.available);
 
     return `
