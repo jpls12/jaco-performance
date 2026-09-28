@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.16 · Rustiger wedstrijdscherm**
+
+Onder je wedstrijddoelen en actuele seizoensfase staan vijf hulpmiddelen als compacte, uitklapbare keuzes: seizoensschema, kalenderanalyse, raceplan, evaluatie en een los wedstrijdschema. Zo blijft de hoofdroute kort zonder functies weg te nemen. De kalenderanalyse toont in gesloten toestand direct of een doel nog bevestiging nodig heeft of taper/herstel aandacht vraagt. Het seizoensschema beschrijft duidelijk dat het een vooruitblik is; de weekcoach blijft de komende zeven dagen aanpassen op actuele data. App-shell en backupmetadata gebruiken 10.10.16.
+
 **10.10.15 · Compact wedstrijd- en seizoensoverzicht**
 
 De seizoensplanner toont eerst het wedstrijddoel, de huidige trainingsfase en een korte coachduiding. De routekaart en onderbouwing staan onder een uitklapbaar onderdeel. Een kalenderwedstrijd die nog geen ingestelde prioriteit heeft, krijgt rechtstreeks in de planner de actie **Kies als doel** en wordt in het wedstrijdenoverzicht en de kalenderanalyse als voorlopig gemarkeerd, zonder haar als bevestigde C-wedstrijd te tellen. De wedstrijdkaarten hebben kortere acties en duidelijkere tijdsaanduiding. App-shell en backupmetadata gebruiken 10.10.15.
