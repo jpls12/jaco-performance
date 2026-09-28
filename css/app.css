@@ -3046,6 +3046,22 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .activity-route-line{fill:none;stroke:#17786e;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}.activity-route-start{fill:#48a356;stroke:#fff;stroke-width:2}.activity-route-end{fill:#244f84;stroke:#fff;stroke-width:2}
 .activity-review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.5rem}
 .activity-review-grid label{font-size:.85rem}#activityReviewForm>label{display:block;margin-top:.65rem}
+.activity-review-quick{padding:.85rem;margin:.65rem 0;border:1px solid var(--line);border-radius:14px;background:#182d3f}
+.activity-rpe-label{display:flex;justify-content:space-between;gap:.5rem;font-weight:650}
+.activity-rpe-label output{font-size:1.1rem;color:#9df0c1}
+#activityRpe{display:block;width:100%;margin:.8rem 0 .25rem;accent-color:var(--green);min-height:32px;cursor:pointer}
+.activity-rpe-ends{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem}
+.activity-feeling{border:0;padding:0;margin:1rem 0 0;min-width:0}
+.activity-feeling legend{font-weight:650;margin-bottom:.5rem}
+.activity-feeling-options{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.35rem}
+.activity-feeling-options label{position:relative;min-width:0;cursor:pointer}
+.activity-feeling-options input{position:absolute;width:100%;height:100%;margin:0;opacity:0;cursor:pointer}
+.activity-feeling-options label>span{display:grid;justify-items:center;gap:.2rem;padding:.5rem .1rem;border-radius:11px;border:1px solid var(--line);background:var(--panel2);font-size:1.45rem}
+.activity-feeling-options small{font-size:.7rem;color:var(--muted);white-space:nowrap}
+.activity-feeling-options input:checked+span{border-color:var(--green);background:#1b393e;box-shadow:inset 0 0 0 1px var(--green)}
+.activity-feeling-options input:focus-visible+span{outline:2px solid #9df0c1;outline-offset:2px}
+.activity-review-extra{margin:.7rem 0}.activity-review-extra summary{cursor:pointer;font-weight:650}
+.activity-review-extra .activity-review-grid{margin:.7rem 0}
 @media(max-width:560px){.activity-result-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .activity-result-filters{display:flex;gap:.4rem;overflow-x:auto;padding:.1rem 0 .45rem;scrollbar-width:thin}
 .activity-result-filters button{width:auto;min-width:max-content;padding:.45rem .75rem;border-radius:999px;background:transparent;color:inherit;border:1px solid rgba(70,105,110,.25);font-size:.82rem}
