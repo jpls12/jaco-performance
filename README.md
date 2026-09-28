@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.6 · Weekoverzicht met betrouwbare datadekking**
+
+Uitgevoerde trainingen tonen een doorlopend overzicht van zeven dagen: aantal activiteiten, gemeten hardloopkilometers, bekende beweegtijd, beoordelingen en hardloopkilometers per dag. Ontbrekende afstanden of een onvolledig syncbereik worden als ontbrekende data weergegeven en niet als rust of nul kilometer geïnterpreteerd. Alleen bekende trainingsbelasting wordt opgeteld en de actuele wedstrijdfocus wordt als context getoond zonder een voorspelling uit ongelijksoortige sessies af te leiden. De resultaatkaart en coachduiding gebruiken nu het donkere app-thema met leesbaar contrast. App-shell en backupmetadata gebruiken 10.10.6.
+
 **10.10.5 · Coachduiding bij trainingsresultaten**
 
 Het resultatenoverzicht heeft een filter Te beoordelen met voortgangsteller. Na een beoordeling verschijnt bij de activiteit een compacte duiding van de subjectieve trainingsrespons. Hoge RPE alleen wordt niet als herstelalarm aangemerkt; duidelijke klachten of hoge RPE in combinatie met zware benen en lage energie krijgen voorrang. De app vermeldt wanneer een handmatige dag-check-in leidend blijft, en biedt een directe link naar het actuele coachadvies. De duiding wijzigt de bestaande beoordelingsdata niet; het bestaande coachdagboek en de automatische planning blijven hun eigen veiligheidscontroles uitvoeren. App-shell en backupmetadata gebruiken 10.10.5.

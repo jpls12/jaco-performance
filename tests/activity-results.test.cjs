@@ -208,3 +208,53 @@ test('unreviewed filter preserves separate activities on the same date',()=>{
   assert.equal(open[0].id,'i2');
   assert.equal(context.filterActivityResults(rows,'run').length,2);
 });
+
+test('seven-day report keeps measured volume separate from missing data',()=>{
+  const {context}=resultsContext();
+  const addDays=(date,n)=>{
+    const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);
+    return d.toISOString().slice(0,10);
+  };
+  context.addDays=addDays;
+  context.syncedSportFamily=type=>type==='Run'?'run':'ride';
+  const activities=[
+    {id:'a',date:'2026-09-25',type:'Run',distanceKm:10,durationMinutes:50,trainingLoad:70},
+    {id:'b',date:'2026-09-26',type:'Run',distanceKm:null,durationMinutes:35,trainingLoad:null},
+    {id:'c',date:'2026-09-26',type:'Ride',distanceKm:40,durationMinutes:90,trainingLoad:80},
+    {id:'old',date:'2026-09-19',type:'Run',distanceKm:30,durationMinutes:180}
+  ];
+  const reviews={a:{sessionRpe:6,complaintSeverity:0},b:{sessionRpe:8,complaintSeverity:2}};
+  const report=context.activityWeekSummary(activities,reviews,'2026-09-26',{
+    fetchedAt:'2026-09-26T12:00:00Z',oldest:'2026-09-20',newest:'2026-09-26'
+  });
+  assert.equal(report.activities,3);
+  assert.equal(report.runKm,10);
+  assert.equal(report.runDistanceCount,1);
+  assert.equal(report.minutes,175);
+  assert.equal(report.load,150);
+  assert.equal(report.loadCount,2);
+  assert.equal(report.rated,2);
+  assert.equal(report.complaints,1);
+  assert.equal(report.covered,true);
+  assert.equal(report.days.at(-1).missing,true);
+});
+
+test('stale sync coverage does not label unknown days as rest',()=>{
+  const {context}=resultsContext();
+  context.addDays=(date,n)=>{
+    const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);
+    return d.toISOString().slice(0,10);
+  };
+  context.syncedSportFamily=()=> 'run';
+  const report=context.activityWeekSummary([],{},'2026-09-26',{
+    fetchedAt:'2026-09-24T12:00:00Z',oldest:'2026-09-18',newest:'2026-09-24'
+  });
+  assert.equal(report.covered,false);
+  assert.equal(report.days.at(-1).covered,false);
+});
+
+test('result panels use the existing dark theme contrast',()=>{
+  const css=fs.readFileSync('css/app.css','utf8');
+  assert.match(css,/\.activity-results-card\{[^}]*background:var\(--panel\)/);
+  assert.match(css,/\.activity-result-insight\{[^}]*background:#172b3b;color:var\(--text\)/);
+});
