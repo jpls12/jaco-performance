@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.10 · Inzichtelijker weekcoach**
+
+De gekozen kalenderweek toont nu per dag de beschikbare tijd, geplande training, geschatte duur en eventuele tijdconflicten. De automatische coach blijft telkens zeven dagen vanaf vandaag vooruitkijken. Een nieuw ingevulde week maakt alleen automatisch trainingen aan als de coachschakelaar aan staat. Nieuw aangemaakte trainingen kunnen worden teruggezet zolang ze niet zijn aangepast, afgerond of verstuurd. Bij terugzetten pauzeert de automatische coach zodat dezelfde trainingen niet meteen terugkomen. App-shell en backupmetadata gebruiken 10.10.10.
+
 **10.10.9 · Wekelijkse beschikbaarheid**
 
 In Jaco Performance verschijnt op het dashboard en in de mobiele Planning-navigatie een herinnering zolang de beschikbaarheid voor de huidige week, of op zondag de komende week, nog niet is opgeslagen. Onder Weekplanning kies je per dag 0–300 minuten met een schuifbalk; 0 is rust. De instelling geldt alleen voor de gekozen kalenderweek en valt daarbuiten terug op het vaste ritme. Bestaande trainingen worden door de automatische weekcoach getoetst op tijd, recent uitgevoerde trainingen, herstel en wedstrijden. Als de volgende week nog geen reguliere trainingen bevat, kan de app na het laden van actuele data passende sessies richting het doel inplannen; wedstrijden en bestaande sessies blijven beschermd. Een sessie die de beschikbare tijd overschrijdt wordt niet automatisch toegevoegd. De herinnering verschijnt bij het openen van de app; voor pushmeldingen terwijl de app gesloten is zijn een abonnementenopslag en een geplande Web Push-verzending nodig. App-shell en backupmetadata gebruiken 10.10.9.

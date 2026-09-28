@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.9";
+const APP_VERSION = "10.10.10";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -7510,6 +7510,7 @@ function refreshDerivedCoachViews(){
   renderPerformanceTrend(activeTrendDays);
   renderSmartWeekCoach();
   renderRaceSimulator();
+  renderWeeklyPlanSummary();
 }
 
 function refreshAfterCalendarMutation({resetPlans=true}={}){
@@ -7758,6 +7759,80 @@ async function loadWellnessDashboard(){
 
 const DAY_NAMES=["Maandag","Dinsdag","Woensdag","Donderdag","Vrijdag","Zaterdag","Zondag"];
 const DAY_KEYS=["mon","tue","wed","thu","fri","sat","sun"];
+const WEEKLY_PLAN_UNDO_KEY="jp_weekly_plan_undo_v1";
+
+function weeklyPlanUndoRecord(){
+  try{
+    const record=JSON.parse(localStorage.getItem(WEEKLY_PLAN_UNDO_KEY)||"null");
+    return record && Array.isArray(record.changes) && record.changes.length<=7
+      ?record:null;
+  }catch{return null;}
+}
+
+function renderWeeklyPlanUndo(message=""){
+  const button=document.getElementById("undoWeeklyPlan");
+  const status=document.getElementById("weeklyPlanUndoStatus");
+  if(!button || !status) return;
+  const record=weeklyPlanUndoRecord();
+  button.hidden=!record;
+  status.textContent=message || (record
+    ?`${record.changes.length} automatisch ingeplande training(en) kunnen worden teruggezet zolang ze niet gewijzigd of voltooid zijn.`
+    :"");
+}
+
+function undoWeeklyPlan(){
+  const record=weeklyPlanUndoRecord();
+  if(!record) return;
+  const conflict=record.changes.some(change=>{
+    const workout=allWorkouts()[change.date];
+    return change.date<=todayDateString() || !workout || workout.type==="Race" ||
+      Boolean(doneWorkouts[change.date]) || Boolean(uploadedWorkouts[change.date]) ||
+      JSON.stringify(customWorkouts[change.date])!==JSON.stringify(change.workout);
+  });
+  if(conflict){
+    renderWeeklyPlanUndo("Terugzetten gestopt: een van deze trainingen is gewijzigd, voltooid of verstuurd.");
+    return;
+  }
+  for(const change of record.changes) delete customWorkouts[change.date];
+  saveObject(STORAGE_KEY,customWorkouts);
+  localStorage.removeItem(WEEKLY_PLAN_UNDO_KEY);
+  if(typeof AUTO_WEEK_REPLAN_KEY!=="undefined") localStorage.setItem(AUTO_WEEK_REPLAN_KEY,"off");
+  refreshAfterCalendarMutation();
+  renderWeeklyPlanUndo("Trainingen teruggezet. Automatisch aanpassen staat uit totdat je het weer inschakelt.");
+  renderWeeklyPlanSummary();
+}
+
+function weeklyPlanRows(start){
+  const workouts=allWorkouts();
+  return DAY_KEYS.map((key,index)=>{
+    const date=addDays(start,index);
+    const day=availabilityForDate(date);
+    const workout=workouts[date]||null;
+    const minutes=workout && workout.type!=="Rest" && workout.type!=="Race"
+      ?estimatedWorkoutMinutes(workout):0;
+    const state=workout?.type==="Race"?"wedstrijd":workout?.type==="Rest"?"rust"
+      :!workout?"geen training":date<todayDateString()?"geweest"
+      :(!day.available || minutes>day.maxMinutes)?"tijdconflict":"past binnen je tijd";
+    return{date,dayName:DAY_NAMES[index],availableMinutes:day.maxMinutes,
+      workoutName:workout?.name||"",minutes,state};
+  });
+}
+
+function renderWeeklyPlanSummary(){
+  const box=document.getElementById("weeklyPlanSummary");
+  if(!box) return;
+  const start=mondayOf(document.getElementById("weeklyAvailabilityDate")?.value||weeklyAvailabilityStart());
+  const rows=weeklyPlanRows(start);
+  const conflicts=rows.filter(row=>row.state==="tijdconflict").length;
+  const scheduled=rows.filter(row=>row.workoutName && row.state!=="rust").length;
+  box.innerHTML=`<h3>Schema · ${start} t/m ${addDays(start,6)}</h3>
+    <p class="help">${scheduled} geplande sessie(s)${conflicts?` · ${conflicts} tijdconflict(en) om te bekijken`:""}. De coach kijkt steeds zeven dagen vooruit vanaf vandaag; deze weergave toont de gekozen kalenderweek.</p>
+    <div class="weekly-plan-rows">${rows.map(row=>`<div class="weekly-plan-row${row.state==="tijdconflict"?" conflict":""}">
+      <div><strong>${row.dayName}</strong><small>${row.date} · ${row.availableMinutes?`${row.availableMinutes} min beschikbaar`:"Niet beschikbaar"}</small></div>
+      <div><span>${escapeHtmlAttribute(row.workoutName||"Geen training gepland")}</span><small>${row.minutes?`± ${row.minutes} min · `:""}${row.state}</small></div>
+    </div>`).join("")}</div>`;
+  renderWeeklyPlanUndo();
+}
 
 function defaultAvailability(){
   return{
@@ -7822,6 +7897,7 @@ function renderWeeklyAvailabilityEditor({keepValues=false}={}){
       <output for="weekly-minutes-${key}">${value?`${Math.floor(value/60)}:${String(value%60).padStart(2,"0")}`:"Rust"}</output>
     </label>`;
   }).join("");
+  renderWeeklyPlanSummary();
 }
 
 function updateWeeklyAvailabilityValue(event){
@@ -7867,8 +7943,10 @@ function saveWeeklyAvailability(event){
 
   let added=0;
   let timeConflicts=0;
+  const generated=[];
   if((start===nextMonday() || (start===current && todayDateString()===current)) &&
     typeof autoWeekReplanReady!=="undefined" && autoWeekReplanReady &&
+    typeof autoWeekReplanEnabled==="function" && autoWeekReplanEnabled() &&
     !DAY_KEYS.some((_,index)=>{
       const workout=allWorkouts()[addDays(start,index)];
       return workout && workout.type!=="Rest" && workout.type!=="Race";
@@ -7888,16 +7966,27 @@ function saveWeeklyAvailability(event){
       if(workout.date<=todayDateString() || allWorkouts()[workout.date] || !day.available) continue;
       if(estimatedWorkoutMinutes(workout)>day.maxMinutes){timeConflicts++;continue;}
       customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
+      generated.push({date:workout.date,workout:JSON.parse(JSON.stringify(customWorkouts[workout.date]))});
       added++;
     }
-    if(added) saveObject(STORAGE_KEY,customWorkouts);
+    if(added){
+      saveObject(WEEKLY_PLAN_UNDO_KEY,{createdAt:new Date().toISOString(),changes:generated});
+      saveObject(STORAGE_KEY,customWorkouts);
+    }
   }
-  if(added) refreshAfterCalendarMutation();
+  if(added){
+    // Keep this first render from immediately replacing the generated sessions.
+    autoWeekReplanApplying=true;
+    try{refreshAfterCalendarMutation();}finally{autoWeekReplanApplying=false;}
+  }
   else refreshDerivedCoachViews();
+  renderWeeklyPlanSummary();
   status.className="status ok";
   status.textContent=added
     ?`Week opgeslagen. ${added} trainingen richting je doel ingepland op basis van bekende herstel- en trainingsdata en je wedstrijden.${timeConflicts?` ${timeConflicts} sessie(s) pasten niet binnen je tijd en zijn niet ingepland.`:""}`
-    :"Week opgeslagen. De coach heeft de bestaande trainingen met je beschikbaarheid vergeleken. Bekijk het actuele weekadvies voor eventuele conflicten.";
+    :autoWeekReplanEnabled()
+      ?"Week opgeslagen. De coach heeft de bestaande trainingen met je beschikbaarheid vergeleken. Bekijk het schema hieronder voor eventuele conflicten."
+      :"Week opgeslagen. Automatisch aanpassen staat uit; bekijk het weekadvies en pas het voorstel zelf toe.";
 }
 
 function availabilityPreferenceOptions(selected){
