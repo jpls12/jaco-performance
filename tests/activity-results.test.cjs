@@ -178,6 +178,25 @@ test('review form offers a slider, five feelings and optional details',()=>{
   assert.match(code,/Extra details \(optioneel\)/);
 });
 
+test('heart rate suggests a starting RPE without treating it as a saved rating',()=>{
+  const {context}=resultsContext();
+  const profile={maxHr:185,z2Hr:145};
+  const suggest=heartRate=>context.suggestedActivityRpe({averageHeartRate:heartRate},profile);
+  assert.equal(suggest(120),2);
+  assert.equal(suggest(140),4);
+  assert.equal(suggest(153),5);
+  assert.equal(suggest(161),6);
+  assert.equal(suggest(169),7);
+  assert.equal(suggest(177),8);
+  assert.equal(suggest(180),9);
+  assert.equal(suggest(null),null);
+  assert.equal(suggest(240),null);
+  assert.equal(context.suggestedActivityRpe({averageHeartRate:160},{maxHr:150,z2Hr:145}),null);
+  const code=fs.readFileSync('js/activity-results.js','utf8');
+  assert.match(code,/review\.sessionRpe\?\?hrSuggestion\?\?5/);
+  assert.match(code,/Pas aan op hoe zwaar het echt voelde/);
+});
+
 test('route preview uses a bounded map with attribution and no map without GPS',()=>{
   const {context}=resultsContext();
   const map=context.activityRouteSvg([[51.9,4.5],[51.901,4.505],[51.905,4.51]]);

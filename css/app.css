@@ -3051,6 +3051,7 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .activity-rpe-label output{font-size:1.1rem;color:#9df0c1}
 #activityRpe{display:block;width:100%;margin:.8rem 0 .25rem;accent-color:var(--green);min-height:32px;cursor:pointer}
 .activity-rpe-ends{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem}
+.activity-rpe-hint{margin:.45rem 0 0;font-size:.78rem;line-height:1.4;color:var(--muted)}
 .activity-feeling{border:0;padding:0;margin:1rem 0 0;min-width:0}
 .activity-feeling legend{font-weight:650;margin-bottom:.5rem}
 .activity-feeling-options{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.35rem}
