@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1114">
-  <link rel="icon" href="/icons/app-icon.svg?v=1114" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1114">
-  <link rel="stylesheet" href="/css/app.css?v=1114">
+  <link rel="manifest" href="/manifest.webmanifest?v=1115">
+  <link rel="icon" href="/icons/app-icon.svg?v=1115" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1115">
+  <link rel="stylesheet" href="/css/app.css?v=1115">
 </head>
 <body>
 <main>
@@ -1746,16 +1746,12 @@
     <article class="card season-planner-card" id="seasonPlannerCard">
       <div class="ai-generator-head">
         <div>
-          <p class="label">Performance 8.1 · Seizoensplanner</p>
-          <h2>Mijn trainingsblokken richting A-races</h2>
-          <p class="help">
-            De seizoensplanner verdeelt de tijd tot je hoofddoel in basis,
-            opbouw, wedstrijdspecifiek, taper en herstel. B- en C-races worden
-            in die routekaart verwerkt zonder automatisch je A/B/C-keuze te wijzigen.
-          </p>
+          <p class="label">Seizoensplan</p>
+          <h2>Richting je volgende wedstrijd</h2>
+          <p class="help">Je doel bepaalt de trainingsfase. De weekcoach stemt de komende zeven dagen af op je recente trainingen en beschikbaarheid.</p>
         </div>
         <button id="refreshSeasonPlanner" class="secondary" type="button" style="width:auto">
-          Herbereken
+          Ververs plan
         </button>
       </div>
 
@@ -1770,17 +1766,9 @@
           <strong id="seasonTargetRace">—</strong>
           <small id="seasonTargetRaceNote">—</small>
         </div>
-        <div class="today-metric">
-          <span>Tot hoofddoel</span>
-          <strong id="seasonWeeksToTarget">—</strong>
-          <small>weken</small>
-        </div>
-        <div class="today-metric">
-          <span>Weekvolume-factor</span>
-          <strong id="seasonVolumeFactor">—</strong>
-          <small id="seasonVolumeFactorNote">t.o.v. profielomvang</small>
-        </div>
       </div>
+
+      <p class="season-context"><span id="seasonWeeksToTarget">—</span> weken tot de wedstrijd <span aria-hidden="true">·</span> Richtvolume <strong id="seasonVolumeFactor">—</strong> <span id="seasonVolumeFactorNote">t.o.v. je normale week</span></p>
 
       <div class="coach-box">
         <p class="label">Focus van het huidige blok</p>
@@ -1790,23 +1778,17 @@
         </p>
       </div>
 
-      <div id="seasonPlannerSignals" class="reason-list"></div>
+      <div id="seasonGoalAction" class="season-goal-action" hidden></div>
 
-      <p class="label season-roadmap-label">Routekaart</p>
-      <div id="seasonRoadmap" class="season-roadmap">
-        <p class="help">Nog geen trainingsblokken beschikbaar.</p>
-      </div>
-
-      <div class="data-integrity-box">
-        <div class="data-integrity-head">
-          <span>Automatische koppeling</span>
-          <strong>Weekplanners actief</strong>
+      <details class="season-details">
+        <summary>Bekijk trainingsblokken en onderbouwing</summary>
+        <div id="seasonPlannerSignals" class="reason-list"></div>
+        <p class="label season-roadmap-label">Routekaart</p>
+        <div id="seasonRoadmap" class="season-roadmap">
+          <p class="help">Nog geen trainingsblokken beschikbaar.</p>
         </div>
-        <div class="help">
-          Het actuele seizoensblok stuurt vanaf nu het doelvolume en de soort
-          kwaliteitstraining in AI Week Planner en Slimme Weekcoach.
-        </div>
-      </div>
+        <p class="help season-disclaimer">De trainingsfase geeft richting aan de weekcoach; je weekplanning houdt ook rekening met recente belasting, herstel en beschikbaarheid.</p>
+      </details>
     </article>
 
 
@@ -2889,24 +2871,24 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1114" defer></script>
-<script src="/js/training-sync.js?v=1114" defer></script>
-<script src="/js/activity-results.js?v=1114" defer></script>
-<script src="/js/training-quality.js?v=1114" defer></script>
-<script src="/js/performance-model.js?v=1114" defer></script>
-<script src="/js/training-response.js?v=1114" defer></script>
-<script src="/js/session-progression.js?v=1114" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1114" defer></script>
-<script src="/js/race-readiness.js?v=1114" defer></script>
-<script src="/js/fuel-hydration.js?v=1114" defer></script>
-<script src="/js/race-strategy.js?v=1114" defer></script>
-<script src="/js/race-day.js?v=1114" defer></script>
-<script src="/js/race-debrief.js?v=1114" defer></script>
-<script src="/js/daily-decision.js?v=1114" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1114" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1114" defer></script>
-<script src="/js/support-training.js?v=1114" defer></script>
-<script src="/js/bootstrap.js?v=1114" defer></script>
+<script src="/js/app.js?v=1115" defer></script>
+<script src="/js/training-sync.js?v=1115" defer></script>
+<script src="/js/activity-results.js?v=1115" defer></script>
+<script src="/js/training-quality.js?v=1115" defer></script>
+<script src="/js/performance-model.js?v=1115" defer></script>
+<script src="/js/training-response.js?v=1115" defer></script>
+<script src="/js/session-progression.js?v=1115" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1115" defer></script>
+<script src="/js/race-readiness.js?v=1115" defer></script>
+<script src="/js/fuel-hydration.js?v=1115" defer></script>
+<script src="/js/race-strategy.js?v=1115" defer></script>
+<script src="/js/race-day.js?v=1115" defer></script>
+<script src="/js/race-debrief.js?v=1115" defer></script>
+<script src="/js/daily-decision.js?v=1115" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1115" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1115" defer></script>
+<script src="/js/support-training.js?v=1115" defer></script>
+<script src="/js/bootstrap.js?v=1115" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
