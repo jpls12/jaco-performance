@@ -3143,3 +3143,16 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .today-monitor-details>.load-monitor-card{margin:0;border:0;box-shadow:none}
 .activity-result-more{margin:1rem 0}.activity-result-more>.activity-result-metrics,.activity-result-more>.activity-result-comparison,.activity-result-more>.activity-route-preview,.activity-result-more>.activity-result-intervals{margin-left:.75rem;margin-right:.75rem}
 .activity-result-more>.activity-result-metrics{margin-top:.2rem}
+.race-overview-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.race-overview-head h2{margin:.2rem 0}.race-overview-head button{width:auto;flex:none}
+.race-overview-card .saved-list{margin-top:12px}
+.race-form-disclosure{margin:12px 0;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+.race-form-disclosure>summary{cursor:pointer;padding:14px 16px;font-weight:750}
+.race-form-disclosure>.card{margin:0;border:0;box-shadow:none}
+.race-form-extra{margin:12px 0;border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.race-form-extra>summary{cursor:pointer;font-weight:700}.race-form-extra label{display:block;margin-top:12px}
+.race-history{margin-top:12px}.race-history>summary{cursor:pointer;font-weight:700;padding:10px 0}
+.race-history .race-card{margin-top:10px}
+.season-planner-card[hidden]{display:none}
+#raceFormCard{scroll-margin-top:18px}
+@media(max-width:550px){.race-overview-head{align-items:flex-start;flex-direction:column}.race-overview-head button{width:100%}}
