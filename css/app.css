@@ -2706,12 +2706,13 @@ input::placeholder,textarea::placeholder{color:#a4b5c9}
 .today-intro h2{font-size:clamp(1.85rem,4vw,2.5rem);margin:0 0 2px}
 .today-intro .help{margin:0;text-transform:capitalize}
 .today-shortcuts{display:flex;flex-wrap:wrap;gap:8px}
-.today-shortcuts a{
+.today-shortcuts a,.today-shortcuts button{
   display:inline-flex;align-items:center;min-height:40px;padding:8px 12px;
   border:1px solid #385b77;border-radius:999px;
   background:#142a40;color:#d8efff;text-decoration:none;font-size:.86rem;font-weight:750
 }
-.today-shortcuts a:hover{background:#20415b;border-color:#70b9e4}
+.today-shortcuts a:hover,.today-shortcuts button:hover{background:#20415b;border-color:#70b9e4}
+.today-shortcuts button{width:auto;cursor:pointer}
 #dailyTrainingCard,#supportTodayCard,#coachDiaryCard{scroll-margin-top:94px}
 .daily-training-card{
   border-color:#4785a5;
@@ -2737,7 +2738,7 @@ input::placeholder,textarea::placeholder{color:#a4b5c9}
 @media(max-width:650px){
   .today-intro{display:block;margin-top:15px}
   .today-shortcuts{margin-top:14px;gap:7px}
-  .today-shortcuts a{font-size:.79rem;min-height:38px;padding:7px 10px}
+  .today-shortcuts a,.today-shortcuts button{font-size:.79rem;min-height:38px;padding:7px 10px}
   .card{padding:17px;margin:12px 0;border-radius:18px}
   .daily-training-card{margin-top:15px}
   #dailyTrainingCard,#supportTodayCard,#coachDiaryCard{scroll-margin-top:24px}
@@ -2902,8 +2903,8 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .support-session{background:#152c35;border-radius:14px}
 .support-session.is-done{border-color:#69bc8c}
 .support-session.is-blocked{border-left-color:var(--orange)}
-.today-shortcuts a,.view-jumps a{background:#1a3545;border-color:#4c7689;color:#e4f5fc}
-.today-shortcuts a:hover,.view-jumps a:hover{background:#285063}
+.today-shortcuts a,.today-shortcuts button,.view-jumps a{background:#1a3545;border-color:#4c7689;color:#e4f5fc}
+.today-shortcuts a:hover,.today-shortcuts button:hover,.view-jumps a:hover{background:#285063}
 .coach-box{background:#183b37;border-color:#4d7c69}
 .mobile-bottom-nav{background:rgba(9,23,32,.97);border-top-color:#36576a}
 .mobile-bottom-nav .mobile-nav-button.active{background:#244a59;color:#f5fcff}
@@ -3047,6 +3048,7 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .activity-review-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:.5rem}
 .activity-review-grid label{font-size:.85rem}#activityReviewForm>label{display:block;margin-top:.65rem}
 .activity-review-quick{padding:.85rem;margin:.65rem 0;border:1px solid var(--line);border-radius:14px;background:#182d3f}
+#activityReviewForm{scroll-margin-top:24px}
 .activity-rpe-label{display:flex;justify-content:space-between;gap:.5rem;font-weight:650}
 .activity-rpe-label output{font-size:1.1rem;color:#9df0c1}
 #activityRpe{display:block;width:100%;margin:.8rem 0 .25rem;accent-color:var(--green);min-height:32px;cursor:pointer}
@@ -3062,6 +3064,7 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .weekly-availability-head{display:flex;align-items:end;justify-content:space-between;gap:1rem}
 .weekly-availability-head h3{margin:0}.weekly-availability-head p{margin:.4rem 0}.weekly-availability-head label{min-width:175px;font-size:.8rem}
 .weekly-availability-days{display:grid;gap:.45rem;margin:1rem 0}
+#copyPreviousAvailability:not([hidden]){width:auto;margin:.25rem 0 0}
 .weekly-availability-day{display:grid;grid-template-columns:105px minmax(0,1fr) 58px;align-items:center;gap:.7rem;padding:.65rem .75rem;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
 .weekly-availability-day>span{font-weight:650}.weekly-availability-day input{width:100%;accent-color:var(--green);cursor:pointer}
 .weekly-availability-day output{text-align:right;font-variant-numeric:tabular-nums;color:#9df0c1;font-weight:700}

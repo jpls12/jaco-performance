@@ -255,6 +255,21 @@ test('unreviewed filter preserves separate activities on the same date',()=>{
   assert.equal(context.filterActivityResults(rows,'run').length,2);
 });
 
+test('quick action opens the newest unreviewed activity, then the next one',()=>{
+  const {context,submit}=resultsContext();
+  let opened='',scrolled=0;
+  context.calendarDayDifference=()=>0;
+  context.selectActivityResult=id=>{opened=id;};
+  context.document={getElementById:id=>id==='activityReviewForm'
+    ?{scrollIntoView(){scrolled++;}}:null};
+  context.openNextActivityReview();
+  assert.equal(opened,'i2');
+  assert.equal(scrolled,1);
+  submit('i2',{sessionRpe:5,energy:4});
+  context.openNextActivityReview();
+  assert.equal(opened,'i1');
+});
+
 test('seven-day report keeps measured volume separate from missing data',()=>{
   const {context}=resultsContext();
   const addDays=(date,n)=>{

@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.11 · Sneller dagelijks gebruik**
+
+Een directe knop bovenaan Vandaag opent de nieuwste nog niet beoordeelde training en toont hoeveel beoordelingen openstaan. Zijn alle trainingen beoordeeld, dan opent de knop het resultatenoverzicht. In de weekplanning kun je een opgeslagen vorige week overnemen, zie je direct wanneer schuifbalken nog niet zijn opgeslagen en krijg je bij wisselen van week eerst een bevestiging. Het datumveld beperkt de keuze tot de acht komende weken. App-shell en backupmetadata gebruiken 10.10.11.
+
 **10.10.10 · Inzichtelijker weekcoach**
 
 De gekozen kalenderweek toont nu per dag de beschikbare tijd, geplande training, geschatte duur en eventuele tijdconflicten. De automatische coach blijft telkens zeven dagen vanaf vandaag vooruitkijken. Een nieuw ingevulde week maakt alleen automatisch trainingen aan als de coachschakelaar aan staat. Nieuw aangemaakte trainingen kunnen worden teruggezet zolang ze niet zijn aangepast, afgerond of verstuurd. Bij terugzetten pauzeert de automatische coach zodat dezelfde trainingen niet meteen terugkomen. App-shell en backupmetadata gebruiken 10.10.10.

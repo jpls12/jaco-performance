@@ -394,13 +394,16 @@ document.getElementById("profileForm").onsubmit=saveProfile;
 document.getElementById("fuelHydrationForm").onsubmit=saveFuelHydrationProfile;
 document.getElementById("planningForm").onsubmit=savePlanning;
 document.getElementById("weeklyAvailabilityForm").onsubmit=saveWeeklyAvailability;
+document.getElementById("reviewNextActivity").onclick=openNextActivityReview;
 document.getElementById("undoWeeklyPlan").onclick=undoWeeklyPlan;
 document.getElementById("weeklyAvailabilityDate").onchange=()=>{
+  if(!confirmWeeklyAvailabilityWeekChange()) return;
   renderWeeklyAvailabilityEditor();
   renderPlanningPreview();
   renderWeeklyPlanSummary();
 };
 document.getElementById("weeklyAvailabilityDays").oninput=updateWeeklyAvailabilityValue;
+document.getElementById("copyPreviousAvailability").onclick=copyPreviousAvailability;
 document.getElementById("openWeeklyAvailability").onclick=()=>{
   navigateAppView("planning");
   document.getElementById("planningAvailability").scrollIntoView({behavior:"smooth",block:"start"});
