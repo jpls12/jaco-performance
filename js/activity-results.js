@@ -350,28 +350,7 @@ function renderActivityResultDetail(activity){
       ${metric("Beweegtijd",resultNumber(activity.durationMinutes,0," min"))}
       ${metric(family==="ride"?"Gem. snelheid":"Gem. tempo",family==="ride"?speed:pace||"—")}
       ${metric("Gem. hartslag",resultNumber(activity.averageHeartRate,0," bpm"))}
-      ${metric("Hoogtemeters",resultNumber(activity.elevationM,0," m"))}
-      ${metric("Belasting",resultNumber(activity.trainingLoad,0))}
-      ${activity.maxHeartRate!=null?metric("Max. hartslag",resultNumber(activity.maxHeartRate,0," bpm")):""}
-      ${family==="ride" && activity.averageWatts!=null?metric("Gem. vermogen",resultNumber(activity.averageWatts,0," W")):""}
     </div>
-    <div class="activity-result-comparison">
-      <strong>${comparison?`Vergeleken met ${safe(comparison.name)}`:workout?"Activiteit apart van de planning":"Geen geplande training op deze dag"}</strong>
-      <p>${comparison
-        ?safe([comparison.distance,comparison.duration].filter(Boolean).join(" · ")||"Geen vergelijkbare afstand of duur beschikbaar.")
-        :workout?"Deze activiteit is niet betrouwbaar aan de geplande training gekoppeld. De app schrijft het resultaat daarom niet aan dat plan toe.":"Dit resultaat blijft beschikbaar voor je beoordeling."}</p>
-    </div>
-    <div class="activity-result-insight ${insight.tone}" role="status">
-      <div><span class="activity-insight-dot" aria-hidden="true"></span><strong>${safe(insight.title)}</strong></div>
-      <p>${safe(insight.explanation)}</p>
-      <small>${safe(insight.coach)}</small>
-      ${review.savedAt?'<a href="#fullyAdaptiveCoachCard">Bekijk actueel coachadvies ↑</a>':""}
-    </div>
-    <div id="activityRoutePreview" class="activity-route-preview" role="status"></div>
-    <details id="activityResultIntervals" class="activity-result-intervals">
-      <summary>Bekijk splits en intervallen</summary>
-      <div id="activityResultIntervalRows" class="activity-result-interval-rows"></div>
-    </details>
     <form id="activityReviewForm" data-activity-id="${escapeHtmlAttribute(activity.id)}">
       <h4>Hoe voelde deze training?</h4>
       <p class="help">Twee snelle keuzes per training. Extra details kun je toevoegen als ze belangrijk zijn.</p>
@@ -404,11 +383,39 @@ function renderActivityResultDetail(activity){
         <button type="button" class="secondary" id="openResultDiary">Open dagboek</button>
         ${review.savedAt?'<button type="button" class="secondary" id="deleteActivityReview">Verwijder beoordeling</button>':""}</div>
       <p id="activityReviewStatus" class="status" role="status"></p>
-    </form>`;
+    </form>
+    <div class="activity-result-insight ${insight.tone}" role="status">
+      <div><span class="activity-insight-dot" aria-hidden="true"></span><strong>${safe(insight.title)}</strong></div>
+      <p>${safe(insight.explanation)}</p>
+      <small>${safe(insight.coach)}</small>
+      ${review.savedAt?'<a href="#fullyAdaptiveCoachCard">Bekijk actueel coachadvies ↑</a>':""}
+    </div>
+    <details id="activityResultMore" class="activity-result-more">
+      <summary>Kaart, splits en extra metingen</summary>
+      <div class="activity-result-metrics">
+        ${metric("Hoogtemeters",resultNumber(activity.elevationM,0," m"))}
+        ${metric("Belasting",resultNumber(activity.trainingLoad,0))}
+        ${activity.maxHeartRate!=null?metric("Max. hartslag",resultNumber(activity.maxHeartRate,0," bpm")):""}
+        ${family==="ride" && activity.averageWatts!=null?metric("Gem. vermogen",resultNumber(activity.averageWatts,0," W")):""}
+      </div>
+      <div class="activity-result-comparison">
+        <strong>${comparison?`Vergeleken met ${safe(comparison.name)}`:workout?"Activiteit apart van de planning":"Geen geplande training op deze dag"}</strong>
+        <p>${comparison
+          ?safe([comparison.distance,comparison.duration].filter(Boolean).join(" · ")||"Geen vergelijkbare afstand of duur beschikbaar.")
+          :workout?"Deze activiteit is niet betrouwbaar aan de geplande training gekoppeld. De app schrijft het resultaat daarom niet aan dat plan toe.":"Dit resultaat blijft beschikbaar voor je beoordeling."}</p>
+      </div>
+      <div id="activityRoutePreview" class="activity-route-preview" role="status"></div>
+      <details id="activityResultIntervals" class="activity-result-intervals">
+        <summary>Bekijk splits en intervallen</summary>
+        <div id="activityResultIntervalRows" class="activity-result-interval-rows"></div>
+      </details>
+    </details>`;
+  detail.querySelector("#activityResultMore").addEventListener("toggle",event=>{
+    if(event.target.open) loadActivityRoute(activity);
+  });
   detail.querySelector("#activityResultIntervals").addEventListener("toggle",event=>{
     if(event.target.open) loadActivityResultIntervals(activity);
   });
-  loadActivityRoute(activity);
 }
 
 function renderActivityIntervalRows(intervals){

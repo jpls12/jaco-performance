@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.12 · Compacte hoofdroute**
+
+Op Vandaag blijven de hoofdtraining en coachactie zichtbaar, terwijl trainingsopbouw, context en belastingsmonitor als uitklapbare details beschikbaar zijn. Bij een uitgevoerde training staan de vier kerncijfers en snelle RPE/gevoel-beoordeling vooraan; kaart, splits en extra metingen worden pas bij openen getoond en de GPS-route wordt dan opgehaald. Het weekoverzicht toont dezelfde zeven dagen in kortere regels met beschikbare tijd en een heldere conflictstatus. App-shell en backupmetadata gebruiken 10.10.12.
+
 **10.10.11 · Sneller dagelijks gebruik**
 
 Een directe knop bovenaan Vandaag opent de nieuwste nog niet beoordeelde training en toont hoeveel beoordelingen openstaan. Zijn alle trainingen beoordeeld, dan opent de knop het resultatenoverzicht. In de weekplanning kun je een opgeslagen vorige week overnemen, zie je direct wanneer schuifbalken nog niet zijn opgeslagen en krijg je bij wisselen van week eerst een bevestiging. Het datumveld beperkt de keuze tot de acht komende weken. App-shell en backupmetadata gebruiken 10.10.11.
