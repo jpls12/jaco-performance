@@ -340,6 +340,12 @@ document.getElementById("finishGuidedTraining").onclick=finishGuidedTrainingSess
 document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
 document.getElementById("refreshActivitySync").onclick=()=>syncCompletedActivities();
 document.getElementById("copyActivitySyncDiagnostics").onclick=copyActivitySyncDiagnostics;
+document.getElementById("activityResultsList").onclick=handleActivityResultClick;
+document.getElementById("refreshActivityResults").onclick=()=>syncCompletedActivities();
+document.getElementById("activityResultDetail").onclick=handleActivityResultClick;
+document.getElementById("activityResultDetail").onsubmit=event=>{
+  if(event.target.id==="activityReviewForm") saveActivityReview(event);
+};
 document.getElementById("refreshTrainingQuality").onclick=()=>syncTrainingQualityLatest({force:true});
 document.getElementById("refreshTrainingResponse").onclick=refreshTrainingResponseLearner;
 document.getElementById("refreshKeySessionProgression").onclick=refreshKeySessionProgression;

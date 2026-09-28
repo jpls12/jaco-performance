@@ -63,7 +63,10 @@ function normalizeActivity(activity){
     weightedAverageWatts:numberOrNull(activity?.icu_weighted_avg_watts),
     trainingLoad:numberOrNull(activity?.icu_training_load),
     intensity:numberOrNull(activity?.icu_intensity),
-    perceivedExertion:numberOrNull(activity?.perceived_exertion)
+    perceivedExertion:numberOrNull(activity?.perceived_exertion),
+    hasGps:Array.isArray(activity?.stream_types)
+      ?activity.stream_types.includes("latlng")
+      :null
   };
 }
 
