@@ -194,6 +194,21 @@ test('week overview marks a session that exceeds the saved time',()=>{
   assert.equal(rows[0].state,'geen training');
 });
 
+test('week summary keeps all seven days in a compact view',()=>{
+  const profile={weeklyAvailability:{'2026-10-05':Object.fromEntries(keys.map(key=>[key,60]))}};
+  const ctx=contextFor(profile);
+  const box={innerHTML:''};
+  ctx.document={getElementById:id=>({weeklyPlanSummary:box,
+    weeklyAvailabilityDate:{value:'2026-10-05'}})[id]};
+  ctx.allWorkouts=()=>({});
+  ctx.escapeHtmlAttribute=value=>value;
+  ctx.renderWeeklyPlanUndo=()=>{};
+  ctx.renderWeeklyPlanSummary();
+  assert.equal((box.innerHTML.match(/class="weekly-plan-row(?: conflict)?"/g)||[]).length,7);
+  assert.match(box.innerHTML,/Ma 5/);
+  assert.match(box.innerHTML,/Zo 11/);
+});
+
 test('undo removes only untouched generated sessions and pauses automatic changes',()=>{
   const data=new Map();
   const workout={name:'Rustige duurloop',type:'Run',date:'2026-10-06'};

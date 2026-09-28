@@ -178,6 +178,15 @@ test('review form offers a slider, five feelings and optional details',()=>{
   assert.match(code,/Extra details \(optioneel\)/);
 });
 
+test('review comes before optional route and detailed metrics',()=>{
+  const code=fs.readFileSync('js/activity-results.js','utf8');
+  const render=code.slice(code.indexOf('function renderActivityResultDetail('),
+    code.indexOf('function renderActivityIntervalRows('));
+  assert.ok(render.indexOf('<form id="activityReviewForm"')<render.indexOf('<details id="activityResultMore"'));
+  assert.ok(render.indexOf('<details id="activityResultMore"')<render.indexOf('id="activityRoutePreview"'));
+  assert.match(render,/if\(event\.target\.open\) loadActivityRoute\(activity\)/);
+});
+
 test('heart rate suggests a starting RPE without treating it as a saved rating',()=>{
   const {context}=resultsContext();
   const profile={maxHr:185,z2Hr:145};

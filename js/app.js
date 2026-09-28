@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.11";
+const APP_VERSION = "10.10.12";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -7826,10 +7826,10 @@ function renderWeeklyPlanSummary(){
   const conflicts=rows.filter(row=>row.state==="tijdconflict").length;
   const scheduled=rows.filter(row=>row.workoutName && row.state!=="rust").length;
   box.innerHTML=`<h3>Schema · ${start} t/m ${addDays(start,6)}</h3>
-    <p class="help">${scheduled} geplande sessie(s)${conflicts?` · ${conflicts} tijdconflict(en) om te bekijken`:""}. De coach kijkt steeds zeven dagen vooruit vanaf vandaag; deze weergave toont de gekozen kalenderweek.</p>
+    <p class="help">${scheduled} geplande sessie(s)${conflicts?` · ${conflicts} tijdconflict(en)`:""} · Coach kijkt 7 dagen vooruit.</p>
     <div class="weekly-plan-rows">${rows.map(row=>`<div class="weekly-plan-row${row.state==="tijdconflict"?" conflict":""}">
-      <div><strong>${row.dayName}</strong><small>${row.date} · ${row.availableMinutes?`${row.availableMinutes} min beschikbaar`:"Niet beschikbaar"}</small></div>
-      <div><span>${escapeHtmlAttribute(row.workoutName||"Geen training gepland")}</span><small>${row.minutes?`± ${row.minutes} min · `:""}${row.state}</small></div>
+      <div><strong><time datetime="${row.date}" aria-label="${row.dayName} ${row.date}">${row.dayName.slice(0,2)} ${Number(row.date.slice(8))}</time></strong><small>${row.availableMinutes?`${row.availableMinutes} min ruimte`:"Geen tijd"}</small></div>
+      <div><span>${escapeHtmlAttribute(row.workoutName||"Vrij")}</span><small>${row.minutes?`± ${row.minutes} min · `:""}${row.state==="past binnen je tijd"?"Past":row.state==="geen training"?"Geen training":row.state}</small></div>
     </div>`).join("")}</div>`;
   renderWeeklyPlanUndo();
 }
@@ -12124,6 +12124,8 @@ function renderCurrentTodayWorkout(workout){
   const rpe=document.getElementById("todayTrainingRpe");
   const source=document.getElementById("todayTrainingSource");
   const steps=document.getElementById("todayTrainingSteps");
+  const stepDetails=document.getElementById("todayTrainingDetails");
+  const stepSummary=document.getElementById("todayTrainingStepsSummary");
   const startButton=document.getElementById("startTodayTraining");
   const completeButton=document.getElementById("completeTodayTraining");
   const statusText=document.getElementById("todayTrainingStatusText");
@@ -12145,6 +12147,7 @@ function renderCurrentTodayWorkout(workout){
     rpe.textContent="—";
     source.textContent="—";
     steps.innerHTML="";
+    if(stepDetails){stepDetails.hidden=true;stepDetails.open=false;}
     startButton.disabled=true;
     startButton.textContent="Geen training";
     completeButton.disabled=true;
@@ -12186,6 +12189,11 @@ function renderCurrentTodayWorkout(workout){
   steps.innerHTML=workoutSteps.map((step,index)=>`
     <li><span class="step-number">${index+1}</span><span>${safe(step)}</span></li>
   `).join("");
+  if(stepDetails){
+    stepDetails.hidden=!workoutSteps.length;
+    if(!workoutSteps.length) stepDetails.open=false;
+    stepSummary.textContent=`Bekijk trainingsopbouw · ${workoutSteps.length} ${workoutSteps.length===1?"stap":"stappen"}`;
+  }
 
   startButton.disabled=done || isRest;
   startButton.textContent=
