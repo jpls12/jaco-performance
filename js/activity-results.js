@@ -23,6 +23,24 @@ function resultPace(activity){
     ?`${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,"0")} ${family==="swim"?"/100 m":"/km"}`:null;
 }
 
+function suggestedActivityRpe(activity,profile){
+  const average=finiteNumberOrNull(activity?.averageHeartRate);
+  const max=finiteNumberOrNull(profile?.maxHr);
+  const z2=finiteNumberOrNull(profile?.z2Hr);
+  if(average===null || max===null || z2===null ||
+    max<120 || max>230 || z2<90 || z2>=max-15 ||
+    average<55 || average>max+5) return null;
+  if(average<z2-20) return 2;
+  if(average<z2-10) return 3;
+  if(average<=z2) return 4;
+  const fraction=(average-z2)/(max-z2);
+  if(fraction<=.2) return 5;
+  if(fraction<=.4) return 6;
+  if(fraction<=.6) return 7;
+  if(fraction<=.8) return 8;
+  return 9;
+}
+
 function recentActivityResults(){
   return Object.values(syncedActivities)
     .filter(activity=>activity?.id && activity.date &&
@@ -285,6 +303,8 @@ function renderActivityResultDetail(activity){
   const detail=document.getElementById("activityResultDetail");
   if(!detail) return;
   const review=activityReviews[activity.id]||{};
+  const hrSuggestion=suggestedActivityRpe(activity,getProfile());
+  const initialRpe=review.sessionRpe??hrSuggestion??5;
   const metric=(label,value)=>`<div><span>${label}</span><strong>${safe(value)}</strong></div>`;
   const scoreSelect=(id,label,max,min=1)=>`<label>${label}<select name="${id}">
     <option value="">Niet ingevuld</option>${Array.from({length:max-min+1},(_,i)=>{
@@ -334,9 +354,14 @@ function renderActivityResultDetail(activity){
       <h4>Hoe voelde deze training?</h4>
       <p class="help">Twee snelle keuzes per training. Extra details kun je toevoegen als ze belangrijk zijn.</p>
       <div class="activity-review-quick">
-        <label class="activity-rpe-label" for="activityRpe">Zwaarte · RPE <output id="activityRpeValue" for="activityRpe">${safe(review.sessionRpe??5)}/10</output></label>
-        <input id="activityRpe" name="sessionRpe" type="range" min="1" max="10" step="1" value="${safe(review.sessionRpe??5)}">
+        <label class="activity-rpe-label" for="activityRpe">Zwaarte · RPE <output id="activityRpeValue" for="activityRpe">${safe(initialRpe)}/10</output></label>
+        <input id="activityRpe" name="sessionRpe" type="range" min="1" max="10" step="1" value="${safe(initialRpe)}">
         <div class="activity-rpe-ends"><span>Heel licht</span><span>Maximaal</span></div>
+        <p class="activity-rpe-hint">${review.savedAt
+          ?"Jouw opgeslagen RPE. Verschuif de balk als je de beoordeling wilt aanpassen."
+          :hrSuggestion!==null
+            ?`Voorstel op basis van ${safe(Math.round(activity.averageHeartRate))} bpm gemiddeld, je zone 2-grens en maximale hartslag. Pas aan op hoe zwaar het echt voelde.`
+            :"Geen betrouwbare hartslag voor een voorstel. Startwaarde 5; stel de balk in op jouw gevoel."}</p>
         <fieldset class="activity-feeling"><legend>Hoe voelde je je?</legend>
           <div class="activity-feeling-options">${[
             [1,"😫","Uitgeput"],[2,"😕","Matig"],[3,"😐","Oké"],

@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.8 · RPE-voorstel uit hartslag**
+
+De RPE-balk start bij nieuwe activiteitbeoordelingen op een indicatie uit de gemiddelde hartslag, de zone 2-bovengrens en maximale hartslag uit het profiel. Ongeldige of ontbrekende hartslag levert geen voorstel op en gebruikt de neutrale startwaarde 5. De uitleg onder de balk maakt de herkomst zichtbaar. RPE blijft subjectief: de sporter kan de balk direct aanpassen en een eerder opgeslagen beoordeling krijgt altijd voorrang. App-shell en backupmetadata gebruiken 10.10.8.
+
 **10.10.7 · Snelle activiteitbeoordeling**
 
 Beoordeel een uitgevoerde training met een RPE-schuifbalk (1–10) en één van vijf smileys voor je gevoel/energie. Benen, plezier, klachten en een notitie zijn optioneel onder extra details. Ontbrekende scores blijven onbekend in de dagcoach en backup; bestaande beoordelingen blijven bewerkbaar. App-shell en backupmetadata gebruiken 10.10.7.
