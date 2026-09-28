@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.4 · Resultaatanalyse met kaart en planvergelijking**
+
+Het overzicht met uitgevoerde trainingen heeft nu sportfilters, een helderder resultaatkaart en een vergelijking met de geplande afstand en duur wanneer Training Sync de activiteit betrouwbaar heeft gekoppeld. Extra activiteiten blijven bewust apart van de geplande training. Bij GPS wordt de route op aanvraag op een OpenStreetMap-ondergrond getoond met bronvermelding; als kaarttegels ontbreken blijft de lijn zichtbaar op een neutrale achtergrond. Splits en intervallen worden pas opgehaald als je het detailgedeelte opent. Beoordelen per activiteit en de voorrang van een handmatige dag-check-in blijven behouden. App-shell en backupmetadata gebruiken 10.10.4.
+
 **10.10.3 · Trainingsresultaten en beoordeling**
 
 Training Sync toont nu recente uitgevoerde activiteiten afzonderlijk met afstand, beweegtijd, tempo, gemiddelde hartslag, hoogtemeters en trainingsbelasting. Bij beschikbaar GPS wordt de route op aanvraag als schematische routekaart getoond; routepunten worden niet in de lokale opslag bewaard. Elke activiteit krijgt een eigen beoordeling met vijf bewuste scores en een optionele opmerking, ook wanneer meerdere trainingen op één dag zijn gedaan. De dagcoach gebruikt dan conservatief de zwaarste inspanning/klachten en laagste energie; een bestaande handmatige dagcheck-in blijft leidend. Beoordelingen zijn bewerkbaar, verwijderbaar en onderdeel van de lokale backup. App-shell en backupmetadata gebruiken 10.10.3.
