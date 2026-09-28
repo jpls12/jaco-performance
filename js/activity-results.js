@@ -56,22 +56,59 @@ function activityResultPlanComparison(activity){
   };
 }
 
+function activityReviewInsight(activity,review){
+  if(!review) return{
+    tone:"neutral",title:"Nog niet beoordeeld",
+    explanation:"De meetgegevens zijn binnen. Vul in hoe deze training voelde om het coachsignaal aan te vullen.",
+    coach:"Er is nog geen subjectieve beoordeling van deze activiteit opgeslagen."
+  };
+  const manual=coachDiary[activity.date] &&
+    coachDiary[activity.date].source!=="activity_reviews";
+  let tone="steady",title="Reactie genoteerd";
+  let explanation="Geen duidelijk herstelalarm in deze beoordeling. De coach combineert dit met je overige gegevens.";
+  if(review.complaintSeverity>=2){
+    tone="caution";title="Klachten vragen aandacht";
+    explanation="Je meldde duidelijke klachten. Controleer het actuele coachadvies voordat je de volgende zware training uitvoert.";
+  }else if(review.sessionRpe>=8 && review.legs>=4 && review.energy<=2){
+    tone="caution";title="Zware trainingsrespons";
+    explanation="De combinatie van hoge zwaarte, zware benen en lage energie is een herstelsignaal voor de coach.";
+  }else if(review.sessionRpe>=8){
+    tone="attention";title="Zware training voltooid";
+    explanation="Je gaf een hoge RPE op zonder extra klachten- of vermoeidheidssignaal in deze beoordeling. De coach weegt de overige daggegevens mee.";
+  }else if(review.legs>=4 || review.energy<=2){
+    tone="attention";title="Herstel in de gaten houden";
+    explanation="Je benen of energie vragen aandacht. De coach gebruikt de volledige dagcontext voor het vervolg.";
+  }
+  return{
+    tone,title,explanation,
+    coach:manual
+      ?"Er is ook een handmatige dag-check-in. Die blijft leidend voor het coachadvies; pas die aan als dit resultaat je dagbeeld verandert."
+      :"Deze beoordeling is verwerkt in het dagboeksignaal. Bij meerdere trainingen op één dag gebruikt de coach de hoogste zwaarte en klachten en de laagste energie."
+  };
+}
+
+function filterActivityResults(activities,filter){
+  return activities.filter(activity=>filter==="all" ||
+    (filter==="unreviewed"
+      ?!activityReviews[activity.id]
+      :filter==="other"
+        ?!["run","ride","swim"].includes(syncedSportFamily(activity.type))
+        :syncedSportFamily(activity.type)===filter));
+}
+
 function renderActivityResults(){
   const list=document.getElementById("activityResultsList");
   const detail=document.getElementById("activityResultDetail");
   if(!list || !detail) return;
   const activities=recentActivityResults();
   const filters=[
-    ["all","Alles"],["run","Lopen"],["ride","Fietsen"],
+    ["all","Alles"],["unreviewed","Te beoordelen"],["run","Lopen"],["ride","Fietsen"],
     ["swim","Zwemmen"],["other","Overig"]
   ];
-  const visible=activities.filter(activity=>resultSportFilter==="all" ||
-    (resultSportFilter==="other"
-      ?!["run","ride","swim"].includes(syncedSportFamily(activity.type))
-      :syncedSportFamily(activity.type)===resultSportFilter));
+  const visible=filterActivityResults(activities,resultSportFilter);
   list.innerHTML=activities.length?`<div class="activity-result-filters" role="group" aria-label="Filter trainingen">
     ${filters.map(([value,label])=>`<button type="button" class="${resultSportFilter===value?"active":""}" data-result-filter="${value}" aria-pressed="${resultSportFilter===value}">${label}</button>`).join("")}
-  </div><p class="activity-result-count">${visible.length} van ${activities.length} trainingen</p>`+
+  </div><p class="activity-result-count">${visible.length} getoond · ${activities.filter(activity=>activityReviews[activity.id]).length} van ${activities.length} beoordeeld</p>`+
   (visible.length?visible.map(activity=>{
     const reviewed=activityReviews[activity.id];
     const family=syncedSportFamily(activity.type);
@@ -187,6 +224,7 @@ function renderActivityResultDetail(activity){
     ?resultNumber(activity.distanceKm/(activity.durationMinutes/60),1," km/u"):"—";
   const comparison=activityResultPlanComparison(activity);
   const workout=allWorkouts()[activity.date]||null;
+  const insight=activityReviewInsight(activity,review.savedAt?review:null);
   detail.hidden=false;
   detail.innerHTML=`<div class="activity-result-heading">
       <div><p class="label">${safe(activity.date)} · ${safe(activity.type||"Training")}</p><h4>${safe(activity.name)}</h4></div>
@@ -207,6 +245,12 @@ function renderActivityResultDetail(activity){
       <p>${comparison
         ?safe([comparison.distance,comparison.duration].filter(Boolean).join(" · ")||"Geen vergelijkbare afstand of duur beschikbaar.")
         :workout?"Deze activiteit is niet betrouwbaar aan de geplande training gekoppeld. De app schrijft het resultaat daarom niet aan dat plan toe.":"Dit resultaat blijft beschikbaar voor je beoordeling."}</p>
+    </div>
+    <div class="activity-result-insight ${insight.tone}" role="status">
+      <div><span class="activity-insight-dot" aria-hidden="true"></span><strong>${safe(insight.title)}</strong></div>
+      <p>${safe(insight.explanation)}</p>
+      <small>${safe(insight.coach)}</small>
+      ${review.savedAt?'<a href="#fullyAdaptiveCoachCard">Bekijk actueel coachadvies ↑</a>':""}
     </div>
     <div id="activityRoutePreview" class="activity-route-preview" role="status"></div>
     <details id="activityResultIntervals" class="activity-result-intervals">
