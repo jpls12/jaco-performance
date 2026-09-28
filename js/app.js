@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.14";
+const APP_VERSION = "10.10.15";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -6216,7 +6216,7 @@ function renderSeasonPlanner(){
     document.getElementById("seasonVolumeFactorNote").textContent=
       current.phase==="race"
         ?"wedstrijdweek"
-        :`${current.quality}`;
+        :"van je normale week";
     document.getElementById("seasonFocusHeadline").textContent=
       `${current.label} richting ${current.targetRace.name}`;
     document.getElementById("seasonFocusText").textContent=current.focus;
@@ -6238,8 +6238,16 @@ function renderSeasonPlanner(){
     target?target.name:"—";
   document.getElementById("seasonTargetRaceNote").textContent=
     target
-      ?`${target.priority}-race · ${formatRaceDistance(target.distanceKm)}${plan.provisional?" · voorlopig doel":""}`
+      ?`${fullDate.format(new Date(target.date+"T12:00:00"))} · ${formatRaceDistance(target.distanceKm)} · ${plan.provisional?"voorlopig doel":`${target.priority}-wedstrijd`}`
       :"geen toekomstige race";
+
+  const goalAction=document.getElementById("seasonGoalAction");
+  if(goalAction){
+    goalAction.hidden=!target?.calendarSource;
+    goalAction.innerHTML=target?.calendarSource
+      ?`<span>Deze wedstrijd komt uit je kalender. Kies de prioriteit om je hoofddoel vast te leggen.</span><button type="button" onclick="setCalendarRaceGoal('${target.date}')">Kies als doel</button>`
+      :"";
+  }
 
   document.getElementById("seasonWeeksToTarget").textContent=
     target
@@ -6414,6 +6422,7 @@ function raceCalendarAnalysis(){
   const priorityCounts={A:0,B:0,C:0};
 
   upcoming.forEach(race=>{
+    if(race.calendarSource) return;
     const p=String(race.priority||"C").toUpperCase();
     if(priorityCounts[p]!==undefined) priorityCounts[p]++;
   });
@@ -6559,7 +6568,7 @@ function renderRaceCalendarOptimizer(){
     analysis.nextRace?analysis.nextRace.name:"—";
   document.getElementById("raceCalendarNextNote").textContent=
     analysis.nextRace
-      ?`${analysis.nextRace.priority}-race · over ${daysUntil(analysis.nextRace.date)} d`
+      ?`${analysis.nextRace.calendarSource?"voorlopig doel":`${analysis.nextRace.priority}-wedstrijd`} · over ${daysUntil(analysis.nextRace.date)} d`
       :"—";
 
   document.getElementById("raceCalendarPrimary").textContent=
@@ -6572,7 +6581,7 @@ function renderRaceCalendarOptimizer(){
   document.getElementById("raceCalendarCount").textContent=
     String(analysis.upcoming.length);
   document.getElementById("raceCalendarPriorityCount").textContent=
-    `A ${analysis.priorityCounts.A} · B ${analysis.priorityCounts.B} · C ${analysis.priorityCounts.C}`;
+    `A ${analysis.priorityCounts.A} · B ${analysis.priorityCounts.B} · C ${analysis.priorityCounts.C}${analysis.upcoming.some(race=>race.calendarSource)?` · ${analysis.upcoming.filter(race=>race.calendarSource).length} voorlopig`:""}`;
 
   document.getElementById("raceCalendarSignals").innerHTML=
     analysis.signals.map(signal=>`
@@ -6608,13 +6617,13 @@ function renderRaceCalendarOptimizer(){
     analysis.timeline.length
       ?analysis.timeline.map(item=>`
         <div class="race-timeline-row">
-          <div class="race-timeline-priority ${String(item.race.priority).toLowerCase()}">
-            ${safe(item.race.priority)}
+          <div class="race-timeline-priority ${item.race.calendarSource?"provisional":String(item.race.priority).toLowerCase()}">
+            ${item.race.calendarSource?"?":safe(item.race.priority)}
           </div>
           <div>
             <strong>${safe(item.race.name)}</strong>
             <small>
-              ${safe(item.race.date)} · ${formatRaceDistance(item.race.distanceKm)}
+              ${safe(item.race.date)} · ${formatRaceDistance(item.race.distanceKm)}${item.race.calendarSource?" · prioriteit nog kiezen":""}
               · over ${item.days} dagen
               ${item.gapFromPrevious!==null?` · ${item.gapFromPrevious} d na vorige race`:""}
             </small>
@@ -7026,21 +7035,19 @@ function renderRaces(){
   const cards=rows=>rows.map(race=>{
     const remaining=daysUntil(race.date);
     return `
-      <div class="race-card ${String(race.priority).toLowerCase()}">
+          <div class="race-card ${race.calendarSource?"provisional":String(race.priority).toLowerCase()}">
         <div class="race-top">
           <div>
             <strong>${safe(race.name)}</strong>
             <small>
               ${fullDate.format(new Date(race.date+"T12:00:00"))}
               · ${formatRaceDistance(race.distanceKm)}
-              · ${race.calendarSource?"Uit trainingskalender · voorlopig doel":`${safe(race.priority)}-wedstrijd`}
+              · ${race.calendarSource?"Uit kalender · prioriteit nog kiezen":`${safe(race.priority)}-wedstrijd`}
             </small>
           </div>
           <div class="race-time">${safe(race.targetTime || "—")}</div>
         </div>
-        <p class="countdown">
-          ${remaining>=0 ? `Nog ${remaining} dagen` : `${Math.abs(remaining)} dagen geleden`}
-        </p>
+        <p class="countdown">${remaining>=0 ? `${remaining===0?"Vandaag":`Over ${remaining} dagen`}` : `${Math.abs(remaining)} dagen geleden`}</p>
         ${race.notes ? `<p class="help">${safe(race.notes)}</p>` : ""}
         <div class="mini-actions">
           <button class="secondary" type="button" onclick="openRace('${race.id}')">Open</button>

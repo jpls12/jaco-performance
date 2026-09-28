@@ -26,6 +26,34 @@ test('season planner hides empty metrics when there is no future race',()=>{
   assert.equal(card.hidden,true);
 });
 
+test('season planner offers a direct action for an unconfirmed calendar goal',()=>{
+  const ids=['seasonCurrentBlock','seasonPlannerCard','seasonCurrentBlockNote',
+    'seasonVolumeFactor','seasonVolumeFactorNote','seasonFocusHeadline',
+    'seasonFocusText','seasonTargetRace','seasonTargetRaceNote','seasonGoalAction',
+    'seasonWeeksToTarget','seasonPlannerSignals','seasonRoadmap'];
+  const nodes=Object.fromEntries(ids.map(id=>[id,{textContent:'',innerHTML:'',hidden:false}]));
+  const race={id:'calendar-2026-10-18',date:'2026-10-18',name:'Halve Marathon Amsterdam',
+    priority:'C',distanceKm:21.0975,calendarSource:true};
+  const plan={primaryTarget:race,provisional:true,blocks:[]};
+  const context=vm.createContext({
+    document:{getElementById:id=>nodes[id]},buildSeasonPlan:()=>plan,
+    seasonBlockForDate:()=>null,todayDateString:()=> '2026-09-28',
+    fullDate:new Intl.DateTimeFormat('nl-NL',{timeZone:'UTC'}),
+    formatRaceDistance:()=> 'Halve marathon',daysUntil:()=>20,
+    raceCalendarAnalysis:()=>({conflicts:[]}),safe:value=>String(value??'')
+  });
+  vm.runInContext(renderSeason,context);
+  context.renderSeasonPlanner();
+  assert.equal(nodes.seasonGoalAction.hidden,false);
+  assert.match(nodes.seasonGoalAction.innerHTML,/setCalendarRaceGoal\('2026-10-18'\)/);
+  assert.match(nodes.seasonTargetRaceNote.textContent,/voorlopig doel/);
+  plan.primaryTarget={...race,id:'saved',calendarSource:false,priority:'A'};
+  plan.provisional=false;
+  context.renderSeasonPlanner();
+  assert.equal(nodes.seasonGoalAction.hidden,true);
+  assert.equal(nodes.seasonGoalAction.innerHTML,'');
+});
+
 test('race overview explains missing goals and shows upcoming races before history',()=>{
   const list={innerHTML:''},status={textContent:''},disclosure={open:false,dataset:{}};
   const races={};

@@ -3154,5 +3154,31 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .race-history{margin-top:12px}.race-history>summary{cursor:pointer;font-weight:700;padding:10px 0}
 .race-history .race-card{margin-top:10px}
 .season-planner-card[hidden]{display:none}
+.season-planner-card .ai-generator-head{align-items:flex-start;gap:12px}
+.season-planner-card .ai-generator-head h2{margin-bottom:4px}
+.season-planner-card .ai-generator-head .help{margin:0;max-width:58ch}
+.season-planner-card .season-metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.season-planner-card .today-metric{min-width:0}
+.season-planner-card .today-metric strong{overflow-wrap:anywhere}
+.season-planner-card .today-metric small{line-height:1.25}
+.season-context{color:var(--muted);font-size:.84rem;line-height:1.4;margin:12px 0}
+.season-context strong{color:var(--text)}
+.season-planner-card .coach-box{margin:10px 0;padding:13px}
+.season-planner-card .coach-box h3{font-size:1.05rem;margin-bottom:5px}
+.season-planner-card .coach-box .help{margin:0}
+.season-goal-action{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#17354a;border:1px solid #44728c;border-radius:12px;padding:11px 12px;font-size:.86rem;line-height:1.4}
+.season-goal-action[hidden]{display:none}
+.season-goal-action button{flex:none;width:auto;padding:10px 12px}
+.season-details{margin-top:12px;border-top:1px solid var(--line)}
+.season-details>summary{cursor:pointer;padding:14px 0 4px;font-weight:700;color:#c4e6f5}
+.season-details>summary:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.season-details .season-disclaimer{margin:14px 0 0;font-size:.84rem}
+.race-card.provisional{border-color:#44728c}
+.race-timeline-priority.provisional{border-color:#44728c;color:#c4e6f5;background:#17354a}
+.race-overview-card .race-card{padding:12px 14px}
+.race-overview-card .race-card .countdown{margin:8px 0;font-size:.84rem}
+.race-overview-card .race-card .mini-actions{display:flex;flex-wrap:wrap;gap:7px}
+.race-overview-card .race-card .mini-actions button{width:auto;padding:9px 12px}
 #raceFormCard{scroll-margin-top:18px}
 @media(max-width:550px){.race-overview-head{align-items:flex-start;flex-direction:column}.race-overview-head button{width:100%}}
+@media(max-width:550px){.season-planner-card .ai-generator-head button{margin-top:10px;width:auto!important}.season-goal-action{align-items:flex-start;flex-direction:column}.season-goal-action button{width:100%}}
