@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.13";
+const APP_VERSION = "10.10.14";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -3165,11 +3165,9 @@ function validateProspectiveBackupCalendar(values){
     const race=racesByDate.get(date);
     if(!race) continue;
 
-    const allowedImportedRaceFallback=
-      workout?.type==="Race" &&
-      workout?.importedPlan;
+    const allowedRaceOnRace=workout?.type==="Race";
 
-    if(!allowedImportedRaceFallback){
+    if(!allowedRaceOnRace){
       throw new Error(
         `Backupconflict op ${date}: wedstrijd "${race.name||"Wedstrijd"}" en training "${workout.name||"Training"}" kunnen niet op dezelfde kalenderdag staan.`
       );
@@ -3178,7 +3176,7 @@ function validateProspectiveBackupCalendar(values){
 
   for(const race of Object.values(raceData)){
     const fixed=serverWorkouts[String(race.date)];
-    if(fixed){
+    if(fixed && fixed.type!=="Race"){
       throw new Error(
         `Backupconflict op ${race.date}: wedstrijd "${race.name||"Wedstrijd"}" botst met vaste training "${fixed.name}".`
       );
@@ -6332,7 +6330,22 @@ function racePriorityRank(priority){
 }
 
 function futureRacesSorted(){
-  return Object.values(races)
+  const explicit=Object.values(races);
+  const explicitDates=new Set(explicit.map(race=>race.date));
+  const calendar=Object.entries(allWorkouts())
+    .filter(([date,workout])=>calendarDayNumber(date)!==null &&
+      workout?.type==="Race" &&
+      !explicitDates.has(date) && daysUntil(date)>=0)
+    .map(([date,workout])=>({
+      id:`calendar-${date}`,date,
+      name:String(workout.name||"Wedstrijd"),
+      distanceKm:Number(workout.distanceKm)||0,
+      priority:["A","B","C"].includes(String(workout.priority).toUpperCase())
+        ?String(workout.priority).toUpperCase():"C",
+      targetTime:String(workout.targetTime||""),
+      calendarSource:true
+    }));
+  return [...explicit,...calendar]
     .filter(race=>daysUntil(race.date)>=0)
     .sort((a,b)=>a.date.localeCompare(b.date));
 }
@@ -6789,7 +6802,8 @@ function saveRace(event){
 
   if(
     (movingDate || !previousRace) &&
-    ((targetCustom && !importedRaceFallback) || targetServer)
+    ((targetCustom && targetCustom.type!=="Race" && !importedRaceFallback) ||
+      (targetServer && targetServer.type!=="Race"))
   ){
     const occupied=targetCustom && !importedRaceFallback
       ?targetCustom
@@ -6832,7 +6846,9 @@ function saveRace(event){
     distanceKm,
     targetTime:safe(document.getElementById("raceTargetTime").value).trim(),
     priority:document.getElementById("racePriority").value,
-    notes:safe(document.getElementById("raceNotes").value).trim()
+    notes:safe(document.getElementById("raceNotes").value).trim(),
+    calendarOrigin:Boolean(previousRace?.calendarOrigin ||
+      targetCustom?.type==="Race" || targetServer?.type==="Race")
   };
 
   if(preserveCompletedRace){
@@ -6906,6 +6922,26 @@ function openRaceForm(){
   document.getElementById("raceName").focus({preventScroll:true});
 }
 
+function setCalendarRaceGoal(date){
+  const workout=allWorkouts()[date];
+  if(workout?.type!=="Race" || Object.values(races).some(race=>race.date===date)) return;
+  openRaceForm();
+  document.getElementById("raceName").value=workout.name||"Wedstrijd";
+  document.getElementById("raceDate").value=date;
+  const distance=String(workout.distanceKm||"");
+  const standard=["5","10","21.0975","42.195"];
+  document.getElementById("raceDistance").value=standard.includes(distance)?distance:"other";
+  const custom=document.getElementById("customRaceDistanceLabel");
+  custom.hidden=standard.includes(distance);
+  if(!custom.hidden) document.getElementById("customRaceDistance").value=Number(distance)||15;
+  document.getElementById("raceTargetTime").value=workout.targetTime||"";
+  document.getElementById("racePriority").value="A";
+  document.getElementById("raceFormStatus").className="status";
+  document.getElementById("raceFormStatus").textContent=
+    "Wedstrijd uit je kalender ingevuld. Controleer je doel en sla hem op als A-, B- of C-wedstrijd.";
+  document.getElementById("racePriority").focus({preventScroll:true});
+}
+
 function deleteRace(id){
   const race=races[id];
   if(!race) return;
@@ -6917,9 +6953,10 @@ function deleteRace(id){
 
   delete races[id];
 
-  // Een door een schema-import aangemaakte racefallback hoort bij dezelfde
-  // racedag en mag na expliciet verwijderen niet opnieuw zichtbaar worden.
+  // Bij een uit de kalender overgenomen doel blijft de oorspronkelijke race staan.
+  // Alleen oude expliciete racedagen verwijderen hun geïmporteerde fallback.
   if(
+    !race.calendarOrigin &&
     hiddenCustom?.type==="Race" &&
     hiddenCustom?.importedPlan
   ){
@@ -6951,7 +6988,7 @@ function deleteRace(id){
 }
 
 function openRace(id){
-  const race=races[id];
+  const race=races[id] || futureRacesSorted().find(item=>item.id===id);
   if(!race) return;
   selectedDate=race.date;
   const d=new Date(race.date+"T12:00:00");
@@ -6966,13 +7003,13 @@ function renderRaces(){
   if(!list) return;
 
   const entries=Object.values(races);
-  const future=entries.filter(race=>daysUntil(race.date)>=0)
-    .sort((a,b)=>a.date.localeCompare(b.date));
+  const future=futureRacesSorted();
   const past=entries.filter(race=>daysUntil(race.date)<0)
     .sort((a,b)=>b.date.localeCompare(a.date));
+  const fromCalendar=future.filter(race=>race.calendarSource).length;
   const status=document.getElementById("raceOverviewStatus");
   if(status) status.textContent=future.length
-    ?`${future.length} komende wedstrijd${future.length===1?"":"en"}. De eerstvolgende A-wedstrijd stuurt je seizoensplan.`
+    ?`${future.length} komende wedstrijd${future.length===1?"":"en"}.${fromCalendar?` ${fromCalendar} uit je trainingskalender; kies een prioriteit om je hoofddoel vast te leggen.`:" De eerstvolgende A-wedstrijd stuurt je seizoensplan."}`
     :past.length
       ?"Je hebt alleen eerdere wedstrijden op dit toestel. Voeg een nieuw doel toe om je komende trainingsblokken te plannen."
       :"Nog geen wedstrijden op dit toestel. Voeg je eerstvolgende doel toe om je coach gericht te laten plannen.";
@@ -6981,7 +7018,7 @@ function renderRaces(){
     disclosure.open=!future.length;
     disclosure.dataset.initialized="true";
   }
-  if(!entries.length){
+  if(!future.length && !past.length){
     list.innerHTML="";
     return;
   }
@@ -6996,7 +7033,7 @@ function renderRaces(){
             <small>
               ${fullDate.format(new Date(race.date+"T12:00:00"))}
               · ${formatRaceDistance(race.distanceKm)}
-              · ${safe(race.priority)}-wedstrijd
+              · ${race.calendarSource?"Uit trainingskalender · voorlopig doel":`${safe(race.priority)}-wedstrijd`}
             </small>
           </div>
           <div class="race-time">${safe(race.targetTime || "—")}</div>
@@ -7007,8 +7044,9 @@ function renderRaces(){
         ${race.notes ? `<p class="help">${safe(race.notes)}</p>` : ""}
         <div class="mini-actions">
           <button class="secondary" type="button" onclick="openRace('${race.id}')">Open</button>
+          ${race.calendarSource?`<button type="button" onclick="setCalendarRaceGoal('${race.date}')">Kies als doel</button>`:`
           <button class="secondary" type="button" onclick="editRace('${race.id}')">Bewerk</button>
-          <button class="danger" type="button" onclick="deleteRace('${race.id}')">Verwijder</button>
+          <button class="danger" type="button" onclick="deleteRace('${race.id}')">Verwijder</button>`}
         </div>
       </div>`;
   }).join("");
@@ -7027,7 +7065,9 @@ function renderRaceOptions(){
 
   const options=future.length
     ?future.map(r=>`<option value="${r.id}">${safe(r.name)} — ${r.date}</option>`).join("")
-    :'<option value="">Voeg eerst een wedstrijd toe</option>';
+    :futureRacesSorted().some(race=>race.calendarSource)
+      ?'<option value="">Kies je kalenderwedstrijd eerst als doel</option>'
+      :'<option value="">Voeg eerst een wedstrijd toe</option>';
 
   if(planSelect){
     const previous=planSelect.value;
@@ -7045,7 +7085,7 @@ function renderRaceOptions(){
       simulatorSelect.value=previous;
     }else{
       const focus=getRaceFocus();
-      if(focus) simulatorSelect.value=focus.id;
+      if(focus && races[focus.id]) simulatorSelect.value=focus.id;
     }
   }
 
@@ -10026,7 +10066,7 @@ function mondayOnOrAfter(dateString){
 }
 
 function fullSeasonTargetRaces(){
-  const future=futureRacesSorted();
+  const future=futureRacesSorted().filter(race=>!race.calendarSource);
   const aRaces=future.filter(
     race=>String(race.priority||"C").toUpperCase()==="A"
   );
@@ -10050,7 +10090,9 @@ function renderFullSeasonTargetOptions(){
     ?targets.map(race=>
       `<option value="${race.id}">${safe(race.name)} — ${race.date}</option>`
     ).join("")
-    :'<option value="">Voeg eerst een toekomstige wedstrijd toe</option>';
+    :futureRacesSorted().some(race=>race.calendarSource)
+      ?'<option value="">Kies je kalenderwedstrijd eerst als doel</option>'
+      :'<option value="">Voeg eerst een toekomstige wedstrijd toe</option>';
 
   if(previous && targets.some(race=>race.id===previous)){
     select.value=previous;
@@ -13659,4 +13701,9 @@ async function loadServer(){
 
   renderMonth();
   renderSelected();
+  renderRaces();
+  renderRaceOptions();
+  renderSeasonPlanner();
+  renderRaceCalendarOptimizer();
+  renderFullSeasonTargetOptions();
 }

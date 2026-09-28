@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.14 · Kalenderwedstrijden in de coach**
+
+Een toekomstige training met type Race die al in de kalender staat, wordt nu ook als voorlopige wedstrijd in het tabblad Wedstrijden, de seizoensplanner en de dynamische coach meegenomen. De bestaande race wordt niet gedupliceerd. Via **Kies als doel** neem je naam, datum en afstand over en leg je de A/B/C-prioriteit vast; wedstrijdschema's die een expliciet doel vereisen blijven daarom tot die bevestiging geblokkeerd. Als een serverkalender later laadt, worden het wedstrijd- en seizoensoverzicht opnieuw opgebouwd. App-shell en backupmetadata gebruiken 10.10.14.
+
 **10.10.13 · Duidelijke wedstrijddoelen**
 
 Het tabblad Wedstrijden begint met de komende wedstrijden en een directe actie om een doel toe te voegen. Eerdere wedstrijden zitten onder een uitklapkop. Zonder toekomstige wedstrijd verschijnt geen lege seizoensplanner met streepjes; de app legt uit dat op dit toestel nog een komend doel ontbreekt en opent het compacte wedstrijdformulier. Een opgeslagen A-wedstrijd toont weer de trainingsblokken; zonder A-wedstrijd blijft de eerstvolgende B/C-wedstrijd een zichtbaar voorlopig doel. De bewerkactie opent direct het formulier. App-shell en backupmetadata gebruiken 10.10.13.
