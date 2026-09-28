@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.12";
+const APP_VERSION = "10.10.13";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -6203,6 +6203,9 @@ function renderSeasonPlanner(){
   if(!currentElement) return;
 
   const plan=buildSeasonPlan();
+  const card=document.getElementById("seasonPlannerCard");
+  if(card) card.hidden=!plan.primaryTarget;
+  if(!plan.primaryTarget) return;
   const current=seasonBlockForDate(todayDateString());
   const target=plan.primaryTarget;
 
@@ -6883,8 +6886,24 @@ function editRace(id){
   document.getElementById("raceTargetTime").value=race.targetTime || "";
   document.getElementById("racePriority").value=race.priority || "A";
   document.getElementById("raceNotes").value=race.notes || "";
+  const disclosure=document.getElementById("raceFormDisclosure");
+  if(disclosure) disclosure.open=true;
+  const extra=document.getElementById("raceFormExtra");
+  if(extra) extra.open=Boolean(race.targetTime || race.notes);
   switchView("races");
-  window.scrollTo({top:0,behavior:"smooth"});
+  document.getElementById("raceFormCard")?.scrollIntoView({block:"start",behavior:"smooth"});
+}
+
+function openRaceForm(){
+  const form=document.getElementById("raceForm");
+  form?.reset();
+  document.getElementById("raceOriginalId").value="";
+  document.getElementById("customRaceDistanceLabel").hidden=true;
+  document.getElementById("raceFormStatus").textContent="";
+  document.getElementById("raceFormExtra").open=false;
+  document.getElementById("raceFormDisclosure").open=true;
+  document.getElementById("raceFormCard").scrollIntoView({block:"start",behavior:"smooth"});
+  document.getElementById("raceName").focus({preventScroll:true});
 }
 
 function deleteRace(id){
@@ -6946,13 +6965,28 @@ function renderRaces(){
   const list=document.getElementById("raceList");
   if(!list) return;
 
-  const entries=Object.values(races).sort((a,b)=>a.date.localeCompare(b.date));
+  const entries=Object.values(races);
+  const future=entries.filter(race=>daysUntil(race.date)>=0)
+    .sort((a,b)=>a.date.localeCompare(b.date));
+  const past=entries.filter(race=>daysUntil(race.date)<0)
+    .sort((a,b)=>b.date.localeCompare(a.date));
+  const status=document.getElementById("raceOverviewStatus");
+  if(status) status.textContent=future.length
+    ?`${future.length} komende wedstrijd${future.length===1?"":"en"}. De eerstvolgende A-wedstrijd stuurt je seizoensplan.`
+    :past.length
+      ?"Je hebt alleen eerdere wedstrijden op dit toestel. Voeg een nieuw doel toe om je komende trainingsblokken te plannen."
+      :"Nog geen wedstrijden op dit toestel. Voeg je eerstvolgende doel toe om je coach gericht te laten plannen.";
+  const disclosure=document.getElementById("raceFormDisclosure");
+  if(disclosure && !disclosure.dataset.initialized){
+    disclosure.open=!future.length;
+    disclosure.dataset.initialized="true";
+  }
   if(!entries.length){
-    list.innerHTML='<p class="help">Je hebt nog geen wedstrijden toegevoegd.</p>';
+    list.innerHTML="";
     return;
   }
 
-  list.innerHTML=entries.map(race=>{
+  const cards=rows=>rows.map(race=>{
     const remaining=daysUntil(race.date);
     return `
       <div class="race-card ${String(race.priority).toLowerCase()}">
@@ -6978,6 +7012,8 @@ function renderRaces(){
         </div>
       </div>`;
   }).join("");
+  list.innerHTML=(future.length?cards(future):"")+
+    (past.length?`<details class="race-history"><summary>Eerdere wedstrijden (${past.length})</summary>${cards(past)}</details>`:"");
 }
 
 

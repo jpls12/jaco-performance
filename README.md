@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.13 · Duidelijke wedstrijddoelen**
+
+Het tabblad Wedstrijden begint met de komende wedstrijden en een directe actie om een doel toe te voegen. Eerdere wedstrijden zitten onder een uitklapkop. Zonder toekomstige wedstrijd verschijnt geen lege seizoensplanner met streepjes; de app legt uit dat op dit toestel nog een komend doel ontbreekt en opent het compacte wedstrijdformulier. Een opgeslagen A-wedstrijd toont weer de trainingsblokken; zonder A-wedstrijd blijft de eerstvolgende B/C-wedstrijd een zichtbaar voorlopig doel. De bewerkactie opent direct het formulier. App-shell en backupmetadata gebruiken 10.10.13.
+
 **10.10.12 · Compacte hoofdroute**
 
 Op Vandaag blijven de hoofdtraining en coachactie zichtbaar, terwijl trainingsopbouw, context en belastingsmonitor als uitklapbare details beschikbaar zijn. Bij een uitgevoerde training staan de vier kerncijfers en snelle RPE/gevoel-beoordeling vooraan; kaart, splits en extra metingen worden pas bij openen getoond en de GPS-route wordt dan opgehaald. Het weekoverzicht toont dezelfde zeven dagen in kortere regels met beschikbare tijd en een heldere conflictstatus. App-shell en backupmetadata gebruiken 10.10.12.

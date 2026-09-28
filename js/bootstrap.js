@@ -447,6 +447,7 @@ document.getElementById("refreshRaceDebrief").onclick=refreshRaceDebriefData;
 document.getElementById("saveRaceSimulation").onclick=saveCurrentRaceSimulation;
 document.getElementById("editSimulatedRace").onclick=editCurrentSimulatedRace;
 document.getElementById("raceForm").onsubmit=saveRace;
+document.getElementById("addRaceButton").onclick=openRaceForm;
 document.getElementById("raceDistance").onchange=()=>{
   document.getElementById("customRaceDistanceLabel").hidden=
     document.getElementById("raceDistance").value!=="other";

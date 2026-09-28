@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1112">
-  <link rel="icon" href="/icons/app-icon.svg?v=1112" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1112">
-  <link rel="stylesheet" href="/css/app.css?v=1112">
+  <link rel="manifest" href="/manifest.webmanifest?v=1113">
+  <link rel="icon" href="/icons/app-icon.svg?v=1113" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1113">
+  <link rel="stylesheet" href="/css/app.css?v=1113">
 </head>
 <body>
 <main>
@@ -1668,7 +1668,82 @@
 
 
 
-    <article class="card season-planner-card">
+    <header class="view-intro">
+      <p class="eyebrow">Jouw wedstrijddoelen</p>
+      <h2>Wedstrijden</h2>
+      <p class="help">Je doelen sturen de trainingsblokken en de coach voor de komende zeven dagen.</p>
+    </header>
+    <article class="card race-overview-card" id="raceOverviewCard">
+      <div class="race-overview-head">
+        <div><p class="label">Wedstrijdkalender</p><h2>Mijn wedstrijden</h2></div>
+        <button id="addRaceButton" type="button">Wedstrijd toevoegen</button>
+      </div>
+      <p id="raceOverviewStatus" class="help" role="status"></p>
+      <div id="raceList" class="saved-list"></div>
+    </article>
+    <details id="raceFormDisclosure" class="race-form-disclosure">
+      <summary>Wedstrijd toevoegen of bewerken</summary>
+    <article class="card" id="raceFormCard">
+      <p class="label">Wedstrijdkalender</p>
+      <h2>Wedstrijd toevoegen</h2>
+      <p class="help">
+        Voeg al je wedstrijden toe. Ze verschijnen als rode stip in de kalender.
+        Je kunt daarna automatisch een voorbereidingsschema laten maken.
+      </p>
+
+      <form id="raceForm">
+        <input id="raceOriginalId" type="hidden">
+
+        <div class="grid2">
+          <label>Wedstrijdnaam
+            <input id="raceName" type="text" placeholder="Bijv. 5 km Rotterdam" required>
+          </label>
+          <label>Datum
+            <input id="raceDate" type="date" required>
+          </label>
+        </div>
+
+        <div class="grid2">
+          <label>Afstand
+            <select id="raceDistance">
+              <option value="5">5 km</option>
+              <option value="10">10 km</option>
+              <option value="21.0975">Halve marathon</option>
+              <option value="42.195">Marathon</option>
+              <option value="other">Anders</option>
+            </select>
+          </label>
+          <label id="customRaceDistanceLabel" hidden>Afstand in km
+            <input id="customRaceDistance" type="number" min="0.1" step="0.1" value="15">
+          </label>
+        </div>
+
+        <label>Prioriteit
+            <select id="racePriority">
+              <option value="A">A-wedstrijd</option>
+              <option value="B">B-wedstrijd</option>
+              <option value="C">C-wedstrijd / training</option>
+            </select>
+        </label>
+
+        <details id="raceFormExtra" class="race-form-extra">
+          <summary>Streeftijd en notitie (optioneel)</summary>
+          <label>Streeftijd
+            <input id="raceTargetTime" type="text" placeholder="Bijv. 17:59 of 1:19:59">
+          </label>
+          <label>Notitie
+            <textarea id="raceNotes" placeholder="Parcours, doel, locatie of bijzonderheden"></textarea>
+          </label>
+        </details>
+
+        <button type="submit">Wedstrijd opslaan</button>
+        <p id="raceFormStatus" class="status"></p>
+      </form>
+    </article>
+
+    </details>
+
+    <article class="card season-planner-card" id="seasonPlannerCard">
       <div class="ai-generator-head">
         <div>
           <p class="label">Performance 8.1 · Seizoensplanner</p>
@@ -2225,63 +2300,6 @@
     </article>
 
     <article class="card">
-      <p class="label">Wedstrijdkalender</p>
-      <h2>Wedstrijd toevoegen</h2>
-      <p class="help">
-        Voeg al je wedstrijden toe. Ze verschijnen als rode stip in de kalender.
-        Je kunt daarna automatisch een voorbereidingsschema laten maken.
-      </p>
-
-      <form id="raceForm">
-        <input id="raceOriginalId" type="hidden">
-
-        <div class="grid2">
-          <label>Wedstrijdnaam
-            <input id="raceName" type="text" placeholder="Bijv. 5 km Rotterdam" required>
-          </label>
-          <label>Datum
-            <input id="raceDate" type="date" required>
-          </label>
-        </div>
-
-        <div class="grid2">
-          <label>Afstand
-            <select id="raceDistance">
-              <option value="5">5 km</option>
-              <option value="10">10 km</option>
-              <option value="21.0975">Halve marathon</option>
-              <option value="42.195">Marathon</option>
-              <option value="other">Anders</option>
-            </select>
-          </label>
-          <label id="customRaceDistanceLabel" hidden>Afstand in km
-            <input id="customRaceDistance" type="number" min="0.1" step="0.1" value="15">
-          </label>
-        </div>
-
-        <div class="grid2">
-          <label>Streeftijd
-            <input id="raceTargetTime" type="text" placeholder="Bijv. 17:59 of 1:19:59">
-          </label>
-          <label>Prioriteit
-            <select id="racePriority">
-              <option value="A">A-wedstrijd</option>
-              <option value="B">B-wedstrijd</option>
-              <option value="C">C-wedstrijd / training</option>
-            </select>
-          </label>
-        </div>
-
-        <label>Notitie
-          <textarea id="raceNotes" placeholder="Parcours, doel, locatie of bijzonderheden"></textarea>
-        </label>
-
-        <button type="submit">Wedstrijd opslaan</button>
-        <p id="raceFormStatus" class="status"></p>
-      </form>
-    </article>
-
-    <article class="card">
       <p class="label">Schema maken</p>
       <h2>Automatisch schema richting wedstrijd</h2>
       <p class="help">
@@ -2321,10 +2339,6 @@
       <p id="planStatus" class="status"></p>
     </article>
 
-    <article class="card">
-      <p class="label">Mijn wedstrijden</p>
-      <div id="raceList" class="saved-list"></div>
-    </article>
   </section>
 
 
@@ -2875,24 +2889,24 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1112" defer></script>
-<script src="/js/training-sync.js?v=1112" defer></script>
-<script src="/js/activity-results.js?v=1112" defer></script>
-<script src="/js/training-quality.js?v=1112" defer></script>
-<script src="/js/performance-model.js?v=1112" defer></script>
-<script src="/js/training-response.js?v=1112" defer></script>
-<script src="/js/session-progression.js?v=1112" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1112" defer></script>
-<script src="/js/race-readiness.js?v=1112" defer></script>
-<script src="/js/fuel-hydration.js?v=1112" defer></script>
-<script src="/js/race-strategy.js?v=1112" defer></script>
-<script src="/js/race-day.js?v=1112" defer></script>
-<script src="/js/race-debrief.js?v=1112" defer></script>
-<script src="/js/daily-decision.js?v=1112" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1112" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1112" defer></script>
-<script src="/js/support-training.js?v=1112" defer></script>
-<script src="/js/bootstrap.js?v=1112" defer></script>
+<script src="/js/app.js?v=1113" defer></script>
+<script src="/js/training-sync.js?v=1113" defer></script>
+<script src="/js/activity-results.js?v=1113" defer></script>
+<script src="/js/training-quality.js?v=1113" defer></script>
+<script src="/js/performance-model.js?v=1113" defer></script>
+<script src="/js/training-response.js?v=1113" defer></script>
+<script src="/js/session-progression.js?v=1113" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1113" defer></script>
+<script src="/js/race-readiness.js?v=1113" defer></script>
+<script src="/js/fuel-hydration.js?v=1113" defer></script>
+<script src="/js/race-strategy.js?v=1113" defer></script>
+<script src="/js/race-day.js?v=1113" defer></script>
+<script src="/js/race-debrief.js?v=1113" defer></script>
+<script src="/js/daily-decision.js?v=1113" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1113" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1113" defer></script>
+<script src="/js/support-training.js?v=1113" defer></script>
+<script src="/js/bootstrap.js?v=1113" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
