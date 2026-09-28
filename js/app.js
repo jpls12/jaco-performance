@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.15";
+const APP_VERSION = "10.10.16";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -6553,6 +6553,18 @@ function renderRaceCalendarOptimizer(){
   if(!status) return;
 
   const analysis=raceCalendarAnalysis();
+
+  const toolSummary=document.getElementById("raceCalendarToolSummary");
+  if(toolSummary){
+    const provisional=analysis.upcoming.filter(race=>race.calendarSource).length;
+    toolSummary.textContent=analysis.conflicts.length
+      ?`${analysis.conflicts.length} aandachtspunt${analysis.conflicts.length===1?"":"en"} in taper of herstel`
+      :provisional
+        ?`${provisional} kalenderwedstrijd${provisional===1?"":"en"} wacht${provisional===1?"":"en"} op een prioriteit`
+        :analysis.upcoming.length
+          ?"Taper en herstel passen bij je wedstrijden"
+          :"Voeg eerst een wedstrijd toe";
+  }
 
   status.textContent=raceCalendarStatusText(analysis.level);
   document.getElementById("raceCalendarStatusNote").textContent=

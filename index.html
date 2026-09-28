@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1115">
-  <link rel="icon" href="/icons/app-icon.svg?v=1115" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1115">
-  <link rel="stylesheet" href="/css/app.css?v=1115">
+  <link rel="manifest" href="/manifest.webmanifest?v=1116">
+  <link rel="icon" href="/icons/app-icon.svg?v=1116" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1116">
+  <link rel="stylesheet" href="/css/app.css?v=1116">
 </head>
 <body>
 <main>
@@ -1792,19 +1792,26 @@
     </article>
 
 
+    <div class="race-tools-intro">
+      <p class="label">Meer mogelijkheden</p>
+      <h2>Plan en analyseer je wedstrijden</h2>
+      <p class="help">Open alleen het onderdeel dat je nodig hebt.</p>
+    </div>
+
+    <details class="race-tool" id="raceSeasonScheduleTool">
+      <summary><span><strong>Seizoensschema</strong><small>Bekijk alle trainingsweken tot je doelwedstrijd</small></span></summary>
     <article class="card full-season-schedule-card">
       <div class="ai-generator-head">
         <div>
-          <p class="label">Performance 8.2 · Volledig Seizoensschema</p>
-          <h2>Bouw alle trainingsweken vooruit</h2>
+          <p class="label">Seizoensschema</p>
+          <h2>Bekijk je weken richting de wedstrijd</h2>
           <p class="help">
-            Genereer een concrete planning van de eerstvolgende trainingsweek tot en
-            met je gekozen A-race en het herstel erna. B- en C-races worden als
-            wedstrijdprikkel in het schema verwerkt.
+            Dit is een vooruitblik tot en met je doelwedstrijd en het herstel erna.
+            De weekcoach past de komende zeven dagen steeds aan op je actuele situatie.
           </p>
         </div>
         <button id="buildFullSeasonSchedule" type="button" style="width:auto">
-          Bouw preview
+          Bekijk voorbeeld
         </button>
       </div>
 
@@ -1873,12 +1880,15 @@
       </div>
       <p id="fullSeasonStatus" class="status"></p>
     </article>
+    </details>
 
+    <details class="race-tool" id="raceCalendarAnalysisTool">
+      <summary><span><strong>Wedstrijdkalender analyseren</strong><small id="raceCalendarToolSummary">Controleer de ruimte voor taper en herstel</small></span></summary>
     <article class="card race-calendar-optimizer-card">
       <div class="ai-generator-head">
         <div>
-          <p class="label">Performance 8.0 · Race Calendar Optimizer</p>
-          <h2>Optimaliseer mijn wedstrijdseizoen</h2>
+          <p class="label">Kalenderanalyse</p>
+          <h2>Hoe passen je wedstrijden samen?</h2>
           <p class="help">
             De optimizer bekijkt alle A-, B- en C-wedstrijden als één seizoen.
             Hij bewaakt taper, herstel, onderlinge afstand en de invloed op je
@@ -1939,12 +1949,15 @@
         </div>
       </div>
     </article>
+    </details>
 
+    <details class="race-tool" id="raceSimulationTool">
+      <summary><span><strong>Raceplan maken</strong><small>Tempo, voeding en uitvoering verkennen</small></span></summary>
     <article class="card race-simulator-card">
       <div class="ai-generator-head">
         <div>
-          <p class="label">Performance 7.5 · Race Simulator</p>
-          <h2>Simuleer mijn wedstrijd</h2>
+          <p class="label">Raceplan</p>
+          <h2>Bereid je wedstrijd voor</h2>
           <p class="help">
             Vergelijk je doel met de actuele Performance Model-prognose en maak een
             pacing-, taper- en voedingsplan. De simulator vermeldt altijd waarop
@@ -2178,11 +2191,14 @@
 
       <p id="raceSimStatus" class="status"></p>
     </article>
+    </details>
 
+    <details class="race-tool" id="raceDebriefTool">
+      <summary><span><strong>Wedstrijd evalueren</strong><small>Vergelijk een afgelopen race met je plan</small></span></summary>
     <article class="card race-debrief-card">
       <div class="ai-generator-head">
         <div>
-          <p class="label">Performance 10.5 · Race Debrief & Model Calibration</p>
+          <p class="label">Wedstrijdevaluatie</p>
           <h2>Wat gebeurde er echt?</h2>
           <p class="help">
             Koppel een afgelopen wedstrijd aan de echte Intervals.icu-activiteit,
@@ -2280,7 +2296,10 @@
         van dezelfde gesynchroniseerde raceactiviteit in het Performance Model.
       </p>
     </article>
+    </details>
 
+    <details class="race-tool" id="raceLegacyPlanTool">
+      <summary><span><strong>Los wedstrijdschema</strong><small>Maak een vast schema voor één wedstrijd</small></span></summary>
     <article class="card">
       <p class="label">Schema maken</p>
       <h2>Automatisch schema richting wedstrijd</h2>
@@ -2320,6 +2339,7 @@
       <button id="generatePlan" type="button">Genereer wedstrijdschema</button>
       <p id="planStatus" class="status"></p>
     </article>
+    </details>
 
   </section>
 
@@ -2871,24 +2891,24 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1115" defer></script>
-<script src="/js/training-sync.js?v=1115" defer></script>
-<script src="/js/activity-results.js?v=1115" defer></script>
-<script src="/js/training-quality.js?v=1115" defer></script>
-<script src="/js/performance-model.js?v=1115" defer></script>
-<script src="/js/training-response.js?v=1115" defer></script>
-<script src="/js/session-progression.js?v=1115" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1115" defer></script>
-<script src="/js/race-readiness.js?v=1115" defer></script>
-<script src="/js/fuel-hydration.js?v=1115" defer></script>
-<script src="/js/race-strategy.js?v=1115" defer></script>
-<script src="/js/race-day.js?v=1115" defer></script>
-<script src="/js/race-debrief.js?v=1115" defer></script>
-<script src="/js/daily-decision.js?v=1115" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1115" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1115" defer></script>
-<script src="/js/support-training.js?v=1115" defer></script>
-<script src="/js/bootstrap.js?v=1115" defer></script>
+<script src="/js/app.js?v=1116" defer></script>
+<script src="/js/training-sync.js?v=1116" defer></script>
+<script src="/js/activity-results.js?v=1116" defer></script>
+<script src="/js/training-quality.js?v=1116" defer></script>
+<script src="/js/performance-model.js?v=1116" defer></script>
+<script src="/js/training-response.js?v=1116" defer></script>
+<script src="/js/session-progression.js?v=1116" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1116" defer></script>
+<script src="/js/race-readiness.js?v=1116" defer></script>
+<script src="/js/fuel-hydration.js?v=1116" defer></script>
+<script src="/js/race-strategy.js?v=1116" defer></script>
+<script src="/js/race-day.js?v=1116" defer></script>
+<script src="/js/race-debrief.js?v=1116" defer></script>
+<script src="/js/daily-decision.js?v=1116" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1116" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1116" defer></script>
+<script src="/js/support-training.js?v=1116" defer></script>
+<script src="/js/bootstrap.js?v=1116" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

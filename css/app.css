@@ -3179,6 +3179,20 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .race-overview-card .race-card .countdown{margin:8px 0;font-size:.84rem}
 .race-overview-card .race-card .mini-actions{display:flex;flex-wrap:wrap;gap:7px}
 .race-overview-card .race-card .mini-actions button{width:auto;padding:9px 12px}
+.race-tools-intro{margin:23px 2px 11px}
+.race-tools-intro h2{font-size:1.15rem;margin:3px 0 4px}
+.race-tools-intro .help{font-size:.88rem;margin:0}
+.race-tool{border:1px solid #365267;border-radius:14px;background:var(--panel);margin:9px 0;overflow:hidden}
+.race-tool>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;cursor:pointer;min-height:68px}
+.race-tool>summary::-webkit-details-marker{display:none}
+.race-tool>summary::after{content:"⌄";color:#9ed9ee;font-size:1.25rem;line-height:1;flex:none;transition:transform .15s ease}
+.race-tool[open]>summary::after{transform:rotate(180deg)}
+.race-tool>summary:focus-visible{outline:2px solid var(--green);outline-offset:-3px}
+.race-tool>summary strong,.race-tool>summary small{display:block}
+.race-tool>summary strong{font-size:.98rem}
+.race-tool>summary small{color:var(--muted);font-size:.79rem;line-height:1.35;margin-top:3px}
+.race-tool[open]{border-color:#5a8294}
+.race-tool>.card{margin:0;border:0;border-top:1px solid #365267;border-radius:0;box-shadow:none}
 #raceFormCard{scroll-margin-top:18px}
 @media(max-width:550px){.race-overview-head{align-items:flex-start;flex-direction:column}.race-overview-head button{width:100%}}
 @media(max-width:550px){.season-planner-card .ai-generator-head button{margin-top:10px;width:auto!important}.season-goal-action{align-items:flex-start;flex-direction:column}.season-goal-action button{width:100%}}
