@@ -183,3 +183,28 @@ test('interval preview shows rounded pace and omits tiny fragments',()=>{
   assert.match(html,/5:00/);
   assert.doesNotMatch(html,/REST/);
 });
+
+test('review insight distinguishes high RPE from a combined recovery signal',()=>{
+  const {context,activities,diary,submit}=resultsContext();
+  const base={sessionRpe:9,legs:2,energy:4,complaintSeverity:0};
+  assert.equal(context.activityReviewInsight(activities.i1,base).tone,'attention');
+  assert.match(context.activityReviewInsight(activities.i1,base).explanation,/overige daggegevens/);
+  const heavy={...base,legs:4,energy:2};
+  assert.equal(context.activityReviewInsight(activities.i1,heavy).tone,'caution');
+  assert.equal(context.activityReviewInsight(activities.i1,{...base,complaintSeverity:2}).tone,'caution');
+  diary['2026-09-26']={sessionRpe:5,note:'handmatig'};
+  assert.match(context.activityReviewInsight(activities.i1,base).coach,/handmatige dag-check-in/);
+  assert.equal(context.activityReviewInsight(activities.i1,null).title,'Nog niet beoordeeld');
+});
+
+test('unreviewed filter preserves separate activities on the same date',()=>{
+  const {context,activities,submit}=resultsContext();
+  context.syncedSportFamily=type=>type==='Run'?'run':'other';
+  const rows=Object.values(activities);
+  assert.equal(context.filterActivityResults(rows,'unreviewed').length,2);
+  submit('i1',{sessionRpe:5,legs:2,energy:4,enjoyment:4,complaintSeverity:0});
+  const open=context.filterActivityResults(rows,'unreviewed');
+  assert.equal(open.length,1);
+  assert.equal(open[0].id,'i2');
+  assert.equal(context.filterActivityResults(rows,'run').length,2);
+});

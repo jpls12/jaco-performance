@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.5 · Coachduiding bij trainingsresultaten**
+
+Het resultatenoverzicht heeft een filter Te beoordelen met voortgangsteller. Na een beoordeling verschijnt bij de activiteit een compacte duiding van de subjectieve trainingsrespons. Hoge RPE alleen wordt niet als herstelalarm aangemerkt; duidelijke klachten of hoge RPE in combinatie met zware benen en lage energie krijgen voorrang. De app vermeldt wanneer een handmatige dag-check-in leidend blijft, en biedt een directe link naar het actuele coachadvies. De duiding wijzigt de bestaande beoordelingsdata niet; het bestaande coachdagboek en de automatische planning blijven hun eigen veiligheidscontroles uitvoeren. App-shell en backupmetadata gebruiken 10.10.5.
+
 **10.10.4 · Resultaatanalyse met kaart en planvergelijking**
 
 Het overzicht met uitgevoerde trainingen heeft nu sportfilters, een helderder resultaatkaart en een vergelijking met de geplande afstand en duur wanneer Training Sync de activiteit betrouwbaar heeft gekoppeld. Extra activiteiten blijven bewust apart van de geplande training. Bij GPS wordt de route op aanvraag op een OpenStreetMap-ondergrond getoond met bronvermelding; als kaarttegels ontbreken blijft de lijn zichtbaar op een neutrale achtergrond. Splits en intervallen worden pas opgehaald als je het detailgedeelte opent. Beoordelen per activiteit en de voorrang van een handmatige dag-check-in blijven behouden. App-shell en backupmetadata gebruiken 10.10.4.
