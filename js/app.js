@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.10";
+const APP_VERSION = "10.10.11";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -7884,13 +7884,21 @@ function renderWeeklyAvailabilityEditor({keepValues=false}={}){
   if(!dateField || !root) return;
   const start=mondayOf(dateField.value||weeklyAvailabilityStart());
   dateField.value=start;
+  dateField.min=mondayOf(todayDateString());
+  dateField.max=addDays(dateField.min,56);
   const saved=getProfile().weeklyAvailability?.[start];
   if(keepValues && root.dataset.week===start) return;
   root.dataset.week=start;
-  root.innerHTML=DAY_KEYS.map((key,index)=>{
+  const values=DAY_KEYS.map((key,index)=>{
     const day=availabilityForDate(addDays(start,index));
     const minutes=saved?.[key]??(day.available?day.maxMinutes:0);
-    const value=Math.max(0,Math.min(300,Number(minutes)||0));
+    return Math.max(0,Math.min(300,Number(minutes)||0));
+  });
+  root.dataset.initial=JSON.stringify(values);
+  const copy=document.getElementById("copyPreviousAvailability");
+  if(copy) copy.hidden=!weeklyAvailabilityComplete(addDays(start,-7));
+  root.innerHTML=DAY_KEYS.map((key,index)=>{
+    const value=values[index];
     return `<label class="weekly-availability-day" for="weekly-minutes-${key}">
       <span>${DAY_NAMES[index]}</span>
       <input id="weekly-minutes-${key}" name="${key}" type="range" min="0" max="300" step="5" value="${value}" aria-label="${DAY_NAMES[index]} maximaal beschikbare minuten">
@@ -7900,12 +7908,53 @@ function renderWeeklyAvailabilityEditor({keepValues=false}={}){
   renderWeeklyPlanSummary();
 }
 
+function weeklyAvailabilityDirty(){
+  const root=document.getElementById("weeklyAvailabilityDays");
+  if(!root?.dataset.initial) return false;
+  const values=DAY_KEYS.map(key=>Number(document.getElementById(`weekly-minutes-${key}`)?.value));
+  return JSON.stringify(values)!==root.dataset.initial;
+}
+
+function markWeeklyAvailabilityDirty(){
+  const status=document.getElementById("weeklyAvailabilityStatus");
+  if(!status) return;
+  status.className="status";
+  status.textContent=weeklyAvailabilityDirty()
+    ?"Wijzigingen nog niet opgeslagen. Tik op ‘Week opslaan en schema bijwerken’."
+    :"";
+}
+
+function confirmWeeklyAvailabilityWeekChange(){
+  const field=document.getElementById("weeklyAvailabilityDate");
+  const previous=document.getElementById("weeklyAvailabilityDays")?.dataset.week;
+  if(!previous || !weeklyAvailabilityDirty()) return true;
+  if(window.confirm("Je hebt de beschikbaarheid nog niet opgeslagen. Wil je naar een andere week gaan?")) return true;
+  field.value=previous;
+  return false;
+}
+
+function copyPreviousAvailability(){
+  const start=mondayOf(document.getElementById("weeklyAvailabilityDate").value);
+  const previous=getProfile().weeklyAvailability?.[addDays(start,-7)];
+  if(!previous || !weeklyAvailabilityComplete(addDays(start,-7))) return;
+  DAY_KEYS.forEach(key=>{
+    const input=document.getElementById(`weekly-minutes-${key}`);
+    if(!input) return;
+    input.value=previous[key];
+    const minutes=previous[key];
+    input.nextElementSibling.textContent=minutes
+      ?`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,"0")}`:"Rust";
+  });
+  markWeeklyAvailabilityDirty();
+}
+
 function updateWeeklyAvailabilityValue(event){
   const input=event.target;
   if(!input.matches?.('#weeklyAvailabilityDays input[type="range"]')) return;
   const minutes=Number(input.value);
   input.nextElementSibling.textContent=minutes
     ?`${Math.floor(minutes/60)}:${String(minutes%60).padStart(2,"0")}`:"Rust";
+  markWeeklyAvailabilityDirty();
 }
 
 function saveWeeklyAvailability(event){

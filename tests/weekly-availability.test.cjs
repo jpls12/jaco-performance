@@ -53,6 +53,34 @@ test('a positive weekly slot makes a normally blocked day available',()=>{
   assert.equal(monday.maxMinutes,90);
 });
 
+test('copying the prior week fills the sliders and marks changes as unsaved',()=>{
+  const previous={mon:0,tue:60,wed:30,thu:90,fri:0,sat:150,sun:45};
+  const ctx=contextFor({weeklyAvailability:{'2026-09-28':previous}});
+  const inputs=Object.fromEntries(keys.map(key=>[`weekly-minutes-${key}`,
+    {value:'75',nextElementSibling:{textContent:''}}]));
+  const status={textContent:'',className:''};
+  const root={dataset:{week:'2026-10-05',initial:JSON.stringify(keys.map(()=>75))}};
+  ctx.document={getElementById:id=>({weeklyAvailabilityDate:{value:'2026-10-05'},
+    weeklyAvailabilityDays:root,weeklyAvailabilityStatus:status,...inputs})[id]};
+  ctx.copyPreviousAvailability();
+  assert.equal(inputs['weekly-minutes-mon'].nextElementSibling.textContent,'Rust');
+  assert.equal(inputs['weekly-minutes-sat'].value,150);
+  assert.equal(ctx.weeklyAvailabilityDirty(),true);
+  assert.match(status.textContent,/nog niet opgeslagen/);
+});
+
+test('a cancelled week change restores the selected date with unsaved edits',()=>{
+  const ctx=contextFor({});
+  const field={value:'2026-10-12'},root={dataset:{week:'2026-10-05',initial:JSON.stringify(keys.map(()=>60))}};
+  const inputs=Object.fromEntries(keys.map(key=>[`weekly-minutes-${key}`,{value:'60'}]));
+  inputs['weekly-minutes-wed'].value='90';
+  ctx.document={getElementById:id=>({weeklyAvailabilityDate:field,
+    weeklyAvailabilityDays:root,...inputs})[id]};
+  ctx.window={confirm:()=>false};
+  assert.equal(ctx.confirmWeeklyAvailabilityWeekChange(),false);
+  assert.equal(field.value,'2026-10-05');
+});
+
 test('the in-app reminder clears after saving the relevant week',()=>{
   const profile={weeklyAvailability:{}};
   const banner={hidden:true},badge={hidden:true},label={textContent:''};

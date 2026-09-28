@@ -192,6 +192,14 @@ function renderActivityResults(){
   if(!list || !detail) return;
   renderActivityWeekReport();
   const activities=recentActivityResults();
+  const reviewButton=document.getElementById("reviewNextActivity");
+  if(reviewButton){
+    const open=activities.filter(activity=>!activityReviews[activity.id]).length;
+    reviewButton.textContent=open?`Beoordeel training${open>1?` (${open})`:""}`:"Bekijk resultaten";
+    reviewButton.setAttribute("aria-label",open
+      ?`${open} training${open===1?"":"en"} te beoordelen; open de meest recente`
+      :"Bekijk je uitgevoerde trainingen");
+  }
   const filters=[
     ["all","Alles"],["unreviewed","Te beoordelen"],["run","Lopen"],["ride","Fietsen"],
     ["swim","Zwemmen"],["other","Overig"]
@@ -214,6 +222,20 @@ function renderActivityResults(){
   const selected=activities.find(item=>item.id===selectedResultId);
   if(selected) renderActivityResultDetail(selected);
   else{selectedResultId=null;detail.hidden=true;detail.innerHTML="";}
+}
+
+function openNextActivityReview(){
+  const activities=recentActivityResults();
+  const next=activities.find(activity=>!activityReviews[activity.id]);
+  if(next){
+    resultSportFilter="unreviewed";
+    selectActivityResult(next.id);
+    document.getElementById("activityReviewForm")?.scrollIntoView({block:"start",behavior:"smooth"});
+  }else{
+    resultSportFilter="all";
+    renderActivityResults();
+    document.getElementById("activityResultsCard")?.scrollIntoView({block:"start",behavior:"smooth"});
+  }
 }
 
 function activityRouteSvg(points){
