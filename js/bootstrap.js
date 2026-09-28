@@ -278,31 +278,6 @@ document.getElementById("copyCorosRecipe").onclick=copyCorosRecipe;
 document.getElementById("buildCoachHorizon").onclick=buildCoachHorizon;
 document.getElementById("recalculateBrain").onclick=renderCoachBrain;
 document.getElementById("refreshLoadMonitor").onclick=renderTodayCoach;
-document.getElementById("coachDiaryForm").onsubmit=saveCoachDiary;
-document.getElementById("coachDiaryForm").addEventListener("invalid",event=>{
-  if(document.getElementById("diaryExtra").contains(event.target)){
-    document.getElementById("diaryExtra").open=true;
-  }
-  const status=document.getElementById("diaryStatus");
-  status.className="status error";
-  status.textContent=event.target.matches("select")
-    ?"Kies alle vijf scores voordat je de check-in opslaat."
-    :"Controleer de gemarkeerde invoer voordat je opslaat.";
-},true);
-document.querySelectorAll("#coachDiaryForm select").forEach(select=>{
-  select.addEventListener("change",()=>{
-    const status=document.getElementById("diaryStatus");
-    if(status.classList.contains("error")){
-      status.className="status";
-      status.textContent="";
-    }
-  });
-});
-document.getElementById("diaryDate").onchange=event=>{
-  renderCoachDiary(event.target.value);
-};
-document.getElementById("deleteDiaryEntry").onclick=deleteCoachDiaryEntry;
-document.getElementById("loadTodayDiary").onclick=()=>renderCoachDiary(todayDateString());
 document.getElementById("sendCoachChat").onclick=sendCoachChatMessage;
 document.getElementById("clearCoachChat").onclick=clearCoachChat;
 document.getElementById("applyCoachChatAction").onclick=applyCoachChatWorkout;
@@ -495,7 +470,6 @@ function refreshDayBoundaryIfNeeded(){
 
   renderMonth();
   renderSelected();
-  renderCoachDiary(current);
   const weekDate=document.getElementById("weeklyAvailabilityDate");
   if(weekDate && weekDate.value<weeklyAvailabilityStart()){
     weekDate.value=weeklyAvailabilityStart();
@@ -621,7 +595,6 @@ async function initializeJacoPerformance(){
     );
   }
 
-  renderCoachDiary(todayDateString());
   autoWeekReplanReady=true;
   refreshDerivedCoachViews();
 }

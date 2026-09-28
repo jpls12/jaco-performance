@@ -80,8 +80,6 @@ function activityReviewInsight(activity,review){
     explanation:"De meetgegevens zijn binnen. Vul in hoe deze training voelde om het coachsignaal aan te vullen.",
     coach:"Er is nog geen subjectieve beoordeling van deze activiteit opgeslagen."
   };
-  const manual=coachDiary[activity.date] &&
-    coachDiary[activity.date].source!=="activity_reviews";
   let tone="steady",title="Reactie genoteerd";
   let explanation="Geen duidelijk herstelalarm in deze beoordeling. De coach combineert dit met je overige gegevens.";
   if(review.complaintSeverity!=null && review.complaintSeverity>=2){
@@ -101,9 +99,7 @@ function activityReviewInsight(activity,review){
   }
   return{
     tone,title,explanation,
-    coach:manual
-      ?"Er is ook een handmatige dag-check-in. Die blijft leidend voor het coachadvies; pas die aan als dit resultaat je dagbeeld verandert."
-      :"Deze beoordeling is verwerkt in het dagboeksignaal. Bij meerdere trainingen op één dag gebruikt de coach de zwaarste bekende inspanning en klachten en de laagste bekende energie."
+    coach:"Deze beoordeling telt mee voor het coachadvies. Bij meerdere trainingen op één dag gebruikt de coach de zwaarste bekende inspanning en klachten en de laagste bekende energie."
   };
 }
 
@@ -380,7 +376,6 @@ function renderActivityResultDetail(activity){
       </details>
       <label>Opmerking (optioneel)<textarea name="note" rows="2" maxlength="500" placeholder="Bijv. laatste blok zwaar, kuit licht gevoelig">${safe(review.note||"")}</textarea></label>
       <div class="today-actions"><button type="submit">${review.savedAt?"Beoordeling bijwerken":"Beoordeling opslaan"}</button>
-        <button type="button" class="secondary" id="openResultDiary">Open dagboek</button>
         ${review.savedAt?'<button type="button" class="secondary" id="deleteActivityReview">Verwijder beoordeling</button>':""}</div>
       <p id="activityReviewStatus" class="status" role="status"></p>
     </form>
@@ -519,22 +514,18 @@ function saveActivityReview(event){
     ...scores,note:form.elements.note.value.trim().slice(0,500),savedAt:new Date().toISOString()};
   saveObject(ACTIVITY_REVIEWS_KEY,activityReviews);
   const diary=coachDiary[activity.date];
-  const mirrored=!diary || diary.source==="activity_reviews";
-  if(mirrored){
+  if(!diary || diary.source==="activity_reviews"){
     coachDiary[activity.date]=deriveActivityDiary(activity.date);
     saveObject(DIARY_KEY,coachDiary);
-    resetGeneratedPlannerPreviews();
-    renderFullSeasonSchedulePreview();
-    refreshDerivedCoachViews();
-    renderCoachDiary(document.getElementById("diaryDate")?.value||todayDateString());
   }
+  resetGeneratedPlannerPreviews();
+  renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
   renderActivityResults();
   const status=document.getElementById("activityReviewStatus");
   if(status){
     status.className="status ok";
-    status.textContent=mirrored
-      ?"Beoordeling opgeslagen. Het coachadvies is opnieuw berekend met je RPE, gevoel en eventuele extra details."
-      :"Beoordeling opgeslagen. Je bestaande handmatige dagcheck-in blijft leidend voor het coachadvies.";
+    status.textContent="Beoordeling opgeslagen. Het coachadvies is opnieuw berekend met je RPE, gevoel en eventuele extra details.";
   }
 }
 
@@ -549,11 +540,10 @@ function deleteActivityReview(){
     if(derived) coachDiary[activity.date]=derived;
     else delete coachDiary[activity.date];
     saveObject(DIARY_KEY,coachDiary);
-    resetGeneratedPlannerPreviews();
-    renderFullSeasonSchedulePreview();
-    refreshDerivedCoachViews();
-    renderCoachDiary(document.getElementById("diaryDate")?.value||todayDateString());
   }
+  resetGeneratedPlannerPreviews();
+  renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
   renderActivityResults();
   const status=document.getElementById("activityReviewStatus");
   if(status){status.className="status ok";status.textContent="Beoordeling verwijderd. Het coachadvies is bijgewerkt.";}
@@ -578,10 +568,6 @@ function handleActivityResultClick(event){
     resultRouteRequest++;
     renderActivityResults();
     return;
-  }
-  if(event.target.closest("#openResultDiary")){
-    const activity=syncedActivities[selectedResultId];
-    if(activity) openDiaryForDate(activity.date);
   }
   if(event.target.closest("#deleteActivityReview")) deleteActivityReview();
 }
