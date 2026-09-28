@@ -82,6 +82,7 @@ function resultsContext(){
     DIARY_KEY:'diary',saveObject:(key,value)=>{store[key]=JSON.parse(JSON.stringify(value));},
     diaryWorkoutForDate:()=>({distanceKm:10,durationMinutes:46}),
     finiteNumberOrNull:value=>value==null?null:Number(value),
+    safe:value=>String(value??'').replace(/[<>]/g,''),
     resetGeneratedPlannerPreviews:()=>{},renderFullSeasonSchedulePreview:()=>{},
     refreshDerivedCoachViews:()=>{},renderCoachDiary:()=>{},todayDateString:()=> '2026-09-26',
     document:{getElementById:id=>id==='activityReviewStatus'?status:
@@ -148,4 +149,37 @@ test('backup validates per-activity scores and IDs',()=>{
     i1:{...valid.i1,energy:'2'}
   }),/ongeldige gegevens/);
   assert.match(app,/DIARY_KEY,\s*"jp_activity_reviews_v1"/);
+});
+
+test('route preview uses a bounded map with attribution and no map without GPS',()=>{
+  const {context}=resultsContext();
+  const map=context.activityRouteSvg([[51.9,4.5],[51.901,4.505],[51.905,4.51]]);
+  assert.match(map,/tile\.openstreetmap\.org\/\d+\/\d+\/\d+\.png/);
+  assert.match(map,/OpenStreetMap-bijdragers/);
+  assert.match(map,/activity-route-start/);
+  assert.ok((map.match(/tile\.openstreetmap\.org/g)||[]).length<=9);
+  assert.equal(context.activityRouteSvg([]),'');
+  assert.equal(context.activityRouteSvg([[0,-179],[0,179]]),'');
+});
+
+test('planned comparison only uses a reliably matched activity',()=>{
+  const {context,activities}=resultsContext();
+  context.allWorkouts=()=>({'2026-09-26':{type:'Run',name:'Geplande duurloop',distanceKm:8,durationMinutes:40}});
+  context.trainingExecutionForDate=()=>({actual:{id:'i1'},matched:true});
+  const matched=context.activityResultPlanComparison(activities.i1);
+  assert.equal(matched.name,'Geplande duurloop');
+  assert.match(matched.distance,/Volgens plan/);
+  assert.equal(context.activityResultPlanComparison(activities.i2),null);
+  context.trainingExecutionForDate=()=>({actual:{id:'i1'},matched:false});
+  assert.equal(context.activityResultPlanComparison(activities.i1),null);
+});
+
+test('interval preview shows rounded pace and omits tiny fragments',()=>{
+  const {context}=resultsContext();
+  const html=context.renderActivityIntervalRows([
+    {type:'WORK',distanceKm:1,paceSecondsPerKm:299.7,averageHeartRate:160},
+    {type:'REST',distanceKm:.01,movingSeconds:5}
+  ]);
+  assert.match(html,/5:00/);
+  assert.doesNotMatch(html,/REST/);
 });
