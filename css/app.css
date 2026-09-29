@@ -3064,6 +3064,12 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .activity-result-row.selected{border-color:var(--green);background:#1b393e}
 .activity-result-row span{display:grid;gap:.15rem}.activity-result-row small{font-size:.8rem;opacity:.75}.activity-result-side{text-align:right;flex:none}
 .activity-result-detail{margin-top:1rem;padding-top:1rem;border-top:1px solid rgba(70,105,110,.2)}
+.manual-completion-review{
+  margin-top:1rem;padding:1rem;border:1px solid #4a819c;border-radius:15px;
+  background:#142b3b;scroll-margin-top:24px
+}
+.manual-completion-review[hidden]{display:none}
+.manual-completion-review form>button{width:auto;min-width:180px;margin-top:.75rem}
 .activity-result-heading{display:flex;justify-content:space-between;align-items:start;gap:.8rem}.activity-result-heading h4{margin:.15rem 0 .7rem}
 .activity-result-heading button{width:auto}
 .activity-result-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin:.5rem 0 1rem}

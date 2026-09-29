@@ -905,6 +905,9 @@ async function syncCompletedActivities({silent=false,render=true}={}){
       oldest:activitySyncMeta.oldest,
       newest:activitySyncMeta.newest
     });
+    if(typeof reconcileManualCompletionReviews==="function"){
+      reconcileManualCompletionReviews();
+    }
 
     if(typeof syncTrainingQualityLatest==="function"){
       await syncTrainingQualityLatest({
