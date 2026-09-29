@@ -7055,6 +7055,25 @@ function openRace(id){
   renderSelected();
 }
 
+function raceCardEstimate(race){
+  const prediction=typeof performanceModelPredictionForDistance==="function"
+    ?performanceModelPredictionForDistance(Number(race.distanceKm)):null;
+  if(!prediction?.seconds){
+    return `<div class="race-estimate empty"><span>Haalbare tijd · huidige vorm</span>
+      <small>Nog onvoldoende bruikbare loopresultaten voor een betrouwbare schatting.</small></div>`;
+  }
+  const source=prediction.primaryEvidence?.source||prediction.source;
+  const training=prediction.trainingSignal?.evidence;
+  return `<div class="race-estimate">
+    <div class="race-estimate-head"><span>Haalbare tijd · huidige vorm</span>
+      <strong>${safe(formatRaceTime(prediction.seconds))}</strong></div>
+    <div class="race-estimate-meta"><span>${safe(prediction.confidence)} vertrouwen</span>
+      <span>${safe(formatPace(prediction.seconds/Number(race.distanceKm)))}/km</span></div>
+    <small>Bandbreedte ${safe(performanceModelRangeText(prediction))}</small>
+    <small>Gebaseerd op ${safe(source)}${training?` · training ${safe(training.date)}`:""}</small>
+  </div>`;
+}
+
 function renderRaces(){
   const list=document.getElementById("raceList");
   if(!list) return;
@@ -7095,9 +7114,10 @@ function renderRaces(){
               · ${race.calendarSource?"Uit kalender · prioriteit nog kiezen":`${safe(race.priority)}-wedstrijd`}
             </small>
           </div>
-          ${race.targetTime?`<div class="race-time">${safe(race.targetTime)}</div>`:""}
+          ${race.targetTime?`<div class="race-time"><small>Jouw doel</small>${safe(race.targetTime)}</div>`:""}
         </div>
         <p class="countdown">${remaining>=0 ? `${remaining===0?"Vandaag":`Over ${remaining} dagen`}` : `${Math.abs(remaining)} dagen geleden`}</p>
+        ${remaining>=0?raceCardEstimate(race):""}
         ${race.notes ? `<p class="help">${safe(race.notes)}</p>` : ""}
         <div class="mini-actions">
           <button class="secondary" type="button" onclick="openRace('${race.id}')">Open</button>
@@ -7630,6 +7650,7 @@ function refreshDerivedCoachViews(){
   // renderTodayCoach ververst ook Load Monitor, Performance Engine en AI-previews.
   // Houd die keten op één plek om dubbele DOM-renders op mobiel te voorkomen.
   renderTrainingQualityAnalyzer();
+  renderRaces();
   renderTrainingResponseLearner();
   renderKeySessionProgression();
   renderTodayCoach();

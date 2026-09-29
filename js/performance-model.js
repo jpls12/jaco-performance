@@ -296,6 +296,21 @@ function performanceModelWeightedMedian(estimates){
   return sorted[sorted.length-1].seconds;
 }
 
+function performanceModelRecentTrainingSignal(target,baseline,evidence){
+  if(!Number.isFinite(baseline) || baseline<=0) return null;
+  const recent=evidence.filter(item=>item.kind==="training" &&
+    item.ageDays!==null && item.ageDays<=45 &&
+    performanceModelDistanceRatio(item.distance,target)<=1.5)
+    .map(item=>performanceModelEstimateFromEvidence(item,target))
+    .filter(Boolean)
+    .sort((a,b)=>b.weight-a.weight);
+  if(!recent.length) return null;
+  const estimate=performanceModelWeightedMedian(recent.slice(0,2));
+  // A hard training is useful evidence, but is not a maximal race effort.
+  const change=Math.max(-.012,Math.min(.012,(estimate/baseline-1)*.3));
+  return{change,evidence:recent[0].evidence};
+}
+
 function performanceModelConfidence(targetDistance,estimates){
   if(!estimates.length){
     return{
@@ -376,9 +391,7 @@ function performanceModelPredictionForDistance(targetDistance){
 
   const allEvidence=performanceModelEvidence();
   const trusted=allEvidence.filter(item=>item.trusted);
-  const workingEvidence=trusted.length
-    ?trusted
-    :allEvidence.filter(item=>!item.trusted);
+  const workingEvidence=trusted.length?trusted:allEvidence;
 
   const estimates=workingEvidence
     .map(item=>performanceModelEstimateFromEvidence(item,target))
@@ -396,7 +409,10 @@ function performanceModelPredictionForDistance(targetDistance){
     };
   }
 
-  const seconds=performanceModelWeightedMedian(estimates);
+  const baseline=performanceModelWeightedMedian(estimates);
+  const trainingSignal=trusted.length
+    ?performanceModelRecentTrainingSignal(target,baseline,allEvidence):null;
+  const seconds=baseline*(1+(trainingSignal?.change||0));
   const confidence=performanceModelConfidence(
     target,
     estimates
@@ -410,7 +426,7 @@ function performanceModelPredictionForDistance(targetDistance){
 
   return{
     seconds,
-    source:`Performance Model · ${sourceParts.join(" + ")}`,
+    source:`Performance Model · ${sourceParts.join(" + ")}${trainingSignal?` · recente training ${trainingSignal.evidence.date}`:""}`,
     confidence:confidence.level,
     confidenceScore:confidence.score,
     independent:true,
@@ -420,6 +436,7 @@ function performanceModelPredictionForDistance(targetDistance){
       margin:confidence.margin
     },
     primaryEvidence:primary?.evidence||null,
+    trainingSignal,
     evidence:ranked.map(item=>({
       ...item.evidence,
       estimateSeconds:item.seconds,
