@@ -384,6 +384,7 @@ document.getElementById("fuelHydrationForm").onsubmit=saveFuelHydrationProfile;
 document.getElementById("planningForm").onsubmit=savePlanning;
 document.getElementById("weeklyAvailabilityForm").onsubmit=saveWeeklyAvailability;
 document.getElementById("reviewNextActivity").onclick=openNextActivityReview;
+document.getElementById("toggleTodayWeekOverview").onclick=toggleTodayWeekOverview;
 document.getElementById("undoWeeklyPlan").onclick=undoWeeklyPlan;
 document.getElementById("weeklyAvailabilityDate").onchange=()=>{
   if(!confirmWeeklyAvailabilityWeekChange()) return;
