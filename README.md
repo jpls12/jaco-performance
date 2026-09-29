@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.21 · Duidelijke vervolgstap op Vandaag**
+
+Na een voltooide training toont Vandaag meteen of je beoordeling nog nodig is of al is opgeslagen. De kaart laat de overbodige startknop weg en maakt beoordelen de hoofdactie; een bestaande beoordeling is met dezelfde knop opnieuw te bekijken. De snelle knop bovenaan geeft voorrang aan de voltooide training van vandaag, ook als oudere gesynchroniseerde activiteiten nog openstaan. De tekst maakt duidelijk dat synchronisatie later mag. De bediening heeft zichtbare toetsenbordfocus. App-shell en backupmetadata gebruiken 10.10.21.
+
 **10.10.20 · Beoordelen direct na afronden**
 
 Na het afronden via Vandaag of de begeleide training kun je direct RPE en gevoel vastleggen, ook zonder Intervals.icu-synchronisatie. De lokale beoordeling staat terugvindbaar bij Resultaten en voedt meteen de dag- en weekcoach. Bij een betrouwbare koppeling aan een later gesynchroniseerde activiteit verhuist de beoordeling naar dat resultaat; zonder betrouwbare koppeling blijft zij lokaal en wordt geen andere activiteit overschreven. Oudere dagboekgegevens blijven in de backup bewaard. App-shell en backupmetadata gebruiken 10.10.20.

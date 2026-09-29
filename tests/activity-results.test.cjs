@@ -157,6 +157,7 @@ function resultsContext(){
     diaryWorkoutForDate:()=>({distanceKm:10,durationMinutes:46}),
     finiteNumberOrNull:value=>value==null?null:Number(value),
     safe:value=>String(value??'').replace(/[<>]/g,''),
+    calendarDayDifference:(today,date)=>Math.round((Date.parse(today)-Date.parse(date))/86400000),
     resetGeneratedPlannerPreviews:()=>{},renderFullSeasonSchedulePreview:()=>{},
     refreshDerivedCoachViews:()=>{},renderCoachDiary:()=>{},todayDateString:()=> '2026-09-26',
     document:{getElementById:id=>id==='activityReviewStatus'?status:
@@ -352,6 +353,7 @@ test('quick action opens the newest unreviewed activity, then the next one',()=>
   const {context,submit}=resultsContext();
   let opened='',scrolled=0;
   context.calendarDayDifference=()=>0;
+  context.allWorkouts=()=>({});
   context.selectActivityResult=id=>{opened=id;};
   context.document={getElementById:id=>id==='activityReviewForm'
     ?{scrollIntoView(){scrolled++;}}:null};
@@ -361,6 +363,28 @@ test('quick action opens the newest unreviewed activity, then the next one',()=>
   submit('i2',{sessionRpe:5,energy:4});
   context.openNextActivityReview();
   assert.equal(opened,'i1');
+});
+
+test('quick action prioritizes today until its completed workout is reviewed',()=>{
+  const {context,diary,activities}=resultsContext();
+  const workout={type:'Run',name:'Duurloop'};
+  let opened='';
+  const shortcut={textContent:'',setAttribute(name,value){this[name]=value;}};
+  context.document.getElementById=id=>id==='reviewNextActivity'?shortcut:null;
+  context.allWorkouts=()=>({'2026-09-26':workout});
+  context.workoutWasCompleted=()=>true;
+  context.workoutCompletionIdentity=()=> 'duurl-1';
+  context.trainingExecutionForDate=()=>({matched:false,actual:null});
+  context.openCompletedWorkoutReview=()=>{opened='today';};
+  context.calendarDayDifference=()=>0;
+  context.updateReviewShortcut(Object.values(activities));
+  assert.equal(shortcut.textContent,'Beoordeel vandaag');
+  context.openNextActivityReview();
+  assert.equal(opened,'today');
+  diary['2026-09-26']={source:'manual_completion',workoutIdentity:'duurl-1'};
+  assert.equal(context.todayWorkoutReviewState(),'reviewed');
+  context.updateReviewShortcut(Object.values(activities));
+  assert.equal(shortcut.textContent,'Beoordeel training (2)');
 });
 
 test('seven-day report keeps measured volume separate from missing data',()=>{

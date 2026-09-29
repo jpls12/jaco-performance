@@ -53,6 +53,18 @@ function recentActivityResults(){
     .slice(0,100);
 }
 
+function todayWorkoutReviewState(date=todayDateString(),workout=allWorkouts()[date]){
+  if(!workout || workout.type==="Rest" || !workoutWasCompleted(date,workout)) return "none";
+  const match=trainingExecutionForDate(date,workout);
+  if(match.matched && match.actual?.id){
+    return activityReviews[match.actual.id]?"reviewed":"pending";
+  }
+  const entry=coachDiary[date];
+  return entry?.source==="manual_completion" &&
+    entry.workoutIdentity===workoutCompletionIdentity(workout)
+      ?"reviewed":"pending";
+}
+
 function manualCompletionEntries(){
   return Object.entries(coachDiary).filter(([date,entry])=>{
     if(entry?.source!=="manual_completion") return false;
@@ -62,6 +74,19 @@ function manualCompletionEntries(){
       workoutCompletionIdentity(workout)===entry.workoutIdentity &&
       workoutWasCompleted(date,workout);
   }).sort(([a],[b])=>b.localeCompare(a));
+}
+
+function updateReviewShortcut(activities=recentActivityResults()){
+  const button=document.getElementById("reviewNextActivity");
+  if(!button) return;
+  const open=activities.filter(activity=>!activityReviews[activity.id]).length;
+  const todayPending=todayWorkoutReviewState()==="pending";
+  button.textContent=todayPending?"Beoordeel vandaag"
+    :open?`Beoordeel training${open>1?` (${open})`:""}`:"Bekijk resultaten";
+  button.setAttribute("aria-label",todayPending
+    ?"Beoordeel de voltooide training van vandaag"
+    :open?`${open} training${open===1?"":"en"} te beoordelen; open de meest recente`
+      :"Bekijk je uitgevoerde trainingen");
 }
 
 function renderManualResultList(){
@@ -217,14 +242,7 @@ function renderActivityResults(){
   renderActivityWeekReport();
   renderManualResultList();
   const activities=recentActivityResults();
-  const reviewButton=document.getElementById("reviewNextActivity");
-  if(reviewButton){
-    const open=activities.filter(activity=>!activityReviews[activity.id]).length;
-    reviewButton.textContent=open?`Beoordeel training${open>1?` (${open})`:""}`:"Bekijk resultaten";
-    reviewButton.setAttribute("aria-label",open
-      ?`${open} training${open===1?"":"en"} te beoordelen; open de meest recente`
-      :"Bekijk je uitgevoerde trainingen");
-  }
+  updateReviewShortcut(activities);
   const filters=[
     ["all","Alles"],["unreviewed","Te beoordelen"],["run","Lopen"],["ride","Fietsen"],
     ["swim","Zwemmen"],["other","Overig"]
@@ -252,6 +270,12 @@ function renderActivityResults(){
 }
 
 function openNextActivityReview(){
+  const date=todayDateString();
+  const workout=allWorkouts()[date];
+  if(todayWorkoutReviewState(date,workout)==="pending"){
+    openCompletedWorkoutReview(date,workout);
+    return;
+  }
   const activities=recentActivityResults();
   const next=activities.find(activity=>!activityReviews[activity.id]);
   if(next){
@@ -363,6 +387,7 @@ function saveManualCompletionReview(event){
   };
   saveObject(DIARY_KEY,coachDiary);
   renderManualResultList();
+  updateReviewShortcut();
   resetGeneratedPlannerPreviews();
   renderFullSeasonSchedulePreview();
   refreshDerivedCoachViews();

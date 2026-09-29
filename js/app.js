@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.20";
+const APP_VERSION = "10.10.21";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -12251,6 +12251,7 @@ function renderCurrentTodayWorkout(workout){
   const stepSummary=document.getElementById("todayTrainingStepsSummary");
   const startButton=document.getElementById("startTodayTraining");
   const completeButton=document.getElementById("completeTodayTraining");
+  const actions=completeButton.parentElement;
   const statusText=document.getElementById("todayTrainingStatusText");
 
   if(!statusBadge || !title) return;
@@ -12272,14 +12273,19 @@ function renderCurrentTodayWorkout(workout){
     steps.innerHTML="";
     if(stepDetails){stepDetails.hidden=true;stepDetails.open=false;}
     startButton.disabled=true;
+    startButton.hidden=true;
     startButton.textContent="Geen training";
     completeButton.disabled=true;
+    completeButton.hidden=true;
     completeButton.textContent="Markeer voltooid";
+    actions.dataset.mode="followup";
     return;
   }
 
   const date=todayDateString();
   const done=workoutWasCompleted(date,workout);
+  const reviewState=done && typeof todayWorkoutReviewState==="function"
+    ?todayWorkoutReviewState(date,workout):"none";
   const uploaded=workoutUploadIsCurrent(date,workout);
   const isRace=workout.type==="Race";
   const isRest=workout.type==="Rest";
@@ -12294,7 +12300,11 @@ function renderCurrentTodayWorkout(workout){
   title.textContent=workout.name;
   subtitle.textContent=
     done
-      ?"Training afgerond. Beoordeel je resultaat zodra het is gesynchroniseerd."
+      ?reviewState==="reviewed"
+        ?"Beoordeling opgeslagen. Je kunt die hieronder bekijken of bijwerken."
+        :isRest
+          ?"Rustdag afgerond."
+          :"Training afgerond. Leg nu vast hoe deze voelde; synchroniseren kan later."
       :uploaded
         ?"Trainingsplan verstuurd naar Intervals.icu."
         :isRest
@@ -12319,6 +12329,7 @@ function renderCurrentTodayWorkout(workout){
   }
 
   startButton.disabled=done || isRest;
+  startButton.hidden=done || isRest;
   startButton.textContent=
     done
       ?"Training voltooid"
@@ -12329,9 +12340,12 @@ function renderCurrentTodayWorkout(workout){
           :"Start training";
 
   completeButton.disabled=isRest && done;
+  completeButton.hidden=isRest && done;
+  completeButton.classList.toggle("secondary",!done || reviewState==="reviewed" || isRest);
+  actions.dataset.mode=done || isRest?"followup":"start";
   completeButton.textContent=
     done && !isRest
-      ?"Beoordeel resultaat"
+      ?reviewState==="reviewed"?"Bekijk beoordeling":"Beoordeel training"
       :done
         ?"Voltooid"
         :"Markeer voltooid";
@@ -12616,6 +12630,7 @@ function completeTodayTrainingFromCard(){
   markWorkoutCompleted(date,workout);
   saveObject(DONE_KEY,doneWorkouts);
   refreshAfterCalendarMutation();
+  if(typeof updateReviewShortcut==="function") updateReviewShortcut();
   const status=document.getElementById("todayTrainingStatusText");
   status.className="status ok";
   status.textContent="Training voltooid. Je kunt nu vastleggen hoe de training voelde.";
@@ -12651,6 +12666,7 @@ function finishGuidedTrainingSession(){
   saveObject(DONE_KEY,doneWorkouts);
   closeGuidedTrainingSession(true);
   refreshAfterCalendarMutation();
+  if(typeof updateReviewShortcut==="function") updateReviewShortcut();
 
   selectedDate=date;
   if(typeof openCompletedWorkoutReview==="function"){

@@ -3070,6 +3070,18 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 }
 .manual-completion-review[hidden]{display:none}
 .manual-completion-review form>button{width:auto;min-width:180px;margin-top:.75rem}
+
+/* 10.10.21 · One clear next action after finishing a workout */
+.daily-training-actions[data-mode="followup"]{grid-template-columns:minmax(0,1fr) auto}
+.daily-training-actions button[hidden]{display:none}
+.daily-training-actions[data-mode="followup"] #openTodayTrainingCalendar{width:auto}
+.daily-training-actions #completeTodayTraining:not(.secondary):not(:disabled){box-shadow:0 5px 20px rgba(99,199,132,.18)}
+.today-shortcuts :is(a,button):focus-visible,.daily-training-actions button:focus-visible,
+.activity-result-row:focus-visible{outline:3px solid #9fdfec;outline-offset:3px}
+@media(max-width:650px){
+  .daily-training-actions[data-mode="followup"]{grid-template-columns:minmax(0,1fr) auto}
+  .daily-training-actions[data-mode="followup"] button:first-child{grid-column:auto}
+}
 .activity-result-heading{display:flex;justify-content:space-between;align-items:start;gap:.8rem}.activity-result-heading h4{margin:.15rem 0 .7rem}
 .activity-result-heading button{width:auto}
 .activity-result-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin:.5rem 0 1rem}
