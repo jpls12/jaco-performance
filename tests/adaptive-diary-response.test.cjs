@@ -17,6 +17,32 @@ test('seven-day plan is visible in Today and review links to it',()=>{
   assert.ok(html.indexOf('id="weekReplannerCard"')<html.indexOf('id="coachTechnical"'));
   assert.match(html,/id="weekReplannerPlan"/);
   assert.match(results,/href="#weekReplannerCard"/);
+  assert.match(html,/id="coachScore">—<\/strong>/);
+  assert.doesNotMatch(html,/id="coachScore">70<\/strong>/);
+});
+
+test('completed training opens review or gives a sync instruction',()=>{
+  const code=app.slice(app.indexOf('function completeTodayTrainingFromCard('),
+    app.indexOf('function finishGuidedTrainingSession('));
+  const status={className:'',textContent:''};
+  let opened=0,scrolled=0;
+  const context=vm.createContext({
+    todayDateString:()=> '2026-09-29',
+    currentTodayWorkout:()=>({type:'Run',name:'Duurloop'}),
+    workoutWasCompleted:()=>true,
+    openActivityReviewForDate:()=>{opened++;return false;},
+    document:{getElementById:id=>id==='todayTrainingStatusText'?status:
+      id==='activityResultsCard'?{scrollIntoView(){scrolled++;}}:null}
+  });
+  vm.runInContext(code,context);
+  context.completeTodayTrainingFromCard();
+  assert.equal(opened,1);
+  assert.equal(scrolled,1);
+  assert.match(status.textContent,/Synchroniseer/);
+  context.openActivityReviewForDate=()=>{opened++;return true;};
+  context.completeTodayTrainingFromCard();
+  assert.equal(opened,2);
+  assert.equal(scrolled,1);
 });
 
 function signal(entries,today='2026-09-26'){
@@ -132,6 +158,7 @@ test('heavy reviewed training protects the next quality day and shows the reason
   assert.match(html,/Was: Drempeltraining/);
   assert.match(html,/Waarom: Klachten gemeld/);
   assert.match(html,/Voorgesteld/);
+  assert.match(html,/onclick="openTodayWeekDate\('2026-09-30'\)"/);
 });
 
 test('changed feedback invalidates a previously shown week proposal before applying',()=>{

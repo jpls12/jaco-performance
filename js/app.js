@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.18";
+const APP_VERSION = "10.10.19";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -12273,10 +12273,10 @@ function renderCurrentTodayWorkout(workout){
   type.textContent=typeInfo.label;
   title.textContent=workout.name;
   subtitle.textContent=
-    uploaded
-      ?"Gesynchroniseerd met Intervals.icu."
-      :done
-        ?"Training afgerond. Je check-in kan nog worden bijgewerkt."
+    done
+      ?"Training afgerond. Beoordeel je resultaat zodra het is gesynchroniseerd."
+      :uploaded
+        ?"Trainingsplan verstuurd naar Intervals.icu."
         :isRest
           ?"Herstel staat vandaag centraal."
           :"Klaar om te starten wanneer jij dat bent.";
@@ -12311,7 +12311,7 @@ function renderCurrentTodayWorkout(workout){
   completeButton.disabled=isRest && done;
   completeButton.textContent=
     done && !isRest
-      ?"Bekijk check-in"
+      ?"Beoordeel resultaat"
       :done
         ?"Voltooid"
         :"Markeer voltooid";
@@ -12583,6 +12583,16 @@ function completeTodayTrainingFromCard(){
   if(!workout) return;
 
   if(workoutWasCompleted(date,workout)){
+    if(workout.type!=="Rest"){
+      const found=typeof openActivityReviewForDate==="function" &&
+        openActivityReviewForDate(date);
+      if(!found){
+        const status=document.getElementById("todayTrainingStatusText");
+        status.className="status";
+        status.textContent="Nog geen gesynchroniseerd resultaat van vandaag. Tik bij Resultaten op Synchroniseer en beoordeel daarna je training.";
+        document.getElementById("activityResultsCard")?.scrollIntoView({block:"start",behavior:"smooth"});
+      }
+    }
     return;
   }
 

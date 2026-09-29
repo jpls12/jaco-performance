@@ -14,6 +14,19 @@ test('one visible place to review training; old check-ins stay in backup',()=>{
   assert.match(html,/id="backupCurrentDiary"/);
 });
 
+test('completed-day action opens the matching unreviewed activity',()=>{
+  const {context,activities,submit}=resultsContext();
+  let opened=null;
+  context.recentActivityResults=()=>Object.values(activities);
+  context.selectActivityResult=id=>{opened=id;};
+  assert.equal(context.openActivityReviewForDate('2026-09-26'),true);
+  assert.equal(opened,'i1');
+  submit('i1',{sessionRpe:7,energy:3});
+  assert.equal(context.openActivityReviewForDate('2026-09-26'),true);
+  assert.equal(opened,'i2');
+  assert.equal(context.openActivityReviewForDate('2026-09-27'),false);
+});
+
 const routeCode=fs.readFileSync('api/intervals-activity-route.js','utf8')
   .replace('export function normalizeRouteStreams','function normalizeRouteStreams')
   .replace('export default async function handler','async function handler');

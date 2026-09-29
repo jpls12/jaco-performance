@@ -234,6 +234,16 @@ function openNextActivityReview(){
   }
 }
 
+function openActivityReviewForDate(date){
+  const activities=recentActivityResults().filter(activity=>activity.date===date);
+  const activity=activities.find(item=>!activityReviews[item.id])||activities[0];
+  if(!activity) return false;
+  resultSportFilter="all";
+  selectActivityResult(activity.id);
+  document.getElementById("activityReviewForm")?.scrollIntoView({block:"start",behavior:"smooth"});
+  return true;
+}
+
 function activityRouteSvg(points){
   if(!Array.isArray(points) || points.length<2) return "";
   const coordinates=points.filter(point=>Array.isArray(point) &&

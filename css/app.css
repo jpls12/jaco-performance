@@ -1558,11 +1558,13 @@
 }
 .week-replanner-day{
   display:grid;grid-template-columns:108px minmax(0,1fr);gap:5px 12px;
+  width:100%;text-align:left;color:#f1f7fb;font:inherit;cursor:pointer;
   padding:11px 13px;border:1px solid #29415e;border-radius:13px;background:#0a1727
 }
 .week-replanner-day.changed{border-color:#609ac0;background:#112b3c}
+.week-replanner-day:hover{border-color:#70b9e4;background:#142c40}
 .week-replanner-day-head{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
-.week-replanner-day-head>span{
+.week-replanner-day-head>small{
   color:#a8cadb;font-size:.68rem;font-weight:800;line-height:1.2
 }
 .week-replanner-day-main{min-width:0;display:grid;gap:3px}
@@ -1578,7 +1580,6 @@
 }
 .week-replanner-settings>summary{cursor:pointer;color:#b9dcf0;font-weight:750}
 .week-replanner-settings .today-actions{margin-top:13px}
-.today-week-link{display:inline-block;margin:-4px 0 14px;color:#a7defb;font-size:.82rem}
 .week-replanner-row{
   display:grid;
   grid-template-columns:105px 1fr;
