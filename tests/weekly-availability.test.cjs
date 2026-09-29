@@ -194,6 +194,18 @@ test('week overview marks a session that exceeds the saved time',()=>{
   assert.equal(rows[0].state,'geen training');
 });
 
+test('planner uses the same strict time limit as the week conflict indicator',()=>{
+  const timeLogic=app.slice(app.indexOf('function estimatedWorkoutMinutes('),
+    app.indexOf('function dateGapDays('));
+  const ctx=vm.createContext({isHardWorkout:()=>false});
+  vm.runInContext(timeLogic,ctx);
+  const workout={type:'Run',durationMinutes:51};
+  assert.equal(ctx.fitsTime(workout,{available:true,maxMinutes:45}),false);
+  assert.equal(ctx.fitsTime({...workout,durationMinutes:45},{available:true,maxMinutes:45}),true);
+  assert.equal(ctx.fitsTime(workout,{available:false,maxMinutes:100}),false);
+  assert.equal(ctx.fitsTime(workout,{available:true,maxMinutes:0}),false);
+});
+
 test('week summary keeps all seven days in a compact view',()=>{
   const profile={weeklyAvailability:{'2026-10-05':Object.fromEntries(keys.map(key=>[key,60]))}};
   const ctx=contextFor(profile);

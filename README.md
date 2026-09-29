@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.23 · Tijdvenster zonder schijnruimte**
+
+De planner gebruikt nu exact de opgegeven minuten per dag. Een training van 51 minuten past niet meer kunstmatig in een venster van 45 minuten, waardoor het voorstel en het weekoverzicht dezelfde conflictstatus tonen. Dagen met nul minuten blijven uitgesloten. De regressietest dekt deze grens, met 98 geslaagde tests. App-shell en backupmetadata gebruiken 10.10.23.
+
 **10.10.22 · Pincode 30 dagen onthouden**
 
 Na eenmalige invoer geeft de server een ondertekende cookie voor dit toestel uit, geldig voor 30 dagen. De pincode wordt niet in browseropslag of de cookie opgeslagen. Gelijktijdige synchronisaties delen één aanmelding. Via Profiel → Toegang kun je dit toestel afmelden. Een gewijzigde pincode of API-sleutel maakt bestaande sessies ongeldig. App-shell en backupmetadata gebruiken 10.10.22.
