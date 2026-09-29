@@ -8156,16 +8156,22 @@ function saveWeeklyAvailability(event){
       saveObject(STORAGE_KEY,customWorkouts);
     }
   }
+  const rearranged=!added && typeof replanSavedAvailabilityWeek==="function"
+    ?replanSavedAvailabilityWeek(start):{applied:false};
   if(added){
     // Keep this first render from immediately replacing the generated sessions.
     autoWeekReplanApplying=true;
     try{refreshAfterCalendarMutation();}finally{autoWeekReplanApplying=false;}
   }
-  else refreshDerivedCoachViews();
+  else if(!rearranged.applied) refreshDerivedCoachViews();
   renderWeeklyPlanSummary();
   status.className="status ok";
-  status.textContent=added
+  status.textContent=rearranged.applied
+    ?"Week opgeslagen. De coach heeft je bestaande trainingen verplaatst naar beschikbare dagen. Bekijk het schema hieronder; je kunt de automatische aanpassing terugzetten."
+    :added
     ?`Week opgeslagen. ${added} trainingen richting je doel ingepland op basis van bekende herstel- en trainingsdata en je wedstrijden.${timeConflicts?` ${timeConflicts} sessie(s) pasten niet binnen je tijd en zijn niet ingepland.`:""}`
+    :rearranged.conflicts && autoWeekReplanEnabled()
+      ?"Week opgeslagen. Er is geen veilige verdeling gevonden die alle trainingen binnen je beschikbare tijd laat passen. Bekijk het tijdconflict hieronder en pas eventueel een extra dag aan."
     :autoWeekReplanEnabled()
       ?"Week opgeslagen. De coach heeft de bestaande trainingen met je beschikbaarheid vergeleken. Bekijk het schema hieronder voor eventuele conflicten."
       :"Week opgeslagen. Automatisch aanpassen staat uit; bekijk het weekadvies en pas het voorstel zelf toe.";
