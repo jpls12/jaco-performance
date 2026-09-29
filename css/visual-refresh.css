@@ -313,6 +313,12 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
 .race-card.featured .countdown{display:inline-flex;color:#19220d;background:#c6ef79;border-radius:999px;padding:5px 10px;margin:14px 0}
 .race-overview-card .race-card .mini-actions{margin-top:14px}
 .race-overview-card .race-card .mini-actions button{font-size:.8rem;min-height:38px;padding:7px 11px}
+.race-action-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0 20px}
+.race-action-nav button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;min-width:0;min-height:105px;padding:15px 16px;border:1px solid #586788;border-radius:17px;background:#202d46;color:#f4f6ff}
+.race-action-nav button:hover{background:#313862;border-color:#a8a0d5}
+.race-action-nav button>span{display:grid;place-items:center;width:29px;height:29px;margin-bottom:3px;border-radius:9px;background:#3c426d;color:#d7faa1;font-size:1.13rem}
+.race-action-nav button strong{font-size:.91rem;line-height:1.2}
+.race-action-nav button small{color:#bfcbdd;font-size:.74rem;font-weight:500;line-height:1.25}
 .race-history>summary{color:#d7e0ed}
 .race-form-disclosure,.race-form-extra{background:#1d2940;border-color:#3b4a67;border-radius:17px}
 .race-form-disclosure>summary,.race-form-extra>summary{color:#e7ecf7}
@@ -445,6 +451,17 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
 .weekly-defaults>summary{font-weight:780}
 
 .profile-basics-card{background:linear-gradient(145deg,#242b4f,#17253d 62%,#151e30);border-color:#67689c!important}
+.profile-jumps{margin:0 0 18px}
+#profileBasics,#profileFuel,#profileBackup{scroll-margin-top:22px}
+.profile-backup{margin:15px 0;border:1px solid #4e5d7b;border-radius:18px;background:#1c2940;overflow:hidden}
+.profile-backup>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;list-style:none;cursor:pointer;padding:17px 20px;color:#f2f4fc}
+.profile-backup>summary::-webkit-details-marker{display:none}
+.profile-backup>summary strong,.profile-backup>summary small{display:block}
+.profile-backup>summary strong{font-size:1.03rem}
+.profile-backup>summary small{font-size:.78rem;color:#c1cddd;margin-top:3px}
+.profile-backup>summary>span:last-child{font-size:1.3rem;transition:transform .18s}
+.profile-backup[open]>summary>span:last-child{transform:rotate(180deg)}
+.profile-backup>.card{border:0;border-top:1px solid #4e5d7b;border-radius:0;margin:0;box-shadow:none}
 .profile-basics-card #profileForm{gap:10px;margin-top:19px}
 .profile-basics-card #profileForm>.grid2{
   padding:15px;border:1px solid #475574;border-radius:16px;background:rgba(13,24,46,.54)
@@ -531,6 +548,10 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
   .activity-result-row .activity-result-icon{width:32px;height:32px;font-size:1rem}
   .activity-result-side small{max-width:100px;line-height:1.2}
   .race-card.featured .race-top{flex-direction:column;gap:8px}
+  .race-action-nav{gap:7px}
+  .race-action-nav button{min-height:100px;padding:11px 9px;border-radius:13px}
+  .race-action-nav button strong{font-size:.78rem}
+  .race-action-nav button small{font-size:.67rem}
   .race-overview-card .race-card{padding:14px}
   .season-block-row{grid-template-columns:96px minmax(0,1fr)}
   .editor-smart-card>.grid2{grid-template-columns:1fr}

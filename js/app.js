@@ -3025,6 +3025,8 @@ function renderPendingBackupImport(){
   const {payload,fileName,fileSize}=pendingBackupImport;
   const summary=backupPayloadSummary(payload);
 
+  const backupSection=document.getElementById("profileBackup");
+  if(backupSection) backupSection.open=true;
   panel.hidden=false;
   document.getElementById("backupImportName").textContent=
     fileName||"Backupbestand";
@@ -7053,6 +7055,16 @@ function openRace(id){
   switchView("calendar");
   renderMonth();
   renderSelected();
+}
+
+function openRaceTool(id){
+  const allowed=["raceSimulationTool","raceSeasonScheduleTool","raceDebriefTool"];
+  if(!allowed.includes(id)) return;
+  const panel=document.getElementById(id);
+  if(!panel) return;
+  panel.open=true;
+  panel.scrollIntoView({block:"start",behavior:"smooth"});
+  panel.querySelector("summary")?.focus({preventScroll:true});
 }
 
 function raceCardEstimate(race){
