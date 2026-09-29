@@ -20,6 +20,8 @@ function contextFor(profile={}){
   const context=vm.createContext({
     DAY_KEYS:keys,DAY_NAMES:['Maandag','Dinsdag','Woensdag','Donderdag','Vrijdag','Zaterdag','Zondag'],
     addDays,mondayOf,weekdayIndexFromDate,todayDateString:()=> '2026-09-28',
+    safe:value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;'),
+    uploadedWorkouts:{},
     getProfile:()=>profile,
     defaultAvailability:()=>Object.fromEntries(keys.map(key=>[key,{
       available:true,maxMinutes:75,preference:'rustig',daypart:'avond',priority:'should'
@@ -239,6 +241,30 @@ test('the weekly time chart scales training to available minutes and marks a blo
   assert.match(box.innerHTML,/height:50%/);
   assert.match(box.innerHTML,/Zaterdag: 80 van 0 beschikbare minuten gepland/);
   assert.match(box.innerHTML,/weekly-time-day conflict/);
+  assert.match(box.innerHTML,/Lang · 80 min nodig, 0 min beschikbaar/);
+  assert.match(box.innerHTML,/Minimaal 80 min extra/);
+  assert.match(box.innerHTML,/href="#weekly-minutes-sat"/);
+  assert.match(box.innerHTML,/openTodayWeekDate\('2026-10-10'\)/);
+});
+
+test('a small overrun gets an actionable rounded time target, but a fitting week has no warning',()=>{
+  const profile={weeklyAvailability:{'2026-10-05':{
+    mon:0,tue:45,wed:0,thu:0,fri:0,sat:0,sun:0
+  }}};
+  const ctx=contextFor(profile);
+  const box={innerHTML:''};
+  ctx.document={getElementById:id=>({weeklyPlanSummary:box,
+    weeklyAvailabilityDate:{value:'2026-10-05'}})[id]};
+  ctx.allWorkouts=()=>({'2026-10-06':{name:'Tempo',type:'Run',durationMinutes:51}});
+  ctx.estimatedWorkoutMinutes=w=>w.durationMinutes;
+  ctx.escapeHtmlAttribute=value=>value;
+  ctx.renderWeeklyPlanUndo=()=>{};
+  ctx.renderWeeklyPlanSummary();
+  assert.match(box.innerHTML,/Tempo · 51 min nodig, 45 min beschikbaar/);
+  assert.match(box.innerHTML,/Minimaal 10 min extra/);
+  profile.weeklyAvailability['2026-10-05'].tue=55;
+  ctx.renderWeeklyPlanSummary();
+  assert.doesNotMatch(box.innerHTML,/weekly-conflict-guide/);
 });
 
 test('undo removes only untouched generated sessions and pauses automatic changes',()=>{

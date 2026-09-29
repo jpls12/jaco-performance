@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.23";
+const APP_VERSION = "10.10.24";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -7984,6 +7984,22 @@ function weeklyTimeUsagePercent(minutes,availableMinutes){
   return Math.min(100,Math.round(minutes/availableMinutes*100));
 }
 
+function weeklyConflictGuidance(rows){
+  const conflicts=rows.filter(row=>row.state==="tijdconflict" && row.date>todayDateString());
+  if(!conflicts.length) return "";
+  return `<div class="weekly-conflict-guide" role="status">
+    <strong>${conflicts.length} training${conflicts.length===1?" past":"en passen"} nog niet veilig</strong>
+    <p>De coach verplaatst geen wedstrijd of al verstuurde training en schrapt geen sessie stilletjes. Geef meer tijd op, of open de training om zelf een keuze te maken. Sla daarna de week opnieuw op.</p>
+    <ul>${conflicts.map(row=>{
+      const needed=Math.max(0,Math.ceil(row.minutes/5)*5-row.availableMinutes);
+      const key=DAY_KEYS[weekdayIndexFromDate(row.date)];
+      const reason=uploadedWorkouts[row.date]?" · al verstuurd naar Intervals":"";
+      return `<li><span><strong>${safe(row.dayName)} ${Number(row.date.slice(8))}</strong> · ${safe(row.workoutName)} · ${row.minutes} min nodig, ${row.availableMinutes} min beschikbaar${reason}. ${needed?`Minimaal ${needed} min extra op deze dag, of een andere veilige plek.`:"Deze dag is niet beschikbaar."}</span>
+        <span class="weekly-conflict-actions"><a href="#weekly-minutes-${key}">Pas tijd aan</a><button type="button" class="secondary" onclick="openTodayWeekDate('${row.date}')">Bekijk training</button></span></li>`;
+    }).join("")}</ul>
+  </div>`;
+}
+
 function renderWeeklyPlanSummary(){
   const box=document.getElementById("weeklyPlanSummary");
   if(!box) return;
@@ -8000,6 +8016,7 @@ function renderWeeklyPlanSummary(){
         <small>${row.dayName.slice(0,2)}</small>
       </div>`).join("")}
     </div>
+    ${weeklyConflictGuidance(rows)}
     <div class="weekly-plan-rows">${rows.map(row=>`<div class="weekly-plan-row${row.state==="tijdconflict"?" conflict":""}">
       <div><strong><time datetime="${row.date}" aria-label="${row.dayName} ${row.date}">${row.dayName.slice(0,2)} ${Number(row.date.slice(8))}</time></strong><small>${row.availableMinutes?`${row.availableMinutes} min ruimte`:"Geen tijd"}</small></div>
       <div><span>${escapeHtmlAttribute(row.workoutName||"Vrij")}</span><small>${row.minutes?`± ${row.minutes} min · `:""}${row.state==="past binnen je tijd"?"Past":row.state==="geen training"?"Geen training":row.state}</small></div>
@@ -8211,7 +8228,7 @@ function saveWeeklyAvailability(event){
     :added
     ?`Week opgeslagen. ${added} trainingen richting je doel ingepland op basis van bekende herstel- en trainingsdata en je wedstrijden.${timeConflicts?` ${timeConflicts} sessie(s) pasten niet binnen je tijd en zijn niet ingepland.`:""}`
     :rearranged.conflicts && autoWeekReplanEnabled()
-      ?"Week opgeslagen. Er is geen veilige verdeling gevonden die alle trainingen binnen je beschikbare tijd laat passen. Bekijk het tijdconflict hieronder en pas eventueel een extra dag aan."
+      ?"Week opgeslagen. Er is geen veilige verdeling voor alle trainingen. Bekijk hieronder per training hoeveel tijd ontbreekt en kies wat je wilt aanpassen."
     :autoWeekReplanEnabled()
       ?"Week opgeslagen. De coach heeft de bestaande trainingen met je beschikbaarheid vergeleken. Bekijk het schema hieronder voor eventuele conflicten."
       :"Week opgeslagen. Automatisch aanpassen staat uit; bekijk het weekadvies en pas het voorstel zelf toe.";
