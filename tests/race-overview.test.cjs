@@ -6,7 +6,7 @@ const vm=require('node:vm');
 const app=fs.readFileSync('js/app.js','utf8');
 const renderSeason=app.slice(app.indexOf('function renderSeasonPlanner('),
   app.indexOf('function seasonPhaseToLegacyPhase('));
-const renderRaces=app.slice(app.indexOf('function renderRaces('),
+const renderRaces=app.slice(app.indexOf('function raceCardEstimate('),
   app.indexOf('function renderRaceOptions('));
 const futureRaces=app.slice(app.indexOf('function futureRacesSorted('),
   app.indexOf('function getPrimaryARace('));
@@ -77,6 +77,31 @@ test('race overview explains missing goals and shows upcoming races before histo
   assert.match(list.innerHTML,/Eerdere wedstrijden \(1\)/);
   assert.equal((list.innerHTML.match(/race-featured-label/g)||[]).length,1);
   assert.match(list.innerHTML,/Eerstvolgende wedstrijd/);
+});
+
+test('upcoming race shows a live estimate separately from the personal target',()=>{
+  const list={innerHTML:''};
+  const race={id:'amsterdam',name:'Amsterdam',date:'2026-10-18',distanceKm:21.0975,
+    targetTime:'1:22:00',priority:'A'};
+  const ctx=vm.createContext({
+    races:{amsterdam:race},
+    document:{getElementById:id=>id==='raceList'?list:null},
+    futureRacesSorted:()=>[race],daysUntil:()=>19,
+    fullDate:new Intl.DateTimeFormat('nl-NL',{timeZone:'UTC'}),
+    safe:value=>String(value),formatRaceDistance:()=> 'Halve marathon',
+    formatRaceTime:n=>`${Math.round(n/60)} min`,formatPace:()=> '4:01',
+    performanceModelRangeText:()=> '84–88 min',
+    performanceModelPredictionForDistance:()=>({seconds:5160,confidence:'Goed',
+      range:{low:5040,high:5280},primaryEvidence:{source:'Rotterdam 20 september'},
+      trainingSignal:{evidence:{date:'2026-09-28'}}})
+  });
+  vm.runInContext(renderRaces,ctx);
+  ctx.renderRaces();
+  assert.match(list.innerHTML,/Jouw doel.*1:22:00/);
+  assert.match(list.innerHTML,/Haalbare tijd · huidige vorm/);
+  assert.match(list.innerHTML,/86 min/);
+  assert.match(list.innerHTML,/84–88 min/);
+  assert.match(list.innerHTML,/Rotterdam 20 september · training 2026-09-28/);
 });
 
 test('a calendar Race becomes a provisional upcoming goal without duplication',()=>{

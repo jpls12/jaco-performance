@@ -278,6 +278,15 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
 .race-card.featured .race-top strong{font-size:clamp(1.45rem,3vw,1.9rem);letter-spacing:-.05em}
 .race-top small{display:block;color:#cbd4e3;font-size:.79rem;line-height:1.45;margin-top:5px}
 .race-time{color:#ffe1e5;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.race-time small{display:block;color:#cfbdc9;font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.race-estimate{margin:14px 0 4px;padding:15px 16px;border:1px solid #5d718a;border-radius:15px;background:#19273d}
+.race-card.featured .race-estimate{background:rgba(16,28,48,.72);border-color:#94a6ad}
+.race-estimate-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.race-estimate-head span{font-size:.73rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#c6ef79}
+.race-estimate-head strong{font-size:clamp(1.35rem,3vw,1.75rem);font-variant-numeric:tabular-nums;color:#f6f9ff}
+.race-estimate-meta{display:flex;gap:12px;color:#d0dcf0;font-size:.8rem;font-weight:700}
+.race-estimate small{display:block;margin-top:6px;color:#bbc9dd;font-size:.75rem;line-height:1.4}
+.race-estimate.empty small{margin-top:7px}
 .race-card .countdown{color:#e8edfa;font-size:.83rem;font-weight:740}
 .race-card.featured .countdown{display:inline-flex;color:#19220d;background:#c6ef79;border-radius:999px;padding:5px 10px;margin:14px 0}
 .race-overview-card .race-card .mini-actions{margin-top:14px}
