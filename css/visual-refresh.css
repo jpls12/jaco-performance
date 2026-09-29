@@ -226,6 +226,14 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
 .wellness-row small{display:block;color:#b9c5d5;font-size:.79rem;margin-top:2px}
 .wellness-row>div:last-child{text-align:right;flex:none;padding:5px 10px;border-radius:11px;background:#26334e}
 .dashboard-planners>summary{border-color:#4b5779;background:#232d48;color:#f1f3ff}
+.section-jumps{margin:0 0 17px}
+.section-jumps a{background:#202b43;border-color:#4b5c7d;color:#e7ecf8}
+.section-heading{display:flex;align-items:baseline;gap:12px;margin:29px 3px 10px;padding-top:17px;border-top:1px solid #3d4a64;scroll-margin-top:22px}
+.section-heading .label{margin:0;white-space:nowrap}
+.section-heading h3{margin:0;font-size:1.45rem;font-weight:820}
+#dashboardMetrics{scroll-margin-top:22px}
+#dashboard .today-monitor-details{margin:0 0 15px}
+#dashboard .today-monitor-details>summary{background:#222e48;border-color:#4b5b7a}
 
 /* Results: one clear selected activity, measured facts, then a two-step review. */
 #activityResultsCard{scroll-margin-top:24px}
@@ -413,6 +421,21 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
 #planningAvailability,#planningSupport,#planningExample{border-left:4px solid #7777b8}
 #planningSupport{border-left-color:#9ad7b2}
 #planningExample{border-left-color:#c6ef79}
+#planningTools{scroll-margin-top:22px;margin:18px 0 25px}
+.planning-tools>summary{
+  display:flex;justify-content:space-between;align-items:center;gap:14px;
+  padding:18px 20px;background:linear-gradient(120deg,#333763,#25314e);
+  border:1px solid #7373aa;border-radius:17px;color:#f6f6ff;cursor:pointer;list-style:none
+}
+.planning-tools>summary::-webkit-details-marker{display:none}
+.planning-tools>summary strong,.planning-tools>summary small{display:block}
+.planning-tools>summary strong{font-size:1rem}
+.planning-tools>summary small{margin-top:3px;color:#d0d7ec;font-size:.78rem;font-weight:450}
+.planning-tools>summary>span:last-child{font-size:1.3rem;transition:transform .18s}
+.planning-tools[open]>summary>span:last-child{transform:rotate(180deg)}
+.planning-tools[open]>summary{margin-bottom:14px}
+.planning-tools>.card{margin:11px 0;background:#19253c;border-color:#445474}
+.planning-tools .dashboard-planners{margin:13px 0}
 #planningAvailability>.label,#planningSupport>.label,#planningExample>.label{font-size:.7rem}
 #planningAvailability>h2,#planningSupport>h2,#planningExample>h2{font-size:clamp(1.35rem,3vw,1.75rem)}
 .weekly-availability-form button[type="submit"]{min-height:48px}
@@ -444,6 +467,9 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
 @media(max-width:650px){
   .view-intro{margin:11px 0 18px;padding:22px 20px;border-radius:22px}
   .view-intro h2{font-size:2.25rem}
+  .section-heading{margin-top:23px;gap:7px;flex-direction:column}
+  .section-heading h3{font-size:1.3rem}
+  .planning-tools>summary{padding:15px}
   .view-intro .help{font-size:.86rem;margin-bottom:0}
   .view-intro::after{width:230px;height:230px;right:-83px;top:-105px}
   #planningAvailability,#planningSupport,#planningExample,#profile>.card,#library>.card{padding:18px}

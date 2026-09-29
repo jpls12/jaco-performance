@@ -11,11 +11,11 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1132">
-  <link rel="icon" href="/icons/app-icon.svg?v=1132" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1132">
-  <link rel="stylesheet" href="/css/app.css?v=1132">
-  <link rel="stylesheet" href="/css/visual-refresh.css?v=8">
+  <link rel="manifest" href="/manifest.webmanifest?v=1133">
+  <link rel="icon" href="/icons/app-icon.svg?v=1133" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1133">
+  <link rel="stylesheet" href="/css/app.css?v=1133">
+  <link rel="stylesheet" href="/css/visual-refresh.css?v=9">
 </head>
 <body>
 <main>
@@ -46,7 +46,7 @@
 
   <nav class="tabs" aria-label="Hoofdnavigatie">
     <button type="button" class="tab active" data-view="today">Vandaag</button>
-    <button type="button" class="tab" data-view="dashboard">Dashboard</button>
+    <button type="button" class="tab" data-view="dashboard">Voortgang</button>
     <button type="button" class="tab" data-view="calendar">Kalender</button>
     <button type="button" class="tab" data-view="editor">Nieuwe training</button>
     <button type="button" class="tab" data-view="saved">Mijn trainingen</button>
@@ -538,6 +538,224 @@
     
     
 
+    <article class="card activity-results-card" id="activityResultsCard">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Uitgevoerde trainingen</p>
+          <h2>Resultaat en beoordeling</h2>
+          <p class="help">Beoordeel hier je voltooide training. Na synchronisatie zie je ook de cijfers en eventuele GPS-route.</p>
+        </div>
+        <button id="refreshActivityResults" class="secondary" type="button" style="width:auto">Synchroniseer</button>
+      </div>
+      <div id="activityWeekReport" class="activity-week-report" aria-label="Uitgevoerde trainingen laatste zeven dagen"></div>
+      <div id="manualResultList" class="manual-result-list" hidden></div>
+      <div id="activityResultsList" class="activity-results-list"></div>
+      <div id="activityResultDetail" class="activity-result-detail" hidden></div>
+      <div id="manualCompletionReview" class="manual-completion-review" hidden></div>
+    </article>
+
+    <details id="todayMore" class="today-more">
+      <summary><span><strong>Meer coachacties</strong><small>Stel een vraag, maak een dagvoorstel en bekijk de onderbouwing</small></span><span class="today-more-chevron" aria-hidden="true">⌄</span></summary>
+
+    <article class="card coach-chat-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 7.4 · Coach Chat</p>
+          <h2>Praat met je coach</h2>
+          <p class="help">
+            Beschrijf hoe je je voelt of wat er vandaag verandert. De coach
+            combineert je bericht met herstel, planning en wedstrijdfocus.
+          </p>
+        </div>
+        <button id="clearCoachChat" class="secondary" type="button" style="width:auto">
+          Wis chat
+        </button>
+      </div>
+
+      <div id="coachChatMessages" class="coach-chat-messages">
+        <div class="coach-message coach">
+          <div class="coach-avatar">C</div>
+          <div class="coach-bubble">
+            Vertel me wat er verandert. Bijvoorbeeld: “Mijn benen voelen zwaar”
+            of “Ik heb vandaag maar 40 minuten.”
+          </div>
+        </div>
+      </div>
+
+      <div class="coach-chat-chips">
+        <button type="button" class="coach-chip" data-coach-prompt="Mijn benen voelen zwaar">Zware benen</button>
+        <button type="button" class="coach-chip" data-coach-prompt="Ik heb vandaag maar 40 minuten">40 minuten</button>
+        <button type="button" class="coach-chip" data-coach-prompt="Ik voel me heel goed vandaag">Voel me goed</button>
+        <button type="button" class="coach-chip" data-coach-prompt="Ik kan morgen niet trainen">Morgen niet beschikbaar</button>
+      </div>
+
+      <div class="coach-chat-input-row">
+        <textarea id="coachChatInput" rows="3" placeholder="Bijv. Ik heb slecht geslapen en mijn benen voelen zwaar..."></textarea>
+        <button id="sendCoachChat" type="button">Vraag coach</button>
+      </div>
+
+      <div id="coachChatAction" class="coach-chat-action" hidden>
+        <p class="label">Voorgestelde aanpassing</p>
+        <h3 id="coachChatActionTitle">—</h3>
+        <p class="help" id="coachChatActionText"></p>
+        <button id="applyCoachChatAction" type="button">
+          Pas advies toe op vandaag
+        </button>
+      </div>
+
+      <p id="coachChatStatus" class="status"></p>
+    </article>
+
+    <article class="card ai-generator-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 6.1 · AI Training Generator</p>
+          <h2>Genereer mijn training van vandaag</h2>
+          <p class="help">
+            De generator combineert je herstel, beschikbaarheid, wedstrijdfase en
+            dagvoorkeur tot één concreet trainingsvoorstel.
+          </p>
+        </div>
+        <button id="generateAiTraining" type="button" style="width:auto">
+          Genereer training
+        </button>
+      </div>
+
+      <div class="generator-context-grid">
+        <div class="today-metric">
+          <span>Beschikbare tijd</span>
+          <strong id="generatorAvailableTime">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Trainingsdoel</span>
+          <strong id="generatorGoal">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Intensiteitsniveau</span>
+          <strong id="generatorIntensity">—</strong>
+        </div>
+      </div>
+
+      <div id="generatorResult" class="recommendation-card generator-result">
+        <p class="label">Voorstel</p>
+        <div class="recommendation-title" id="generatorTitle">
+          Nog geen training gegenereerd
+        </div>
+        <p class="help" id="generatorExplanation">
+          Tik op Genereer training om een voorstel te maken.
+        </p>
+        <ul class="steps" id="generatorSteps"></ul>
+      </div>
+
+      <div id="generatorAlternatives" class="generator-alternatives"></div>
+
+      <div class="today-actions">
+        <button id="regenerateAiTraining" class="secondary" type="button" disabled>
+          Ander voorstel
+        </button>
+        <button id="saveAiTraining" type="button" disabled>
+          Zet voorstel in kalender
+        </button>
+      </div>
+
+      <p id="generatorStatus" class="status"></p>
+    </article>
+
+    <article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div>
+          <p class="label">Performance 3.1 · Coach Brain</p>
+          <h2>Waarom deze training?</h2>
+          <p class="help">
+            De coach kiest uit een trainingsbibliotheek op basis van herstel,
+            beschikbaarheid, wedstrijdfase en doelafstand.
+          </p>
+        </div>
+        <button id="recalculateBrain" class="secondary" type="button" style="width:auto">
+          Herbereken
+        </button>
+      </div>
+
+      <div id="brainDecision" class="coach-box">
+        <p class="label">Coachbesluit</p>
+        <h3 id="brainDecisionTitle">Nog geen besluit</h3>
+        <p class="help" id="brainDecisionText">De coach wordt geladen.</p>
+      </div>
+
+      <div id="brainFactors" class="reason-list"></div>
+    </article>
+
+
+    </details>
+
+  </section>
+
+  <section id="dashboard" class="view">
+    <header class="view-intro"><p class="eyebrow">Trends & herstel</p><h2>Voortgang</h2><p class="help">Belasting, herstel, loopniveau en trends op basis van je beschikbare gegevens.</p></header>
+    <nav class="view-jumps section-jumps" aria-label="Onderdelen van voortgang">
+      <a href="#dashboardMetrics">Herstel</a><a href="#dashboardTrends">Trends</a><a href="#dashboardLevel">Loopniveau</a>
+    </nav>
+    <article class="card dashboard-metrics-card" id="dashboardMetrics">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div>
+          <p class="label">Intervals.icu live</p>
+          <h2>Herstel en trainingsbelasting</h2>
+          <p class="help" id="dashboardUpdated">Data wordt geladen…</p>
+        </div>
+        <button class="secondary" id="refreshDashboard" type="button" style="width:auto">Vernieuw</button>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="metric-card">
+          <span>Fitness · CTL</span>
+          <strong id="metricCtl">—</strong>
+          <small>Langetermijnbelasting</small>
+        </div>
+        <div class="metric-card">
+          <span>Vermoeidheid · ATL</span>
+          <strong id="metricAtl">—</strong>
+          <small>Kortetermijnbelasting</small>
+        </div>
+        <div class="metric-card">
+          <span>Vorm · CTL − ATL</span>
+          <strong id="metricForm">—</strong>
+          <small id="formLabel">Nog geen data</small>
+        </div>
+        <div class="metric-card">
+          <span>HRV</span>
+          <strong id="metricHrv">—</strong>
+          <small id="hrvTrend">Laatste waarde</small>
+        </div>
+        <div class="metric-card">
+          <span>Rusthartslag</span>
+          <strong id="metricRestingHr">—</strong>
+          <small id="restingHrTrend">Laatste waarde</small>
+        </div>
+        <div class="metric-card">
+          <span>Slaap</span>
+          <strong id="metricSleep">—</strong>
+          <small id="sleepScore">Laatste nacht</small>
+        </div>
+      </div>
+
+      <div class="coach-box">
+        <p class="label">Coachadvies</p>
+        <h3 id="coachHeadline">Wellnessdata laden…</h3>
+        <p class="help" id="coachAdvice">Even geduld.</p>
+      </div>
+
+      <p id="wellnessStatus" class="status"></p>
+      <p id="dashboardError" class="status error"></p>
+    </article>
+
+    <article class="card dashboard-history-card">
+      <p class="label">Laatste 7 dagen</p>
+      <div id="wellnessHistory" class="wellness-list"></div>
+    </article>
+
+
+
+    <div id="dashboardTrends" class="section-heading"><p class="label">Analyse</p><h3>Belasting en trends</h3></div>
     <details class="today-monitor-details">
       <summary><span>Trainingsbelasting en herstel</span><span id="loadMonitorBadge" class="load-status unknown">Onvoldoende data</span></summary>
     <article class="card load-monitor-card">
@@ -608,136 +826,6 @@
       </div>
     </article>
     </details>
-
-
-    <article class="card activity-results-card" id="activityResultsCard">
-      <div class="ai-generator-head">
-        <div>
-          <p class="label">Uitgevoerde trainingen</p>
-          <h2>Resultaat en beoordeling</h2>
-          <p class="help">Beoordeel hier je voltooide training. Na synchronisatie zie je ook de cijfers en eventuele GPS-route.</p>
-        </div>
-        <button id="refreshActivityResults" class="secondary" type="button" style="width:auto">Synchroniseer</button>
-      </div>
-      <div id="activityWeekReport" class="activity-week-report" aria-label="Uitgevoerde trainingen laatste zeven dagen"></div>
-      <div id="manualResultList" class="manual-result-list" hidden></div>
-      <div id="activityResultsList" class="activity-results-list"></div>
-      <div id="activityResultDetail" class="activity-result-detail" hidden></div>
-      <div id="manualCompletionReview" class="manual-completion-review" hidden></div>
-    </article>
-
-    <details id="todayMore" class="today-more">
-      <summary><span><strong>Meer inzichten en tools</strong><small>Coachvragen, trends en uitgebreide planning</small></span><span class="today-more-chevron" aria-hidden="true">⌄</span></summary>
-
-    <article class="card coach-chat-card">
-      <div class="ai-generator-head">
-        <div>
-          <p class="label">Performance 7.4 · Coach Chat</p>
-          <h2>Praat met je coach</h2>
-          <p class="help">
-            Beschrijf hoe je je voelt of wat er vandaag verandert. De coach
-            combineert je bericht met herstel, planning en wedstrijdfocus.
-          </p>
-        </div>
-        <button id="clearCoachChat" class="secondary" type="button" style="width:auto">
-          Wis chat
-        </button>
-      </div>
-
-      <div id="coachChatMessages" class="coach-chat-messages">
-        <div class="coach-message coach">
-          <div class="coach-avatar">C</div>
-          <div class="coach-bubble">
-            Vertel me wat er verandert. Bijvoorbeeld: “Mijn benen voelen zwaar”
-            of “Ik heb vandaag maar 40 minuten.”
-          </div>
-        </div>
-      </div>
-
-      <div class="coach-chat-chips">
-        <button type="button" class="coach-chip" data-coach-prompt="Mijn benen voelen zwaar">Zware benen</button>
-        <button type="button" class="coach-chip" data-coach-prompt="Ik heb vandaag maar 40 minuten">40 minuten</button>
-        <button type="button" class="coach-chip" data-coach-prompt="Ik voel me heel goed vandaag">Voel me goed</button>
-        <button type="button" class="coach-chip" data-coach-prompt="Ik kan morgen niet trainen">Morgen niet beschikbaar</button>
-      </div>
-
-      <div class="coach-chat-input-row">
-        <textarea id="coachChatInput" rows="3" placeholder="Bijv. Ik heb slecht geslapen en mijn benen voelen zwaar..."></textarea>
-        <button id="sendCoachChat" type="button">Vraag coach</button>
-      </div>
-
-      <div id="coachChatAction" class="coach-chat-action" hidden>
-        <p class="label">Voorgestelde aanpassing</p>
-        <h3 id="coachChatActionTitle">—</h3>
-        <p class="help" id="coachChatActionText"></p>
-        <button id="applyCoachChatAction" type="button">
-          Pas advies toe op vandaag
-        </button>
-      </div>
-
-      <p id="coachChatStatus" class="status"></p>
-    </article>
-
-    <article class="card smart-week-coach-card">
-      <div class="ai-generator-head">
-        <div>
-          <p class="label">Performance 7.3 · Slimme Weekcoach</p>
-          <h2>Optimaliseer mijn trainingsweek</h2>
-          <p class="help">
-            De weekcoach controleert je week op herstel, spreiding van kwaliteit,
-            lange duur, beschikbaarheid en bestaande trainingen.
-          </p>
-        </div>
-        <button id="optimizeSmartWeek" type="button" style="width:auto">
-          Optimaliseer week
-        </button>
-      </div>
-
-      <div class="smart-week-metrics">
-        <div class="today-metric">
-          <span>Weekbalans</span>
-          <strong id="smartWeekBalance">—</strong>
-        </div>
-        <div class="today-metric">
-          <span>Zware sessies</span>
-          <strong id="smartWeekHardSessions">—</strong>
-        </div>
-        <div class="today-metric">
-          <span>Hersteldagen</span>
-          <strong id="smartWeekRecoveryDays">—</strong>
-        </div>
-        <div class="today-metric">
-          <span>Beschikbaarheid</span>
-          <strong id="smartWeekAvailability">—</strong>
-        </div>
-      </div>
-
-      <div id="smartWeekWarnings" class="reason-list"></div>
-
-      <div class="coach-box">
-        <p class="label">Weekcoachbesluit</p>
-        <h3 id="smartWeekHeadline">Nog geen week geanalyseerd</h3>
-        <p class="help" id="smartWeekConclusion">
-          Tik op Optimaliseer week om je huidige week te laten controleren.
-        </p>
-      </div>
-
-      <div id="smartWeekPlan" class="ai-week-plan">
-        <p class="help">Hier verschijnt de geoptimaliseerde week.</p>
-      </div>
-
-      <div class="today-actions">
-        <button id="smartWeekAlternative" class="secondary" type="button" disabled>
-          Andere verdeling
-        </button>
-        <button id="applySmartWeek" type="button" disabled>
-          Pas week toe
-        </button>
-      </div>
-
-      <p id="smartWeekStatus" class="status"></p>
-    </article>
-
     <article class="card performance-trend-card">
       <div class="ai-generator-head">
         <div>
@@ -807,7 +895,6 @@
         <p class="help" id="performanceTrendConclusion"></p>
       </div>
     </article>
-
     <article class="card coach-intelligence-card">
       <div class="ai-generator-head">
         <div>
@@ -867,163 +954,6 @@
         <p class="help" id="coachIntelligenceConclusion"></p>
       </div>
     </article>
-
-    <article class="card ai-week-card">
-      <div class="ai-generator-head">
-        <div>
-          <p class="label">Performance 6.2 · AI Week Planner</p>
-          <h2>Plan mijn beste trainingsweek</h2>
-          <p class="help">
-            De planner verdeelt kwaliteit, rustige duur, lange duur, herstel,
-            core en mobiliteit over jouw beschikbare dagen.
-          </p>
-        </div>
-        <button id="generateAiWeek" type="button" style="width:auto">
-          Genereer week
-        </button>
-      </div>
-
-      <div class="generator-context-grid">
-        <div class="today-metric">
-          <span>Doelomvang</span>
-          <strong id="aiWeekTargetKm">—</strong>
-        </div>
-        <div class="today-metric">
-          <span>Beschikbare dagen</span>
-          <strong id="aiWeekAvailableDays">—</strong>
-        </div>
-        <div class="today-metric">
-          <span>Weekfocus</span>
-          <strong id="aiWeekFocus">—</strong>
-        </div>
-      </div>
-
-      <div id="aiWeekExplanation" class="coach-box">
-        <p class="label">Coachstrategie</p>
-        <h3 id="aiWeekHeadline">Nog geen week gegenereerd</h3>
-        <p class="help" id="aiWeekReason">
-          Tik op Genereer week om een voorstel te maken.
-        </p>
-      </div>
-
-      <div id="aiWeekPlan" class="ai-week-plan">
-        <p class="help">Hier verschijnt je weekvoorstel.</p>
-      </div>
-
-      <div class="today-actions">
-        <button id="regenerateAiWeek" class="secondary" type="button" disabled>
-          Maak alternatief
-        </button>
-        <button id="saveAiWeek" type="button" disabled>
-          Zet week in kalender
-        </button>
-      </div>
-
-      <p id="aiWeekStatus" class="status"></p>
-    </article>
-
-    <article id="adaptiveBlockPlannerCard" class="card adaptive-block-card learning">
-      <div class="adaptive-block-head">
-        <div>
-          <p class="label">Performance 10.8 · Adaptive Training Block Planner</p>
-          <h2>Plan de komende vier weken</h2>
-          <p id="adaptiveBlockSummary" class="help">
-            Genereer vier weken vanaf de eerstvolgende maandag.
-          </p>
-        </div>
-        <strong id="adaptiveBlockStatus">Nog niet gegenereerd</strong>
-      </div>
-
-      <div class="adaptive-block-metrics">
-        <div>
-          <span>4-wekenvolume</span>
-          <strong id="adaptiveBlockTotal">—</strong>
-        </div>
-        <div>
-          <span>Doelwedstrijd</span>
-          <strong id="adaptiveBlockRace">—</strong>
-        </div>
-        <div>
-          <span>10.7-dosisstap</span>
-          <strong id="adaptiveBlockProgression">—</strong>
-        </div>
-      </div>
-
-      <div id="adaptiveBlockWeeks" class="adaptive-block-weeks">
-        <p class="help">Hier verschijnt de 4-wekenplanning.</p>
-      </div>
-
-      <div class="today-actions">
-        <button id="generateAdaptiveBlock" class="secondary" type="button">
-          Genereer 4 weken
-        </button>
-        <button id="applyAdaptiveBlock" type="button" disabled>
-          Zet blok in kalender
-        </button>
-      </div>
-
-      <p id="adaptiveBlockApplyStatus" class="status"></p>
-      <p class="engine-disclaimer">
-        Alleen week 1 gebruikt actuele hersteldata. Toekomstig herstel wordt niet voorspeld.
-        Bestaande kalenderdagen en wedstrijden worden bij toepassen nooit overschreven.
-      </p>
-    </article>
-
-    <article class="card ai-generator-card">
-      <div class="ai-generator-head">
-        <div>
-          <p class="label">Performance 6.1 · AI Training Generator</p>
-          <h2>Genereer mijn training van vandaag</h2>
-          <p class="help">
-            De generator combineert je herstel, beschikbaarheid, wedstrijdfase en
-            dagvoorkeur tot één concreet trainingsvoorstel.
-          </p>
-        </div>
-        <button id="generateAiTraining" type="button" style="width:auto">
-          Genereer training
-        </button>
-      </div>
-
-      <div class="generator-context-grid">
-        <div class="today-metric">
-          <span>Beschikbare tijd</span>
-          <strong id="generatorAvailableTime">—</strong>
-        </div>
-        <div class="today-metric">
-          <span>Trainingsdoel</span>
-          <strong id="generatorGoal">—</strong>
-        </div>
-        <div class="today-metric">
-          <span>Intensiteitsniveau</span>
-          <strong id="generatorIntensity">—</strong>
-        </div>
-      </div>
-
-      <div id="generatorResult" class="recommendation-card generator-result">
-        <p class="label">Voorstel</p>
-        <div class="recommendation-title" id="generatorTitle">
-          Nog geen training gegenereerd
-        </div>
-        <p class="help" id="generatorExplanation">
-          Tik op Genereer training om een voorstel te maken.
-        </p>
-        <ul class="steps" id="generatorSteps"></ul>
-      </div>
-
-      <div id="generatorAlternatives" class="generator-alternatives"></div>
-
-      <div class="today-actions">
-        <button id="regenerateAiTraining" class="secondary" type="button" disabled>
-          Ander voorstel
-        </button>
-        <button id="saveAiTraining" type="button" disabled>
-          Zet voorstel in kalender
-        </button>
-      </div>
-
-      <p id="generatorStatus" class="status"></p>
-    </article>
-
     <article class="card performance-engine-card">
       <div class="performance-engine-head">
         <div>
@@ -1091,7 +1021,7 @@
         Deze scores zijn coachheuristieken en geen medische beoordeling.
       </p>
     </article>
-
+    <div id="dashboardLevel" class="section-heading"><p class="label">Loopniveau</p><h3>Prestatieprognoses</h3></div>
     <article class="card performance-model-card">
       <div class="performance-model-head">
         <div>
@@ -1134,168 +1064,6 @@
         hebben extra onzekerheid als recente lange wedstrijddata ontbreekt.
       </p>
     </article>
-
-
-    <article class="card">
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
-        <div>
-          <p class="label">Performance 3.1 · Coach Brain</p>
-          <h2>Waarom deze training?</h2>
-          <p class="help">
-            De coach kiest uit een trainingsbibliotheek op basis van herstel,
-            beschikbaarheid, wedstrijdfase en doelafstand.
-          </p>
-        </div>
-        <button id="recalculateBrain" class="secondary" type="button" style="width:auto">
-          Herbereken
-        </button>
-      </div>
-
-      <div id="brainDecision" class="coach-box">
-        <p class="label">Coachbesluit</p>
-        <h3 id="brainDecisionTitle">Nog geen besluit</h3>
-        <p class="help" id="brainDecisionText">De coach wordt geladen.</p>
-      </div>
-
-      <div id="brainFactors" class="reason-list"></div>
-    </article>
-
-
-    <article class="card">
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
-        <div>
-          <p class="label">Performance 4.0 · Coach Horizon</p>
-          <h2>Koers voor de komende vier weken</h2>
-          <p class="help">
-            De coach verdeelt opbouw, specifieke belasting en taper richting je
-            belangrijkste komende wedstrijd.
-          </p>
-        </div>
-        <button id="buildCoachHorizon" class="secondary" type="button" style="width:auto">
-          Herbereken
-        </button>
-      </div>
-
-      <div id="coachHorizon" class="week-plan">
-        <p class="help">De vierwekenkoers wordt geladen.</p>
-      </div>
-    </article>
-    </details>
-
-  </section>
-
-  <section id="dashboard" class="view">
-    <header class="view-intro"><p class="eyebrow">Trends & herstel</p><h2>Jouw voortgang</h2><p class="help">De cijfers hieronder gebruiken alleen beschikbare en actuele gegevens.</p></header>
-    <article class="card dashboard-metrics-card">
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
-        <div>
-          <p class="label">Intervals.icu live</p>
-          <h2>Herstel en trainingsbelasting</h2>
-          <p class="help" id="dashboardUpdated">Data wordt geladen…</p>
-        </div>
-        <button class="secondary" id="refreshDashboard" type="button" style="width:auto">Vernieuw</button>
-      </div>
-
-      <div class="dashboard-grid">
-        <div class="metric-card">
-          <span>Fitness · CTL</span>
-          <strong id="metricCtl">—</strong>
-          <small>Langetermijnbelasting</small>
-        </div>
-        <div class="metric-card">
-          <span>Vermoeidheid · ATL</span>
-          <strong id="metricAtl">—</strong>
-          <small>Kortetermijnbelasting</small>
-        </div>
-        <div class="metric-card">
-          <span>Vorm · CTL − ATL</span>
-          <strong id="metricForm">—</strong>
-          <small id="formLabel">Nog geen data</small>
-        </div>
-        <div class="metric-card">
-          <span>HRV</span>
-          <strong id="metricHrv">—</strong>
-          <small id="hrvTrend">Laatste waarde</small>
-        </div>
-        <div class="metric-card">
-          <span>Rusthartslag</span>
-          <strong id="metricRestingHr">—</strong>
-          <small id="restingHrTrend">Laatste waarde</small>
-        </div>
-        <div class="metric-card">
-          <span>Slaap</span>
-          <strong id="metricSleep">—</strong>
-          <small id="sleepScore">Laatste nacht</small>
-        </div>
-      </div>
-
-      <div class="coach-box">
-        <p class="label">Coachadvies</p>
-        <h3 id="coachHeadline">Wellnessdata laden…</h3>
-        <p class="help" id="coachAdvice">Even geduld.</p>
-      </div>
-
-      <p id="wellnessStatus" class="status"></p>
-      <p id="dashboardError" class="status error"></p>
-    </article>
-
-    <article class="card dashboard-history-card">
-      <p class="label">Laatste 7 dagen</p>
-      <div id="wellnessHistory" class="wellness-list"></div>
-    </article>
-
-    <details class="dashboard-planners">
-      <summary><span><strong>Maak een weekvoorstel</strong><small>Vergelijk een basisweek met het adaptieve voorstel</small></span><span aria-hidden="true">⌄</span></summary>
-    <article class="card">
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
-        <div><p class="label">Basisvoorstel</p><h2>Plan mijn week</h2><p class="help">De app gebruikt je profiel, eerstvolgende wedstrijd, weekomvang en hersteldata om een trainingsweek voor te stellen.</p></div>
-        <button id="planMyWeek" type="button" style="width:auto">Plan week</button>
-      </div>
-      <div class="profile-summary">
-        <div class="profile-chip"><span>Loopdagen</span><strong id="summaryDays">4</strong></div>
-        <div class="profile-chip"><span>Weekomvang</span><strong id="summaryKm">60 km</strong></div>
-        <div class="profile-chip"><span>5 km-doel</span><strong id="summaryFiveK">17:59</strong></div>
-        <div class="profile-chip"><span>HM-doel</span><strong id="summaryHalf">1:19:59</strong></div>
-      </div>
-      <div id="weekPlan" class="week-plan"><p class="help">Tik op Plan week om een voorstel te maken.</p></div>
-      <div class="actions"><button id="saveWeekPlan" type="button" disabled>Voeg week toe aan kalender</button></div>
-      <p id="weekPlanStatus" class="status"></p>
-    </article>
-
-    <article class="card">
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
-        <div>
-          <p class="label">Sprint 12.1 · Adaptieve coach</p>
-          <h2>Maak mijn beste trainingsweek</h2>
-          <p class="help">
-            De coach combineert beschikbaarheid, herstelstatus, weekomvang en je
-            eerstvolgende wedstrijd om een passende week voor te stellen.
-          </p>
-        </div>
-        <button id="buildAdaptiveWeek" type="button" style="width:auto">Maak voorstel</button>
-      </div>
-
-      <div class="coach-box">
-        <p class="label">Beslisregels van vandaag</p>
-        <h3 id="adaptiveCoachHeadline">Nog geen voorstel gemaakt</h3>
-        <p class="help" id="adaptiveCoachReason">
-          Tik op Maak voorstel. De app plant niets zonder jouw bevestiging.
-        </p>
-      </div>
-
-      <div id="adaptiveWeekPlan" class="week-plan">
-        <p class="help">Hier verschijnt het adaptieve weekvoorstel.</p>
-      </div>
-
-      <div class="actions">
-        <button id="saveAdaptiveWeek" type="button" disabled>
-          Plan voorgestelde week
-        </button>
-      </div>
-
-      <p id="adaptiveWeekStatus" class="status"></p>
-    </article>
-    </details>
 
   </section>
 
@@ -2230,6 +1998,7 @@
         <a href="#planningAvailability">Beschikbaarheid</a>
         <a href="#planningSupport">Kracht & mobiliteit</a>
         <a href="#planningExample">Weekoverzicht</a>
+        <a href="#planningTools">Meer voorstellen</a>
       </nav>
     </header>
     <article class="card" id="planningAvailability">
@@ -2313,6 +2082,240 @@
       <p class="help">Dit overzicht helpt je controleren of de vaste dagen bij je hoofdtrainingen passen.</p>
       <div id="planningPreview" class="saved-list"></div>
     </article>
+
+    <details id="planningTools" class="planning-tools">
+      <summary><span><strong>Meer week- en blokvoorstellen</strong><small>Vergelijk alternatieven en plan verder vooruit</small></span><span aria-hidden="true">⌄</span></summary>
+    <article class="card smart-week-coach-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 7.3 · Slimme Weekcoach</p>
+          <h2>Optimaliseer mijn trainingsweek</h2>
+          <p class="help">
+            De weekcoach controleert je week op herstel, spreiding van kwaliteit,
+            lange duur, beschikbaarheid en bestaande trainingen.
+          </p>
+        </div>
+        <button id="optimizeSmartWeek" type="button" style="width:auto">
+          Optimaliseer week
+        </button>
+      </div>
+
+      <div class="smart-week-metrics">
+        <div class="today-metric">
+          <span>Weekbalans</span>
+          <strong id="smartWeekBalance">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Zware sessies</span>
+          <strong id="smartWeekHardSessions">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Hersteldagen</span>
+          <strong id="smartWeekRecoveryDays">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Beschikbaarheid</span>
+          <strong id="smartWeekAvailability">—</strong>
+        </div>
+      </div>
+
+      <div id="smartWeekWarnings" class="reason-list"></div>
+
+      <div class="coach-box">
+        <p class="label">Weekcoachbesluit</p>
+        <h3 id="smartWeekHeadline">Nog geen week geanalyseerd</h3>
+        <p class="help" id="smartWeekConclusion">
+          Tik op Optimaliseer week om je huidige week te laten controleren.
+        </p>
+      </div>
+
+      <div id="smartWeekPlan" class="ai-week-plan">
+        <p class="help">Hier verschijnt de geoptimaliseerde week.</p>
+      </div>
+
+      <div class="today-actions">
+        <button id="smartWeekAlternative" class="secondary" type="button" disabled>
+          Andere verdeling
+        </button>
+        <button id="applySmartWeek" type="button" disabled>
+          Pas week toe
+        </button>
+      </div>
+
+      <p id="smartWeekStatus" class="status"></p>
+    </article>
+    <article class="card ai-week-card">
+      <div class="ai-generator-head">
+        <div>
+          <p class="label">Performance 6.2 · AI Week Planner</p>
+          <h2>Plan mijn beste trainingsweek</h2>
+          <p class="help">
+            De planner verdeelt kwaliteit, rustige duur, lange duur, herstel,
+            core en mobiliteit over jouw beschikbare dagen.
+          </p>
+        </div>
+        <button id="generateAiWeek" type="button" style="width:auto">
+          Genereer week
+        </button>
+      </div>
+
+      <div class="generator-context-grid">
+        <div class="today-metric">
+          <span>Doelomvang</span>
+          <strong id="aiWeekTargetKm">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Beschikbare dagen</span>
+          <strong id="aiWeekAvailableDays">—</strong>
+        </div>
+        <div class="today-metric">
+          <span>Weekfocus</span>
+          <strong id="aiWeekFocus">—</strong>
+        </div>
+      </div>
+
+      <div id="aiWeekExplanation" class="coach-box">
+        <p class="label">Coachstrategie</p>
+        <h3 id="aiWeekHeadline">Nog geen week gegenereerd</h3>
+        <p class="help" id="aiWeekReason">
+          Tik op Genereer week om een voorstel te maken.
+        </p>
+      </div>
+
+      <div id="aiWeekPlan" class="ai-week-plan">
+        <p class="help">Hier verschijnt je weekvoorstel.</p>
+      </div>
+
+      <div class="today-actions">
+        <button id="regenerateAiWeek" class="secondary" type="button" disabled>
+          Maak alternatief
+        </button>
+        <button id="saveAiWeek" type="button" disabled>
+          Zet week in kalender
+        </button>
+      </div>
+
+      <p id="aiWeekStatus" class="status"></p>
+    </article>
+    <article id="adaptiveBlockPlannerCard" class="card adaptive-block-card learning">
+      <div class="adaptive-block-head">
+        <div>
+          <p class="label">Performance 10.8 · Adaptive Training Block Planner</p>
+          <h2>Plan de komende vier weken</h2>
+          <p id="adaptiveBlockSummary" class="help">
+            Genereer vier weken vanaf de eerstvolgende maandag.
+          </p>
+        </div>
+        <strong id="adaptiveBlockStatus">Nog niet gegenereerd</strong>
+      </div>
+
+      <div class="adaptive-block-metrics">
+        <div>
+          <span>4-wekenvolume</span>
+          <strong id="adaptiveBlockTotal">—</strong>
+        </div>
+        <div>
+          <span>Doelwedstrijd</span>
+          <strong id="adaptiveBlockRace">—</strong>
+        </div>
+        <div>
+          <span>10.7-dosisstap</span>
+          <strong id="adaptiveBlockProgression">—</strong>
+        </div>
+      </div>
+
+      <div id="adaptiveBlockWeeks" class="adaptive-block-weeks">
+        <p class="help">Hier verschijnt de 4-wekenplanning.</p>
+      </div>
+
+      <div class="today-actions">
+        <button id="generateAdaptiveBlock" class="secondary" type="button">
+          Genereer 4 weken
+        </button>
+        <button id="applyAdaptiveBlock" type="button" disabled>
+          Zet blok in kalender
+        </button>
+      </div>
+
+      <p id="adaptiveBlockApplyStatus" class="status"></p>
+      <p class="engine-disclaimer">
+        Alleen week 1 gebruikt actuele hersteldata. Toekomstig herstel wordt niet voorspeld.
+        Bestaande kalenderdagen en wedstrijden worden bij toepassen nooit overschreven.
+      </p>
+    </article>
+    <details class="dashboard-planners">
+      <summary><span><strong>Maak een weekvoorstel</strong><small>Vergelijk een basisweek met het adaptieve voorstel</small></span><span aria-hidden="true">⌄</span></summary>
+    <article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div><p class="label">Basisvoorstel</p><h2>Plan mijn week</h2><p class="help">De app gebruikt je profiel, eerstvolgende wedstrijd, weekomvang en hersteldata om een trainingsweek voor te stellen.</p></div>
+        <button id="planMyWeek" type="button" style="width:auto">Plan week</button>
+      </div>
+      <div class="profile-summary">
+        <div class="profile-chip"><span>Loopdagen</span><strong id="summaryDays">4</strong></div>
+        <div class="profile-chip"><span>Weekomvang</span><strong id="summaryKm">60 km</strong></div>
+        <div class="profile-chip"><span>5 km-doel</span><strong id="summaryFiveK">17:59</strong></div>
+        <div class="profile-chip"><span>HM-doel</span><strong id="summaryHalf">1:19:59</strong></div>
+      </div>
+      <div id="weekPlan" class="week-plan"><p class="help">Tik op Plan week om een voorstel te maken.</p></div>
+      <div class="actions"><button id="saveWeekPlan" type="button" disabled>Voeg week toe aan kalender</button></div>
+      <p id="weekPlanStatus" class="status"></p>
+    </article>
+
+    <article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div>
+          <p class="label">Sprint 12.1 · Adaptieve coach</p>
+          <h2>Maak mijn beste trainingsweek</h2>
+          <p class="help">
+            De coach combineert beschikbaarheid, herstelstatus, weekomvang en je
+            eerstvolgende wedstrijd om een passende week voor te stellen.
+          </p>
+        </div>
+        <button id="buildAdaptiveWeek" type="button" style="width:auto">Maak voorstel</button>
+      </div>
+
+      <div class="coach-box">
+        <p class="label">Beslisregels van vandaag</p>
+        <h3 id="adaptiveCoachHeadline">Nog geen voorstel gemaakt</h3>
+        <p class="help" id="adaptiveCoachReason">
+          Tik op Maak voorstel. De app plant niets zonder jouw bevestiging.
+        </p>
+      </div>
+
+      <div id="adaptiveWeekPlan" class="week-plan">
+        <p class="help">Hier verschijnt het adaptieve weekvoorstel.</p>
+      </div>
+
+      <div class="actions">
+        <button id="saveAdaptiveWeek" type="button" disabled>
+          Plan voorgestelde week
+        </button>
+      </div>
+
+      <p id="adaptiveWeekStatus" class="status"></p>
+    </article>
+    </details>
+    <article class="card">
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:start">
+        <div>
+          <p class="label">Performance 4.0 · Coach Horizon</p>
+          <h2>Koers voor de komende vier weken</h2>
+          <p class="help">
+            De coach verdeelt opbouw, specifieke belasting en taper richting je
+            belangrijkste komende wedstrijd.
+          </p>
+        </div>
+        <button id="buildCoachHorizon" class="secondary" type="button" style="width:auto">
+          Herbereken
+        </button>
+      </div>
+
+      <div id="coachHorizon" class="week-plan">
+        <p class="help">De vierwekenkoers wordt geladen.</p>
+      </div>
+    </article>
+    </details>
+
   </section>
 
 
@@ -2625,7 +2628,7 @@
 
     <div class="app-menu-grid">
       <button type="button" class="app-menu-item" data-menu-view="dashboard">
-        <span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg></span><strong>Dashboard</strong><small>Herstel & trends</small>
+        <span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="5" rx="1"/><rect x="13" y="10" width="8" height="11" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/></svg></span><strong>Voortgang</strong><small>Herstel, vorm & trends</small>
       </button>
       <button type="button" class="app-menu-item" data-menu-view="editor">
         <span aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M4 12h16"/></svg></span><strong>Nieuwe training</strong><small>Maak of importeer</small>
@@ -2777,24 +2780,24 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1132" defer></script>
-<script src="/js/training-sync.js?v=1132" defer></script>
-<script src="/js/activity-results.js?v=1132" defer></script>
-<script src="/js/training-quality.js?v=1132" defer></script>
-<script src="/js/performance-model.js?v=1132" defer></script>
-<script src="/js/training-response.js?v=1132" defer></script>
-<script src="/js/session-progression.js?v=1132" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1132" defer></script>
-<script src="/js/race-readiness.js?v=1132" defer></script>
-<script src="/js/fuel-hydration.js?v=1132" defer></script>
-<script src="/js/race-strategy.js?v=1132" defer></script>
-<script src="/js/race-day.js?v=1132" defer></script>
-<script src="/js/race-debrief.js?v=1132" defer></script>
-<script src="/js/daily-decision.js?v=1132" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1132" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1132" defer></script>
-<script src="/js/support-training.js?v=1132" defer></script>
-<script src="/js/bootstrap.js?v=1132" defer></script>
+<script src="/js/app.js?v=1133" defer></script>
+<script src="/js/training-sync.js?v=1133" defer></script>
+<script src="/js/activity-results.js?v=1133" defer></script>
+<script src="/js/training-quality.js?v=1133" defer></script>
+<script src="/js/performance-model.js?v=1133" defer></script>
+<script src="/js/training-response.js?v=1133" defer></script>
+<script src="/js/session-progression.js?v=1133" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1133" defer></script>
+<script src="/js/race-readiness.js?v=1133" defer></script>
+<script src="/js/fuel-hydration.js?v=1133" defer></script>
+<script src="/js/race-strategy.js?v=1133" defer></script>
+<script src="/js/race-day.js?v=1133" defer></script>
+<script src="/js/race-debrief.js?v=1133" defer></script>
+<script src="/js/daily-decision.js?v=1133" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1133" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1133" defer></script>
+<script src="/js/support-training.js?v=1133" defer></script>
+<script src="/js/bootstrap.js?v=1133" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
