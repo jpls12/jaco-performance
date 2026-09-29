@@ -1556,6 +1556,29 @@
   gap:8px;
   margin:12px 0;
 }
+.week-replanner-day{
+  display:grid;grid-template-columns:108px minmax(0,1fr);gap:5px 12px;
+  padding:11px 13px;border:1px solid #29415e;border-radius:13px;background:#0a1727
+}
+.week-replanner-day.changed{border-color:#609ac0;background:#112b3c}
+.week-replanner-day-head{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
+.week-replanner-day-head>span{
+  color:#a8cadb;font-size:.68rem;font-weight:800;line-height:1.2
+}
+.week-replanner-day-main{min-width:0;display:grid;gap:3px}
+.week-replanner-day-main>strong{overflow-wrap:anywhere}
+.week-replanner-day-main>small{color:#a8b8c8}
+.week-replanner-day-reason{
+  grid-column:2;margin:1px 0 0;color:#d9e8f4;font-size:.8rem;line-height:1.45
+}
+.week-replanner-recent{display:grid;gap:7px;margin:12px 0}
+.week-replanner-recent[hidden]{display:none}
+.week-replanner-settings{
+  margin-top:14px;border-top:1px solid #36516f;padding-top:12px
+}
+.week-replanner-settings>summary{cursor:pointer;color:#b9dcf0;font-weight:750}
+.week-replanner-settings .today-actions{margin-top:13px}
+.today-week-link{display:inline-block;margin:-4px 0 14px;color:#a7defb;font-size:.82rem}
 .week-replanner-row{
   display:grid;
   grid-template-columns:105px 1fr;
@@ -1585,7 +1608,10 @@
 }
 @media(max-width:600px){
   .week-replanner-head{display:grid}
-  .week-replanner-metrics{grid-template-columns:1fr}
+  .week-replanner-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .week-replanner-metrics>div{padding:8px}
+  .week-replanner-metrics>div strong{font-size:.82rem;overflow-wrap:anywhere}
+  .week-replanner-day{grid-template-columns:77px minmax(0,1fr);gap:4px 8px;padding:10px}
   .week-replanner-row{grid-template-columns:82px 1fr}
 }
 

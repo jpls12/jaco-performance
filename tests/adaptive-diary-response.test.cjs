@@ -11,6 +11,14 @@ const recommendationCode=app.slice(app.indexOf('function createTodayRecommendati
 const days=(a,b)=>Math.round((Date.parse(a+'T12:00:00Z')-Date.parse(b+'T12:00:00Z'))/86400000);
 const addDays=(date,n)=>{const d=new Date(date+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);};
 
+test('seven-day plan is visible in Today and review links to it',()=>{
+  const html=fs.readFileSync('index.html','utf8');
+  const results=fs.readFileSync('js/activity-results.js','utf8');
+  assert.ok(html.indexOf('id="weekReplannerCard"')<html.indexOf('id="coachTechnical"'));
+  assert.match(html,/id="weekReplannerPlan"/);
+  assert.match(results,/href="#weekReplannerCard"/);
+});
+
 function signal(entries,today='2026-09-26'){
   const context=vm.createContext({calendarDayDifference:days});
   vm.runInContext(numberCode+signalCode,context);
@@ -105,6 +113,25 @@ test('week proposal replaces next quality with rest for complaints and preserves
   assert.equal(proposal.changes.length,1);
   assert.equal(proposal.changes[0].date,'2026-09-25');
   assert.equal(weekContext({level:'stable',complaint:false,reason:''}).proposal.changes.length,0);
+});
+
+test('heavy reviewed training protects the next quality day and shows the reason',()=>{
+  const review=signal({'2026-09-28':{
+    sessionRpe:9,legs:5,energy:1,complaintSeverity:2
+  }},'2026-09-29');
+  const goal={name:'Halve marathon Amsterdam',date:'2026-10-18',priority:'A'};
+  const {context,proposal}=weekContext(review,{
+    today:'2026-09-29',focusRace:goal,primaryGoal:goal,
+    workouts:{'2026-09-30':{type:'Run',planType:'quality',name:'Drempeltraining',distanceKm:12}}
+  });
+  assert.equal(proposal.schedule['2026-09-30'].type,'Rest');
+  assert.equal(proposal.focusRace.name,goal.name);
+  context.safe=value=>String(value??'');
+  context.trainingVolumeLabel=workout=>`${workout.distanceKm||0} km`;
+  const html=context.weekReplanDayRows(proposal,new Map());
+  assert.match(html,/Was: Drempeltraining/);
+  assert.match(html,/Waarom: Klachten gemeld/);
+  assert.match(html,/Voorgesteld/);
 });
 
 test('changed feedback invalidates a previously shown week proposal before applying',()=>{
@@ -233,6 +260,14 @@ test('automatic planner applies after loading and undo restores original calenda
   assert.equal(custom['2026-09-25'].type,'Rest');
   assert.equal(custom['2026-09-27'],undefined);
   assert.equal(elements.undoAutoWeekReplan.hidden,false);
+  const recent=context.weekReplanRecentChanges(context.buildAdaptiveWeekReplan());
+  assert.equal(recent.size,1);
+  context.safe=value=>String(value??'');
+  context.trainingVolumeLabel=workout=>`${workout.distanceKm||0} km`;
+  const html=context.weekReplanDayRows(context.buildAdaptiveWeekReplan(),recent);
+  assert.match(html,/Automatisch aangepast/);
+  assert.match(html,/Was: Intervals/);
+  assert.match(html,/Reden bij wijziging: Klachten gemeld/);
   context.undoAutomaticWeekReplan();
   assert.equal(custom['2026-09-25'],undefined);
   assert.equal(context.autoWeekReplanEnabled(),false);

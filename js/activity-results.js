@@ -383,7 +383,7 @@ function renderActivityResultDetail(activity){
       <div><span class="activity-insight-dot" aria-hidden="true"></span><strong>${safe(insight.title)}</strong></div>
       <p>${safe(insight.explanation)}</p>
       <small>${safe(insight.coach)}</small>
-      ${review.savedAt?'<a href="#fullyAdaptiveCoachCard">Bekijk actueel coachadvies ↑</a>':""}
+      ${review.savedAt?'<a href="#weekReplannerCard">Bekijk je aangepaste weekplan ↓</a>':""}
     </div>
     <details id="activityResultMore" class="activity-result-more">
       <summary>Kaart, splits en extra metingen</summary>

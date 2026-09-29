@@ -69,11 +69,13 @@ function applyAutomaticWeekReplan(proposal){
   const changes=proposal.changes.map(change=>({
     date:change.date,
     hadCustom:Object.hasOwn(customWorkouts,change.date),
+    beforeSnapshot:weekReplanClone(change.before,change.date),
     previousCustom:weekReplanClone(customWorkouts[change.date]),
     previousDone:weekReplanClone(doneWorkouts[change.date]),
     previousUpload:weekReplanClone(uploadedWorkouts[change.date]),
     afterSignature:weekReplanWorkoutSignature(change.after),
-    afterSnapshot:weekReplanClone(change.after,change.date)
+    afterSnapshot:weekReplanClone(change.after,change.date),
+    reason:change.reason
   }));
   const record={createdAt:new Date().toISOString(),changes};
   autoWeekReplanApplying=true;
@@ -847,6 +849,38 @@ function weekReplanActionLabel(change){
   return "Herschikken";
 }
 
+function weekReplanRecentChanges(proposal){
+  const record=autoWeekReplanUndoRecord();
+  if(!record) return new Map();
+  return new Map(record.changes.filter(change=>
+    change?.date>proposal.bounds.today && change.date<=proposal.bounds.end &&
+    weekReplanWorkoutSignature(allWorkouts()[change.date]||null)===change.afterSignature
+  ).map(change=>[change.date,change]));
+}
+
+function weekReplanDayRows(proposal,recent){
+  const changed=new Map(proposal.changes.map(change=>[change.date,change]));
+  return weekReplanDateList(addDays(proposal.bounds.today,1),proposal.bounds.end)
+    .map(date=>{
+      const pending=changed.get(date);
+      const applied=recent.get(date);
+      const workout=proposal.schedule[date];
+      const previous=pending?.before||applied?.beforeSnapshot;
+      const reason=pending?.reason||applied?.reason;
+      const dateLabel=new Date(date+"T12:00:00").toLocaleDateString("nl-NL",
+        {weekday:"short",day:"numeric",month:"short"});
+      const label=pending?"Voorgesteld":applied?"Automatisch aangepast":
+        workout?.type==="Race"?"Wedstrijd":workout?"Gepland":"Vrij";
+      const name=workout?.name||"Geen training gepland";
+      return `<div class="week-replanner-day${pending||applied?" changed":""}">
+        <div class="week-replanner-day-head"><strong>${safe(dateLabel)}</strong><span>${safe(label)}</span></div>
+        <div class="week-replanner-day-main"><strong>${safe(name)}</strong>
+          <small>${workout?safe(trainingVolumeLabel(workout)):"Geen trainingsbelasting ingevuld"}</small></div>
+        ${reason?`<p class="week-replanner-day-reason">${previous?`Was: ${safe(previous.name||"Lege dag")}. `:""}${applied?"Reden bij wijziging":"Waarom"}: ${safe(reason)}</p>`:""}
+      </div>`;
+    }).join("");
+}
+
 function weekReplanHasPlanned(proposal){
   return Object.values(proposal?.original||{}).some(workout=>
     workout && workout.type!=="Rest"
@@ -883,9 +917,11 @@ function renderAdaptiveWeekReplanner(){
 
   const proposal=buildAdaptiveWeekReplan();
   const meta=weekReplanStatusMeta(proposal);
+  const recent=weekReplanRecentChanges(proposal);
 
-  root.className=`week-replanner-card ${meta.cls}`;
-  document.getElementById("weekReplannerStatus").textContent=meta.label;
+  root.className=`week-replanner-card ${recent.size && !proposal.changes.length?"adjust":meta.cls}`;
+  document.getElementById("weekReplannerStatus").textContent=
+    recent.size && !proposal.changes.length?"Recent bijgestuurd":meta.label;
   document.getElementById("weekReplannerStress").textContent=
     proposal.stress.level==="elevated"
       ?"Verhoogd"
@@ -921,44 +957,18 @@ function renderAdaptiveWeekReplanner(){
       ?"Er staan geen trainingen in de komende 7 dagen. Voeg eerst een planning toe; zonder sessies wordt geen nieuwe trainingsbelasting verzonnen."
       :proposal.changes.length
       ?`${proposal.changes.length} toekomstige dag${proposal.changes.length===1?"":"en"} wijzigen. ${triggers}`
+      :recent.size
+      ?`${recent.size} automatische wijziging${recent.size===1?"":"en"} verwerkt. Bekijk per dag wat veranderde en waarom.`
       :`Geen kalenderwijziging nodig. ${triggers}`;
 
   const list=document.getElementById("weekReplannerPlan");
-
-  const rows=proposal.changes.map(change=>{
-    const before=change.before
-      ?change.before.name
-      :"Lege dag";
-    const after=change.after
-      ?change.after.name
-      :"Lege dag";
-
-    return`
-      <div class="week-replanner-row">
-        <div>
-          <strong>${safe(change.date)}</strong>
-          <small>${safe(weekReplanActionLabel(change))}</small>
-        </div>
-        <div>
-          <span>${safe(before)}</span>
-          <strong>→ ${safe(after)}</strong>
-          <small>${safe(change.reason)}</small>
-        </div>
-      </div>
-    `;
-  });
-
-  const noteRows=proposal.notes.map(note=>`
-    <div class="week-replanner-note">
-      <span>i</span>
-      <div>${safe(note)}</div>
-    </div>
-  `);
-
-  list.innerHTML=[...rows,...noteRows].join("") ||
-    (!weekReplanHasPlanned(proposal)
-      ?'<div class="week-replanner-note"><span>i</span><div>Plan eerst trainingen richting je doelwedstrijd; daarna kan de coach ze doorlopend bijsturen.</div></div>'
-      :'<div class="week-replanner-note"><span>✓</span><div>De komende zeven dagen hoeven op basis van de huidige data niet te worden aangepast.</div></div>');
+  list.innerHTML=weekReplanDayRows(proposal,recent);
+  const recentBox=document.getElementById("weekReplannerRecent");
+  if(recentBox){
+    recentBox.hidden=!proposal.notes.length;
+    recentBox.innerHTML=proposal.notes.map(note=>
+      `<div class="week-replanner-note"><span>i</span><div>${safe(note)}</div></div>`).join("");
+  }
 
   const apply=document.getElementById("applyWeekReplan");
   apply.disabled=!proposal.changes.length;
