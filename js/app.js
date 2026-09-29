@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.24";
+const APP_VERSION = "10.10.25";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -1440,18 +1440,21 @@ function latestDiaryRecoverySignal(entries=effectiveCoachDiary(),today=todayDate
       reason:`duidelijke klachten na de check-in van ${date}`
     };
   }
-  if(rpe!==null && rpe>=9 && legs!==null && legs>=4 && energy!==null && energy<=2){
+  if(rpe!==null && rpe>=9 && energy!==null && energy<=2){
     return{
       level:"elevated",date,complaint:false,
-      reason:`RPE ${rpe}, zware benen en lage energie op ${date}`
+      reason:`RPE ${rpe} en lage energie${legs!==null && legs>=4?" met zware benen":""} op ${date}`
     };
   }
-  if((rpe!==null && rpe>=8 && ((legs!==null && legs>=4) || (energy!==null && energy<=2))) || complaint===1){
+  if((rpe!==null && rpe>=8 && ((legs!==null && legs>=4) || (energy!==null && energy<=2))) ||
+    (energy!==null && energy<=2) || (legs!==null && legs>=4) || complaint===1){
     return{
       level:"attention",date,complaint:false,
       reason:complaint===1
         ?`lichte klachten op ${date}`
-        :`RPE ${rpe} samen met zware benen of lage energie op ${date}`
+        :rpe!==null && rpe>=8
+          ?`RPE ${rpe} samen met zware benen of lage energie op ${date}`
+          :`weinig energie of zware benen na de training van ${date}`
     };
   }
   return{level:"stable",date,reason:"",complaint:false};
