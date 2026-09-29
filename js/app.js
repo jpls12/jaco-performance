@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.21";
+const APP_VERSION = "10.10.22";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -624,7 +624,6 @@ const HM_AMSTERDAM_RACEWEEK_BACKUP_KEY = "jp_hm_amsterdam_2026_raceweek_v1_backu
 const PREIMPORT_BACKUP_KEY = "jp_last_preimport_backup_v1";
 const BACKUP_FORMAT = "jaco-performance-backup";
 const BACKUP_SCHEMA_VERSION = 1;
-const SESSION_PIN_KEY = "jaco_performance_session_pin_v1";
 
 let serverWorkouts = {};
 let customWorkouts = loadObject(STORAGE_KEY);
@@ -2544,30 +2543,6 @@ function saveObject(key,value){
 }
 
 
-function readSessionAppPin(){
-  try{
-    return sessionStorage.getItem(SESSION_PIN_KEY) || "";
-  }catch{
-    return "";
-  }
-}
-
-function rememberSessionAppPin(pin){
-  try{
-    if(pin) sessionStorage.setItem(SESSION_PIN_KEY,String(pin));
-  }catch{
-    // De app blijft bruikbaar als sessionStorage niet beschikbaar is.
-  }
-}
-
-function clearSessionAppPin(){
-  try{
-    sessionStorage.removeItem(SESSION_PIN_KEY);
-  }catch{
-    // Geen actie nodig.
-  }
-}
-
 function promptForAppPin(message="Voer je Jaco Performance app-pincode in:"){
   const pin=prompt(message);
   if(pin===null) return null;
@@ -2575,48 +2550,58 @@ function promptForAppPin(message="Voer je Jaco Performance app-pincode in:"){
   return value || null;
 }
 
-async function fetchWithAppPin(url,options={}){
-  let pin=readSessionAppPin();
+let appSessionSignIn=null;
+let appSessionGeneration=0;
 
-  if(!pin){
-    pin=promptForAppPin();
-    if(!pin){
-      throw new Error("App-pincode is nodig om Intervals.icu-data te openen.");
-    }
-  }
-
-  const send=currentPin=>fetch(url,{
-    ...options,
-    headers:{
-      ...(options.headers||{}),
-      "X-Jaco-Pin":currentPin
-    }
-  });
-
-  let response=await send(pin);
-
-  if(response.status===401){
-    clearSessionAppPin();
-
-    const retryPin=promptForAppPin("Onjuiste pincode. Probeer opnieuw:");
-    if(!retryPin) return response;
-
-    response=await send(retryPin);
-
+async function signInAppSession(){
+  let message="Voer je Jaco Performance app-pincode in (30 dagen onthouden op dit toestel):";
+  while(true){
+    const pin=promptForAppPin(message);
+    if(!pin) throw new Error("App-pincode is nodig om Intervals.icu-data te openen.");
+    const response=await fetch("/api/app-session",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({pin})
+    });
     if(response.ok){
-      rememberSessionAppPin(retryPin);
-    }else if(response.status===401){
-      clearSessionAppPin();
+      appSessionGeneration++;
+      return;
     }
-
-    return response;
+    if(response.status!==401) throw new Error("Aanmelden is tijdelijk niet gelukt. Probeer het later opnieuw.");
+    message="Onjuiste pincode. Probeer opnieuw (of annuleer):";
   }
+}
 
-  if(response.ok){
-    rememberSessionAppPin(pin);
+async function fetchWithAppPin(url,options={}){
+  const send=()=>fetch(url,options);
+  const generation=appSessionGeneration;
+  let response=await send();
+  if(response.status!==401) return response;
+
+  if(generation===appSessionGeneration){
+    if(!appSessionSignIn){
+      appSessionSignIn=signInAppSession().finally(()=>{appSessionSignIn=null;});
+    }
+    await appSessionSignIn;
   }
-
+  response=await send();
   return response;
+}
+
+async function signOutAppSession(){
+  const button=document.getElementById("signOutAppSession");
+  const status=document.getElementById("appSessionStatus");
+  button.disabled=true;
+  try{
+    const response=await fetch("/api/app-session",{method:"DELETE"});
+    if(!response.ok) throw new Error("Afmelden is niet gelukt.");
+    appSessionGeneration++;
+    status.textContent="Dit toestel is afgemeld. Bij de volgende synchronisatie vraagt de app opnieuw om je pincode.";
+  }catch(error){
+    status.textContent=error.message;
+  }finally{
+    button.disabled=false;
+  }
 }
 
 

@@ -5,8 +5,9 @@ const fs=require('node:fs');
 function setup(){
   const requests=[];
   const context=vm.createContext({WORKOUTS:{},process:{env:{INTERVALS_API_KEY:'test-only',JACO_APP_PIN:'test-pin'}},Buffer,AbortController,setTimeout,clearTimeout,
+    authorizedAppRequest:(req,pin)=>(req.headers['x-jaco-pin']??pin)==='test-pin',
     fetch:async(url,options)=>{requests.push({url,event:JSON.parse(options.body)[0]});return {ok:true,text:async()=>JSON.stringify([{id:123}])};}});
-  const source=fs.readFileSync('api/upload-workout.js','utf8').replace(/^import .*;\n/,'').replace('export default async function handler','async function handler');
+  const source=fs.readFileSync('api/upload-workout.js','utf8').replace(/^import .*;\n/gm,'').replace('export default async function handler','async function handler');
   vm.runInContext(source,context);
   async function upload(type,supportKind,pin='test-pin'){
     const res={status(code){this.code=code;},setHeader(){},end(body){this.body=JSON.parse(body);}};

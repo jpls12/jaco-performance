@@ -78,6 +78,7 @@ test('a local review stays visible until linked and keeps an older check-in',()=
 });
 
 const routeCode=fs.readFileSync('api/intervals-activity-route.js','utf8')
+  .replace(/^import .*;\n/,'')
   .replace('export function normalizeRouteStreams','function normalizeRouteStreams')
   .replace('export default async function handler','async function handler');
 
@@ -99,6 +100,7 @@ test('route endpoint rejects unauthorized and malformed IDs before upstream acce
   let fetches=0;
   const context=vm.createContext({
     process:{env:{INTERVALS_API_KEY:'secret',JACO_APP_PIN:'1234'}},
+    authorizedAppRequest:req=>req.headers['x-jaco-pin']==='1234',
     Buffer,AbortController,setTimeout,clearTimeout,
     fetch:()=>{fetches++;throw Error('should not fetch');}
   });
@@ -122,6 +124,7 @@ test('route endpoint returns bounded coordinates only and no-store response',asy
   let requested='';
   const context=vm.createContext({
     process:{env:{INTERVALS_API_KEY:'secret',JACO_APP_PIN:'1234'}},
+    authorizedAppRequest:req=>req.headers['x-jaco-pin']==='1234',
     Buffer,AbortController,setTimeout,clearTimeout,
     fetch:async url=>{
       requested=url;
