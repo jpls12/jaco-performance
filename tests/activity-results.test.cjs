@@ -14,17 +14,67 @@ test('one visible place to review training; old check-ins stay in backup',()=>{
   assert.match(html,/id="backupCurrentDiary"/);
 });
 
-test('completed-day action opens the matching unreviewed activity',()=>{
-  const {context,activities,submit}=resultsContext();
+test('completed-day action opens only a reliably matched activity',()=>{
+  const {context,activities}=resultsContext();
   let opened=null;
   context.recentActivityResults=()=>Object.values(activities);
   context.selectActivityResult=id=>{opened=id;};
-  assert.equal(context.openActivityReviewForDate('2026-09-26'),true);
+  context.trainingExecutionForDate=()=>({matched:true,actual:activities.i1});
+  assert.equal(context.openActivityReviewForDate('2026-09-26',{type:'Run'}),true);
   assert.equal(opened,'i1');
-  submit('i1',{sessionRpe:7,energy:3});
-  assert.equal(context.openActivityReviewForDate('2026-09-26'),true);
-  assert.equal(opened,'i2');
-  assert.equal(context.openActivityReviewForDate('2026-09-27'),false);
+  context.trainingExecutionForDate=()=>({matched:false,actual:activities.i2});
+  assert.equal(context.openActivityReviewForDate('2026-09-26',{type:'Run'}),false);
+  assert.equal(opened,'i1');
+});
+
+test('quick review works before sync and transfers only on a reliable match',()=>{
+  const {context,activities,diary,store}=resultsContext();
+  const date='2026-09-26';
+  const workout={name:'Duurloop',type:'Run'};
+  const status={textContent:'',className:''};
+  context.allWorkouts=()=>({[date]:workout});
+  context.workoutCompletionIdentity=()=> 'workout-1';
+  context.workoutWasCompleted=()=>true;
+  context.trainingExecutionForDate=()=>({matched:false,actual:activities.i1});
+  context.document.getElementById=id=>id==='manualReviewStatus'?status:null;
+  vm.runInContext('manualReviewDate="2026-09-26";manualReviewIdentity="workout-1"',context);
+  const fields={sessionRpe:'9',energy:'1',legs:'5',complaintSeverity:'2',note:'Kuit gevoelig'};
+  const elements=Object.fromEntries(Object.entries(fields).map(([key,value])=>[key,{value}]));
+  context.saveManualCompletionReview({preventDefault(){},target:{elements}});
+  assert.equal(diary[date].source,'manual_completion');
+  assert.equal(diary[date].complaintSeverity,2);
+  assert.match(status.textContent,/opnieuw berekend/);
+  assert.equal(context.reconcileManualCompletionReviews(),false);
+  assert.equal(store.jp_activity_reviews_v1,undefined);
+  context.trainingExecutionForDate=()=>({matched:true,actual:activities.i1});
+  assert.equal(context.reconcileManualCompletionReviews(),true);
+  assert.equal(store.jp_activity_reviews_v1.i1.sessionRpe,9);
+  assert.equal(diary[date].source,'manual_completion_archived');
+  assert.equal(diary[date].linkedActivityId,'i1');
+});
+
+test('a local review stays visible until linked and keeps an older check-in',()=>{
+  const {context,activities,diary}=resultsContext();
+  const date='2026-09-26';
+  const workout={name:'Duurloop',type:'Run'};
+  const previous={date,note:'Oud dagboek',energy:2};
+  diary[date]={date,source:'manual_completion',workoutIdentity:'workout-1',
+    workoutName:'Duurloop',sessionRpe:8,energy:3,previousEntry:previous};
+  context.allWorkouts=()=>({[date]:workout});
+  context.workoutCompletionIdentity=()=> 'workout-1';
+  context.workoutWasCompleted=()=>true;
+  context.calendarDayDifference=()=>0;
+  const list={hidden:true,innerHTML:''};
+  context.document.getElementById=id=>id==='manualResultList'?list:null;
+  context.renderManualResultList();
+  assert.equal(list.hidden,false);
+  assert.match(list.innerHTML,/Duurloop/);
+  assert.match(list.innerHTML,/RPE 8/);
+  context.trainingExecutionForDate=()=>({matched:true,actual:activities.i1});
+  assert.equal(context.reconcileManualCompletionReviews(),true);
+  context.renderManualResultList();
+  assert.equal(list.hidden,true);
+  assert.equal(diary[date].previousEntry.note,'Oud dagboek');
 });
 
 const routeCode=fs.readFileSync('api/intervals-activity-route.js','utf8')

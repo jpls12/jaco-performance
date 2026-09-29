@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.19";
+const APP_VERSION = "10.10.20";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -1361,6 +1361,16 @@ function diaryNumber(value){
 
 function effectiveCoachDiary(){
   const entries={...coachDiary};
+  for(const [date,entry] of Object.entries(entries)){
+    if(entry?.source==="manual_completion_archived"){
+      delete entries[date];
+    }else if(entry?.source==="manual_completion" &&
+      (!allWorkouts()[date] ||
+        workoutCompletionIdentity(allWorkouts()[date])!==entry.workoutIdentity ||
+        !workoutWasCompleted(date,allWorkouts()[date]))){
+      delete entries[date];
+    }
+  }
   if(typeof activityReviews==="undefined" || typeof deriveActivityDiary!=="function"){
     return entries;
   }
@@ -1368,7 +1378,17 @@ function effectiveCoachDiary(){
     .map(review=>review?.date).filter(Boolean));
   for(const date of dates){
     const derived=deriveActivityDiary(date);
-    if(derived) entries[date]=derived;
+    if(!derived) continue;
+    const manual=entries[date]?.source==="manual_completion"?entries[date]:null;
+    if(!manual){entries[date]=derived;continue;}
+    const max=key=>[manual[key],derived[key]].filter(Number.isFinite);
+    const min=key=>[manual[key],derived[key]].filter(Number.isFinite);
+    entries[date]={...derived,
+      sessionRpe:max("sessionRpe").length?Math.max(...max("sessionRpe")):null,
+      legs:max("legs").length?Math.max(...max("legs")):null,
+      energy:min("energy").length?Math.min(...min("energy")):null,
+      complaintSeverity:max("complaintSeverity").length?Math.max(...max("complaintSeverity")):null
+    };
   }
   return entries;
 }
@@ -12584,14 +12604,8 @@ function completeTodayTrainingFromCard(){
 
   if(workoutWasCompleted(date,workout)){
     if(workout.type!=="Rest"){
-      const found=typeof openActivityReviewForDate==="function" &&
-        openActivityReviewForDate(date);
-      if(!found){
-        const status=document.getElementById("todayTrainingStatusText");
-        status.className="status";
-        status.textContent="Nog geen gesynchroniseerd resultaat van vandaag. Tik bij Resultaten op Synchroniseer en beoordeel daarna je training.";
-        document.getElementById("activityResultsCard")?.scrollIntoView({block:"start",behavior:"smooth"});
-      }
+      if(typeof openCompletedWorkoutReview==="function")
+        openCompletedWorkoutReview(date,workout);
     }
     return;
   }
@@ -12602,7 +12616,12 @@ function completeTodayTrainingFromCard(){
   markWorkoutCompleted(date,workout);
   saveObject(DONE_KEY,doneWorkouts);
   refreshAfterCalendarMutation();
-
+  const status=document.getElementById("todayTrainingStatusText");
+  status.className="status ok";
+  status.textContent="Training voltooid. Je kunt nu vastleggen hoe de training voelde.";
+  if(workout.type!=="Rest" && typeof openCompletedWorkoutReview==="function"){
+    openCompletedWorkoutReview(date,workout);
+  }
 }
 
 function finishGuidedTrainingSession(){
@@ -12634,6 +12653,9 @@ function finishGuidedTrainingSession(){
   refreshAfterCalendarMutation();
 
   selectedDate=date;
+  if(typeof openCompletedWorkoutReview==="function"){
+    openCompletedWorkoutReview(date,current);
+  }
 }
 
 function openTodayTrainingCalendar(){

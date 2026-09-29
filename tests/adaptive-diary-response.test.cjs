@@ -21,28 +21,19 @@ test('seven-day plan is visible in Today and review links to it',()=>{
   assert.doesNotMatch(html,/id="coachScore">70<\/strong>/);
 });
 
-test('completed training opens review or gives a sync instruction',()=>{
+test('completed training opens the quick review flow',()=>{
   const code=app.slice(app.indexOf('function completeTodayTrainingFromCard('),
     app.indexOf('function finishGuidedTrainingSession('));
-  const status={className:'',textContent:''};
-  let opened=0,scrolled=0;
+  let opened=0;
   const context=vm.createContext({
     todayDateString:()=> '2026-09-29',
     currentTodayWorkout:()=>({type:'Run',name:'Duurloop'}),
     workoutWasCompleted:()=>true,
-    openActivityReviewForDate:()=>{opened++;return false;},
-    document:{getElementById:id=>id==='todayTrainingStatusText'?status:
-      id==='activityResultsCard'?{scrollIntoView(){scrolled++;}}:null}
+    openCompletedWorkoutReview:()=>{opened++;}
   });
   vm.runInContext(code,context);
   context.completeTodayTrainingFromCard();
   assert.equal(opened,1);
-  assert.equal(scrolled,1);
-  assert.match(status.textContent,/Synchroniseer/);
-  context.openActivityReviewForDate=()=>{opened++;return true;};
-  context.completeTodayTrainingFromCard();
-  assert.equal(opened,2);
-  assert.equal(scrolled,1);
 });
 
 function signal(entries,today='2026-09-26'){
@@ -76,6 +67,23 @@ test('activity review takes priority without deleting an older manual check-in',
   delete reviews.i1;
   assert.equal(context.latestDiaryRecoverySignal(undefined,'2026-09-26').level,'stable');
   assert.equal(legacy['2026-09-26'].note,'Oud');
+});
+
+test('unsynced completion contributes to coach and preserves stronger signals on another activity',()=>{
+  const date='2026-09-26';
+  const workout={name:'Duurloop',type:'Run'};
+  const diary={[date]:{source:'manual_completion',workoutIdentity:'same',
+    sessionRpe:9,legs:5,energy:1,complaintSeverity:2}};
+  const reviews={ride:{date,sessionRpe:4,legs:2,energy:4,complaintSeverity:0}};
+  const context=vm.createContext({coachDiary:diary,activityReviews:reviews,
+    allWorkouts:()=>({[date]:workout}),
+    workoutCompletionIdentity:()=> 'same',workoutWasCompleted:()=>true,
+    deriveActivityDiary:()=>reviews.ride,calendarDayDifference:days});
+  vm.runInContext(numberCode+signalCode,context);
+  assert.equal(context.latestDiaryRecoverySignal(undefined,date).level,'elevated');
+  assert.equal(context.effectiveCoachDiary()[date].complaintSeverity,2);
+  diary[date].source='manual_completion_archived';
+  assert.equal(context.effectiveCoachDiary()[date].complaintSeverity,0);
 });
 
 test('day advice preserves a finished workout and race; complaint proposes rest otherwise',()=>{

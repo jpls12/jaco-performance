@@ -5,6 +5,8 @@ let resultRouteRequest=0;
 const resultRoutes=new Map();
 const resultIntervals=new Map();
 let resultSportFilter="all";
+let manualReviewDate=null;
+let manualReviewIdentity=null;
 
 function resultNumber(value,digits=0,unit=""){
   const number=finiteNumberOrNull(value);
@@ -49,6 +51,32 @@ function recentActivityResults(){
     .sort((a,b)=>String(b.startDateLocal||b.date).localeCompare(
       String(a.startDateLocal||a.date)))
     .slice(0,100);
+}
+
+function manualCompletionEntries(){
+  return Object.entries(coachDiary).filter(([date,entry])=>{
+    if(entry?.source!=="manual_completion") return false;
+    const age=calendarDayDifference(todayDateString(),date);
+    const workout=allWorkouts()[date];
+    return age!==null && age>=0 && age<=56 && workout &&
+      workoutCompletionIdentity(workout)===entry.workoutIdentity &&
+      workoutWasCompleted(date,workout);
+  }).sort(([a],[b])=>b.localeCompare(a));
+}
+
+function renderManualResultList(){
+  const box=document.getElementById("manualResultList");
+  if(!box) return;
+  const rows=manualCompletionEntries();
+  box.hidden=!rows.length;
+  box.innerHTML=rows.length?`<p class="label">Lokaal beoordeeld · nog zonder meetgegevens</p>`+
+    rows.map(([date,entry])=>`<button type="button" class="activity-result-row"
+      data-manual-date="${safe(date)}">
+      <span class="activity-result-icon" aria-hidden="true">✓</span>
+      <span class="activity-result-main"><strong>${safe(entry.workoutName)}</strong>
+        <small>${safe(date)} · Geen GPS of metingen beschikbaar</small></span>
+      <span class="activity-result-side"><strong>RPE ${safe(entry.sessionRpe)}</strong><small>Bekijk beoordeling →</small></span>
+    </button>`).join(""):"";
 }
 
 function activityResultPlanComparison(activity){
@@ -187,6 +215,7 @@ function renderActivityResults(){
   const detail=document.getElementById("activityResultDetail");
   if(!list || !detail) return;
   renderActivityWeekReport();
+  renderManualResultList();
   const activities=recentActivityResults();
   const reviewButton=document.getElementById("reviewNextActivity");
   if(reviewButton){
@@ -214,7 +243,9 @@ function renderActivityResults(){
       <span class="activity-result-side"><strong>${safe(resultNumber(activity.distanceKm,1," km"))}</strong><small>${reviewed?`✓ Beoordeeld · RPE ${safe(reviewed.sessionRpe)}`:"Beoordeel →"}</small></span>
     </button>`;
   }).join(""):'<p class="help">Geen trainingen binnen dit filter.</p>')
-    :'<p class="help">Nog geen uitgevoerde trainingen beschikbaar. Gebruik Synchroniseer om Intervals.icu op te halen.</p>';
+    :`<p class="help">${manualCompletionEntries().length
+      ?"Nog geen meetgegevens gesynchroniseerd. Je lokaal beoordeelde training staat hierboven."
+      :"Nog geen uitgevoerde trainingen beschikbaar. Gebruik Synchroniseer om Intervals.icu op te halen."}</p>`;
   const selected=activities.find(item=>item.id===selectedResultId);
   if(selected) renderActivityResultDetail(selected);
   else{selectedResultId=null;detail.hidden=true;detail.innerHTML="";}
@@ -234,14 +265,137 @@ function openNextActivityReview(){
   }
 }
 
-function openActivityReviewForDate(date){
-  const activities=recentActivityResults().filter(activity=>activity.date===date);
-  const activity=activities.find(item=>!activityReviews[item.id])||activities[0];
+function openActivityReviewForDate(date,workout){
+  const match=trainingExecutionForDate(date,workout);
+  const activity=match.matched && match.actual &&
+    recentActivityResults().find(item=>item.id===match.actual.id);
   if(!activity) return false;
+  const manual=document.getElementById("manualCompletionReview");
+  if(manual) manual.hidden=true;
   resultSportFilter="all";
   selectActivityResult(activity.id);
   document.getElementById("activityReviewForm")?.scrollIntoView({block:"start",behavior:"smooth"});
   return true;
+}
+
+function openCompletedWorkoutReview(date,workout){
+  if(openActivityReviewForDate(date,workout)) return;
+  const panel=document.getElementById("manualCompletionReview");
+  if(!panel) return;
+  selectedResultId=null;
+  const detail=document.getElementById("activityResultDetail");
+  if(detail) detail.hidden=true;
+  manualReviewDate=date;
+  manualReviewIdentity=workoutCompletionIdentity(workout);
+  const saved=coachDiary[date]?.source==="manual_completion" &&
+    coachDiary[date].workoutIdentity===manualReviewIdentity
+      ?coachDiary[date]:null;
+  const rpe=saved?.sessionRpe??5;
+  panel.hidden=false;
+  panel.innerHTML=`<div class="activity-result-heading">
+    <div><p class="label">${safe(date)} · nog niet gesynchroniseerd</p><h4>${safe(workout.name)}</h4></div>
+    <button id="closeManualReview" class="secondary" type="button">Sluiten</button>
+  </div>
+  <p class="help">Beoordeel de training alvast. De coach gebruikt je feedback direct; meetgegevens en een kaart verschijnen na synchronisatie. Bij een betrouwbare koppeling gaat je beoordeling mee.</p>
+  <form id="manualReviewForm">
+    <div class="activity-review-quick">
+      <label class="activity-rpe-label" for="manualRpe">Zwaarte · RPE <output id="manualRpeValue" for="manualRpe">${safe(rpe)}/10</output></label>
+      <input id="manualRpe" name="sessionRpe" type="range" min="1" max="10" step="1" value="${safe(rpe)}">
+      <div class="activity-rpe-ends"><span>Heel licht</span><span>Maximaal</span></div>
+      <fieldset class="activity-feeling"><legend>Hoe voelde je je?</legend>
+        <div class="activity-feeling-options">${[
+          [1,"😫","Uitgeput"],[2,"😕","Matig"],[3,"😐","Oké"],
+          [4,"🙂","Goed"],[5,"😁","Top"]
+        ].map(([value,emoji,label])=>`<label><input type="radio" name="energy" value="${value}"${saved?.energy===value?" checked":""} required><span><span aria-hidden="true">${emoji}</span><small>${label}</small></span></label>`).join("")}</div>
+      </fieldset>
+    </div>
+    <details class="activity-review-extra"${saved?.complaintSeverity!=null || saved?.legs!=null?" open":""}>
+      <summary>Extra details (optioneel)</summary>
+      <div class="activity-review-grid">
+        ${[["legs","Benen · 1 fris, 5 zwaar",1,5],
+          ["complaintSeverity","Klachten · 0 geen, 3 sterk",0,3]].map(([key,label,min,max])=>
+          `<label>${label}<select name="${key}"><option value="">Niet ingevuld</option>${Array.from({length:max-min+1},(_,i)=>i+min).map(value=>
+            `<option value="${value}"${saved?.[key]===value?" selected":""}>${value}${value===0?" · geen":""}</option>`).join("")}</select></label>`).join("")}
+      </div>
+    </details>
+    <label>Opmerking (optioneel)<textarea name="note" rows="2" maxlength="500" placeholder="Bijv. zware benen of kuit gevoelig">${safe(saved?.note||"")}</textarea></label>
+    <button type="submit">${saved?"Beoordeling bijwerken":"Beoordeling opslaan"}</button>
+    <p id="manualReviewStatus" class="status" role="status"></p>
+  </form>`;
+  panel.scrollIntoView({block:"start",behavior:"smooth"});
+}
+
+function saveManualCompletionReview(event){
+  event.preventDefault();
+  const date=manualReviewDate;
+  const workout=date && allWorkouts()[date];
+  if(!workout || !workoutWasCompleted(date,workout) ||
+    workoutCompletionIdentity(workout)!==manualReviewIdentity){
+    document.getElementById("manualReviewStatus").textContent=
+      "Deze training is gewijzigd. Open de actuele training opnieuw.";
+    return;
+  }
+  const form=event.target;
+  const energyRaw=form.elements.energy.value;
+  const sessionRpe=Number(form.elements.sessionRpe.value);
+  const energy=Number(energyRaw);
+  const optional=(key,min,max)=>{
+    const raw=form.elements[key].value;
+    if(raw==="") return null;
+    const value=Number(raw);
+    return Number.isInteger(value) && value>=min && value<=max?value:null;
+  };
+  if(!Number.isInteger(sessionRpe) || sessionRpe<1 || sessionRpe>10 ||
+    energyRaw==="" || !Number.isInteger(energy) || energy<1 || energy>5){
+    document.getElementById("manualReviewStatus").textContent="Kies je zwaarte en hoe je je voelde.";
+    return;
+  }
+  const previous=coachDiary[date];
+  coachDiary[date]={
+    date,source:"manual_completion",workoutIdentity:manualReviewIdentity,
+    workoutName:workout.name,workoutType:workout.type,
+    sessionRpe,energy,legs:optional("legs",1,5),
+    complaintSeverity:optional("complaintSeverity",0,3),
+    enjoyment:null,note:form.elements.note.value.trim().slice(0,500),
+    savedAt:new Date().toISOString(),
+    ...(previous && !["manual_completion","activity_reviews"].includes(previous.source)
+      ?{previousEntry:previous}:previous?.previousEntry?{previousEntry:previous.previousEntry}:{})
+  };
+  saveObject(DIARY_KEY,coachDiary);
+  renderManualResultList();
+  resetGeneratedPlannerPreviews();
+  renderFullSeasonSchedulePreview();
+  refreshDerivedCoachViews();
+  const status=document.getElementById("manualReviewStatus");
+  status.className="status ok";
+  status.textContent="Beoordeling opgeslagen. De coach heeft je dag- en weekadvies opnieuw berekend.";
+}
+
+function reconcileManualCompletionReviews(){
+  let changed=false;
+  for(const [date,entry] of Object.entries(coachDiary)){
+    if(entry?.source!=="manual_completion") continue;
+    const workout=allWorkouts()[date];
+    if(!workout || workoutCompletionIdentity(workout)!==entry.workoutIdentity) continue;
+    const match=trainingExecutionForDate(date,workout);
+    if(!match.matched || !match.actual?.id) continue;
+    const activity=match.actual;
+    if(!activityReviews[activity.id]){
+      activityReviews[activity.id]={activityId:activity.id,date,
+        startDateLocal:activity.startDateLocal,name:activity.name,type:activity.type,
+        sessionRpe:entry.sessionRpe,energy:entry.energy,
+        legs:entry.legs??null,enjoyment:entry.enjoyment??null,
+        complaintSeverity:entry.complaintSeverity??null,
+        note:entry.note||"",savedAt:entry.savedAt};
+    }
+    coachDiary[date]={...entry,source:"manual_completion_archived",linkedActivityId:activity.id};
+    changed=true;
+  }
+  if(changed){
+    saveObject(ACTIVITY_REVIEWS_KEY,activityReviews);
+    saveObject(DIARY_KEY,coachDiary);
+  }
+  return changed;
 }
 
 function activityRouteSvg(points){
@@ -473,6 +627,8 @@ async function loadActivityResultIntervals(activity){
 
 function selectActivityResult(id){
   if(!Object.hasOwn(syncedActivities,id)) return;
+  const manual=document.getElementById("manualCompletionReview");
+  if(manual) manual.hidden=true;
   selectedResultId=id;
   renderActivityResults();
   document.getElementById("activityResultDetail")?.scrollIntoView({block:"nearest",behavior:"smooth"});
@@ -560,6 +716,13 @@ function deleteActivityReview(){
 }
 
 function handleActivityResultClick(event){
+  const manualRow=event.target.closest("[data-manual-date]");
+  if(manualRow && manualRow.closest("#manualResultList")){
+    const date=manualRow.dataset.manualDate;
+    const workout=allWorkouts()[date];
+    if(workout) openCompletedWorkoutReview(date,workout);
+    return;
+  }
   const filter=event.target.closest("[data-result-filter]");
   if(filter && filter.closest("#activityResultsList")){
     resultSportFilter=filter.dataset.resultFilter;

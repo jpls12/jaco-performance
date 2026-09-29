@@ -316,6 +316,7 @@ document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
 document.getElementById("refreshActivitySync").onclick=()=>syncCompletedActivities();
 document.getElementById("copyActivitySyncDiagnostics").onclick=copyActivitySyncDiagnostics;
 document.getElementById("activityResultsList").onclick=handleActivityResultClick;
+document.getElementById("manualResultList").onclick=handleActivityResultClick;
 document.getElementById("refreshActivityResults").onclick=()=>syncCompletedActivities();
 document.getElementById("activityResultDetail").onclick=handleActivityResultClick;
 document.getElementById("activityResultDetail").oninput=event=>{
@@ -326,6 +327,19 @@ document.getElementById("activityResultDetail").oninput=event=>{
 };
 document.getElementById("activityResultDetail").onsubmit=event=>{
   if(event.target.id==="activityReviewForm") saveActivityReview(event);
+};
+document.getElementById("manualCompletionReview").oninput=event=>{
+  if(event.target.id==="manualRpe"){
+    document.getElementById("manualRpeValue").textContent=`${event.target.value}/10`;
+  }
+};
+document.getElementById("manualCompletionReview").onsubmit=event=>{
+  if(event.target.id==="manualReviewForm") saveManualCompletionReview(event);
+};
+document.getElementById("manualCompletionReview").onclick=event=>{
+  if(event.target.id==="closeManualReview"){
+    document.getElementById("manualCompletionReview").hidden=true;
+  }
 };
 document.getElementById("refreshTrainingQuality").onclick=()=>syncTrainingQualityLatest({force:true});
 document.getElementById("refreshTrainingResponse").onclick=refreshTrainingResponseLearner;

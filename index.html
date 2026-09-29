@@ -11,10 +11,10 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1119">
-  <link rel="icon" href="/icons/app-icon.svg?v=1119" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1119">
-  <link rel="stylesheet" href="/css/app.css?v=1119">
+  <link rel="manifest" href="/manifest.webmanifest?v=1120">
+  <link rel="icon" href="/icons/app-icon.svg?v=1120" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1120">
+  <link rel="stylesheet" href="/css/app.css?v=1120">
 </head>
 <body>
 <main>
@@ -607,13 +607,15 @@
         <div>
           <p class="label">Uitgevoerde trainingen</p>
           <h2>Resultaat en beoordeling</h2>
-          <p class="help">Open een gesynchroniseerde training voor de cijfers, eventuele GPS-route en je beoordeling. Dit is de enige plek waar je trainingsfeedback invult.</p>
+          <p class="help">Beoordeel hier je voltooide training. Na synchronisatie zie je ook de cijfers en eventuele GPS-route.</p>
         </div>
         <button id="refreshActivityResults" class="secondary" type="button" style="width:auto">Synchroniseer</button>
       </div>
       <div id="activityWeekReport" class="activity-week-report" aria-label="Uitgevoerde trainingen laatste zeven dagen"></div>
+      <div id="manualResultList" class="manual-result-list" hidden></div>
       <div id="activityResultsList" class="activity-results-list"></div>
       <div id="activityResultDetail" class="activity-result-detail" hidden></div>
+      <div id="manualCompletionReview" class="manual-completion-review" hidden></div>
     </article>
 
     <details id="todayMore" class="today-more">
@@ -2737,24 +2739,24 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1119" defer></script>
-<script src="/js/training-sync.js?v=1119" defer></script>
-<script src="/js/activity-results.js?v=1119" defer></script>
-<script src="/js/training-quality.js?v=1119" defer></script>
-<script src="/js/performance-model.js?v=1119" defer></script>
-<script src="/js/training-response.js?v=1119" defer></script>
-<script src="/js/session-progression.js?v=1119" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1119" defer></script>
-<script src="/js/race-readiness.js?v=1119" defer></script>
-<script src="/js/fuel-hydration.js?v=1119" defer></script>
-<script src="/js/race-strategy.js?v=1119" defer></script>
-<script src="/js/race-day.js?v=1119" defer></script>
-<script src="/js/race-debrief.js?v=1119" defer></script>
-<script src="/js/daily-decision.js?v=1119" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1119" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1119" defer></script>
-<script src="/js/support-training.js?v=1119" defer></script>
-<script src="/js/bootstrap.js?v=1119" defer></script>
+<script src="/js/app.js?v=1120" defer></script>
+<script src="/js/training-sync.js?v=1120" defer></script>
+<script src="/js/activity-results.js?v=1120" defer></script>
+<script src="/js/training-quality.js?v=1120" defer></script>
+<script src="/js/performance-model.js?v=1120" defer></script>
+<script src="/js/training-response.js?v=1120" defer></script>
+<script src="/js/session-progression.js?v=1120" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1120" defer></script>
+<script src="/js/race-readiness.js?v=1120" defer></script>
+<script src="/js/fuel-hydration.js?v=1120" defer></script>
+<script src="/js/race-strategy.js?v=1120" defer></script>
+<script src="/js/race-day.js?v=1120" defer></script>
+<script src="/js/race-debrief.js?v=1120" defer></script>
+<script src="/js/daily-decision.js?v=1120" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1120" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1120" defer></script>
+<script src="/js/support-training.js?v=1120" defer></script>
+<script src="/js/bootstrap.js?v=1120" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
