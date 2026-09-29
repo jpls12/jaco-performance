@@ -3593,6 +3593,9 @@ function renderMonth(){
   const lastDay=new Date(year,month+1,0).getDate();
   const mondayIndex=(first.getDay()+6)%7;
   const workouts=allWorkouts();
+  let plannedCount=0;
+  let completedCount=0;
+  let raceCount=0;
 
   let html="";
   for(let i=0;i<mondayIndex;i++){
@@ -3607,10 +3610,14 @@ function renderMonth(){
     const isSelected=date===selectedDate;
     const state=workout ? workoutState(date,workout) : "";
     const uploaded=workoutUploadIsCurrent(date,workout) ? "uploaded" : "";
+    if(workout && workout.type!=="Rest") plannedCount++;
+    if(state==="done" && workout?.type!=="Rest") completedCount++;
+    if(state==="race") raceCount++;
+    const dayLabel=`${fullDate.format(dateObj)}${workout?` · ${workout.name} · ${state==="done"?"voltooid":state==="race"?"wedstrijd":"gepland"}`:" · geen training"}`;
 
     html+=`
-      <button class="day ${isToday?"today":""} ${isSelected?"selected":""}"
-        type="button" onclick="selectDate('${date}')">
+      <button class="day ${isToday?"today":""} ${isSelected?"selected":""} ${state?`is-${state}`:""}"
+        type="button" onclick="selectDate('${date}')" aria-label="${escapeHtmlAttribute(dayLabel)}" ${isSelected?'aria-pressed="true"':''}>
         <span class="day-number">${day}</span>
         ${workout?`
           <span class="dot ${state} ${uploaded}"></span>
@@ -3619,6 +3626,8 @@ function renderMonth(){
       </button>`;
   }
   grid.innerHTML=html;
+  const summary=document.getElementById("calendarMonthSummary");
+  if(summary) summary.textContent=`${plannedCount} trainingen · ${completedCount} voltooid${raceCount?` · ${raceCount} wedstrijd${raceCount===1?"":"en"}`:""}`;
 }
 
 function renderSelected(){
