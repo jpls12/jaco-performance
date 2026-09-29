@@ -227,6 +227,12 @@ document.getElementById("nextMonth").onclick=()=>{
   visibleMonth=new Date(visibleMonth.getFullYear(),visibleMonth.getMonth()+1,1);
   renderMonth();
 };
+document.getElementById("calendarToday").onclick=()=>{
+  const current=todayDateString();
+  const date=new Date(current+"T12:00:00");
+  visibleMonth=new Date(date.getFullYear(),date.getMonth(),1);
+  selectDate(current);
+};
 document.getElementById("recoveryType").onchange=()=>{
   const isTime=document.getElementById("recoveryType").value==="time";
   updateRecoveryLabel();

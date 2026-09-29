@@ -130,6 +130,69 @@ button:focus-visible,a:focus-visible,summary:focus-visible{outline-color:#d9ff9f
 .week-replanner-card,.fully-adaptive-coach-card{border-radius:18px}
 input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px}
 
+/* Calendar and planning share the same visual language as the home screen. */
+.calendar-intro{margin-bottom:16px}
+.calendar-month-card,.calendar-detail-card{background:#151e30;border-color:#36425e}
+.calendar-month-card{padding:clamp(17px,2.8vw,28px)}
+.calendar-head{margin-bottom:5px}
+.calendar-head .month-title{font-size:1.45rem;font-weight:820;letter-spacing:-.045em;text-transform:capitalize}
+.calendar-head button.secondary{width:43px;height:43px;min-height:43px;padding:0;border-radius:13px;font-size:1.25rem}
+.calendar-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 18px}
+.calendar-toolbar .help{margin:0;font-size:.82rem}
+.calendar-toolbar button.secondary{width:auto;min-height:36px;padding:7px 11px;font-size:.78rem;white-space:nowrap}
+.weekdays{margin-bottom:5px}
+.weekdays div{font-size:.7rem;color:#b6c2d5;letter-spacing:.08em;text-transform:uppercase}
+.calendar-grid{gap:6px}
+.calendar-grid .day{
+  min-width:0;min-height:82px;padding:9px 7px;border:1px solid #303e58;border-radius:13px;
+  background:#1b263b;color:#f6f8fb;box-shadow:none;transition:background .16s ease,border-color .16s ease
+}
+.calendar-grid .day:hover{background:#293653;border-color:#746fac}
+.calendar-grid .day.today{border-color:#bcb5ff;box-shadow:inset 0 0 0 1px #bcb5ff}
+.calendar-grid .day.selected{background:#3a376d;border-color:#a9a1ee;box-shadow:inset 0 0 0 1px #a9a1ee}
+.calendar-grid .day.is-done{background:#21392f}
+.calendar-grid .day.is-race{background:#473039}
+.calendar-grid .day.selected.is-done,.calendar-grid .day.selected.is-race{background:#3a376d}
+.calendar-grid .day-number{font-size:.91rem;font-weight:820}
+.calendar-grid .day-name{color:#d4deed;font-size:.65rem;line-height:1.25;margin-top:15px}
+.calendar-grid .dot{width:8px;height:8px;right:8px;top:10px}
+.calendar-grid .dot.planned{background:#bcb5ff}
+.calendar-grid .dot.done{background:#c6ef79}
+.calendar-grid .dot.race{background:#ff9eaa}
+.calendar-grid .dot.custom{background:#ffd48f}
+.calendar-month-card .legend{margin-top:19px;gap:7px}
+.calendar-month-card .legend span{padding:5px 9px;border-radius:999px;background:#202d43;color:#c6d0df;font-size:.73rem}
+.calendar-detail-card .workout-title{font-size:clamp(1.55rem,3vw,2rem);line-height:1.13;letter-spacing:-.045em}
+.calendar-detail-card .meta{gap:7px}
+.calendar-detail-card .pill,.calendar-detail-card .sport-badge{background:#25334d;border-color:#475a78;color:#edf3fb}
+.calendar-detail-card ul.steps li{border-color:#32435d}
+.calendar-detail-card .step{color:var(--blue)}
+
+#planning .view-intro{max-width:820px}
+#planning .view-jumps a{background:#202b43;border-color:#435271;color:#e1e8f5}
+#planning .view-jumps a:hover{background:#34345f;border-color:#7c78c0}
+#planningAvailability{background:#151e30;border-color:#36425e}
+#planningAvailability>h2{font-size:1.55rem;font-weight:800}
+.weekly-availability-form{background:#19243a;border:1px solid #3b4c6a;border-radius:20px;padding:clamp(14px,2.4vw,24px)}
+.weekly-availability-head h3{font-size:1.2rem;letter-spacing:-.035em}
+.weekly-availability-head label{color:#d9e1ed}
+.weekly-availability-days{gap:2px}
+.weekly-availability-day{
+  grid-template-columns:105px minmax(0,1fr) 58px;min-height:60px;
+  border:0;border-bottom:1px solid #33415c;border-radius:0;background:transparent;padding:8px 5px
+}
+.weekly-availability-day:last-child{border-bottom:0}
+.weekly-availability-day>span{font-size:.88rem;color:#f3f5fa}
+.weekly-availability-day input[type="range"]{accent-color:var(--green);min-height:34px;background:transparent;border:0;padding:0}
+.weekly-availability-day output{color:#d7f4a7;font-weight:800;font-size:.85rem}
+.weekly-availability-form button[type="submit"]{margin-top:8px}
+.weekly-plan-summary{background:#19243a;border-color:#3b4c6a;border-radius:20px;padding:clamp(14px,2.4vw,22px)}
+.weekly-plan-summary h3{font-size:1.15rem;letter-spacing:-.035em}
+.weekly-plan-rows{gap:4px}
+.weekly-plan-row{background:#222f46;border-radius:12px;padding:10px 12px}
+.weekly-plan-row.conflict{border-color:#bc805e;background:#42352f}
+.weekly-defaults>summary{color:#d1e3f1}
+
 @media(max-width:650px){
   main{padding-top:13px;padding-bottom:calc(115px + env(safe-area-inset-bottom))}
   .app-header{margin-bottom:10px;padding-bottom:5px}
@@ -157,6 +220,13 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
   .mobile-bottom-nav .mobile-nav-button{min-height:51px;border-radius:15px;color:#aebbd2}
   .mobile-bottom-nav .mobile-nav-button.active{background:#3a3a70;color:#fff}
   .mobile-bottom-nav .mobile-nav-button.active .mobile-nav-icon{color:var(--green)}
+  .calendar-grid{gap:4px}
+  .calendar-grid .day{min-height:73px;padding:7px 4px;border-radius:10px}
+  .calendar-grid .day-name{margin-top:12px;font-size:.6rem}
+  .calendar-grid .dot{right:5px;top:7px;width:6px;height:6px}
+  .calendar-month-card .legend{gap:5px}
+  .calendar-month-card .legend span{padding:4px 7px;font-size:.66rem}
+  .weekly-availability-day{grid-template-columns:82px minmax(0,1fr) 50px;gap:8px}
 }
 @media(max-width:390px){
   .today-week-overview-head{flex-direction:column;gap:8px}
