@@ -397,6 +397,18 @@ document.getElementById("openWeeklyAvailability").onclick=()=>{
   navigateAppView("planning");
   document.getElementById("planningAvailability").scrollIntoView({behavior:"smooth",block:"start"});
 };
+document.getElementById("editTodayWeekAvailability").onclick=()=>{
+  navigateAppView("planning");
+  const field=document.getElementById("weeklyAvailabilityDate");
+  if(field && field.value!==todayWeekStartDate()){
+    if(confirmWeeklyAvailabilityWeekChange()){
+      field.value=todayWeekStartDate();
+      renderWeeklyAvailabilityEditor();
+      renderWeeklyPlanSummary();
+    }
+  }
+  document.getElementById("planningAvailability").scrollIntoView({behavior:"smooth",block:"start"});
+};
 document.getElementById("buildFullSeasonSchedule").onclick=buildFullSeasonSchedulePreview;
 document.getElementById("applyFullSeasonSchedule").onclick=applyFullSeasonSchedule;
 document.getElementById("removeFullSeasonSchedule").onclick=removeFullSeasonSchedule;

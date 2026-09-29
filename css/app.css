@@ -3100,6 +3100,26 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .activity-rpe-ends{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem}
 .activity-rpe-hint{margin:.45rem 0 0;font-size:.78rem;line-height:1.4;color:var(--muted)}
 .weekly-availability-prompt{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0;padding:1rem;border:1px solid #40866f;border-radius:14px;background:#173b37}
+.today-week-overview{margin-top:14px}
+.today-week-overview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.today-week-overview-head h2{margin:0 0 4px}
+.today-week-overview-head .help{margin:0}
+.today-week-overview-head button{width:auto;flex:none}
+.today-week-overview-days{display:grid;gap:6px}
+.today-week-overview-day{display:grid;grid-template-columns:45px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;min-height:62px;padding:7px 12px;text-align:left;border:1px solid #375367;border-radius:12px;background:#172d3c;color:var(--text);cursor:pointer}
+.today-week-overview-day.is-today{border-color:#82c9d8;background:#214553}
+.today-week-overview-day.is-done .today-week-overview-state{color:#9ce8b5}
+.today-week-overview-day.is-conflict .today-week-overview-state{color:#ffc188}
+.today-week-overview-day:hover{background:#244657}
+.today-week-overview-day:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.today-week-overview-date,.today-week-overview-session{display:grid;gap:2px;min-width:0}
+.today-week-overview-date{justify-items:center}
+.today-week-overview-date small,.today-week-overview-session small{font-size:.74rem;color:var(--muted)}
+.today-week-overview-date strong{font-size:1.15rem;line-height:1}
+.today-week-overview-session strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.89rem}
+.today-week-overview-state{font-size:.75rem;font-weight:700;color:#b6d7e6;white-space:nowrap}
+.today-week-overview-link{display:inline-flex;gap:7px;margin-top:14px;font-size:.85rem;font-weight:700;color:#a7e5ed}
+@media(max-width:480px){.today-week-overview-head{align-items:stretch;flex-direction:column}.today-week-overview-head button{align-self:flex-start}.today-week-overview-day{grid-template-columns:36px minmax(0,1fr) auto;gap:8px;padding:7px 9px}.today-week-overview-state{font-size:.68rem}}
 .weekly-availability-prompt[hidden]{display:none}.weekly-availability-prompt p{margin:.3rem 0 0;font-size:.85rem;line-height:1.4}
 .weekly-availability-prompt button{width:auto;min-width:max-content}
 .mobile-nav-button[data-mobile-view="planning"]{position:relative}

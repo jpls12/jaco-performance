@@ -12205,6 +12205,42 @@ function renderTodayWeekStrip(){
   }).join("");
 }
 
+function renderTodayWeekOverview(){
+  const root=document.getElementById("todayWeekOverviewDays");
+  const summary=document.getElementById("todayWeekOverviewSummary");
+  if(!root || !summary) return;
+  const start=todayWeekStartDate();
+  const todayString=todayDateString();
+  const workouts=allWorkouts();
+  const saved=weeklyAvailabilityComplete(start);
+  let planned=0;
+  let completed=0;
+  let conflicts=0;
+  root.innerHTML=DAY_KEYS.map((key,index)=>{
+    const date=addDays(start,index);
+    const workout=workouts[date]||null;
+    const availability=availabilityForDate(date);
+    const done=Boolean(workout && workoutWasCompleted(date,workout));
+    const race=workout?.type==="Race";
+    const rest=workout?.type==="Rest";
+    const minutes=workout && !race && !rest ? estimatedWorkoutMinutes(workout) : 0;
+    const conflict=Boolean(saved && workout && !done && !race && !rest &&
+      (!availability.available || minutes>availability.maxMinutes));
+    if(workout && !rest) planned++;
+    if(done && !rest) completed++;
+    if(conflict) conflicts++;
+    const state=done?"Voltooid":race?"Wedstrijd":rest?"Rust":conflict?"Tijdconflict":workout?"Gepland":"Vrij";
+    const time=saved?availability.maxMinutes?`${availability.maxMinutes} min beschikbaar`:"Geen tijd opgegeven":"Tijd nog invullen";
+    return `<button type="button" class="today-week-overview-day${date===todayString?" is-today":""}${done?" is-done":""}${conflict?" is-conflict":""}"
+      onclick="openTodayWeekDate('${date}')" aria-label="${escapeHtmlAttribute(DAY_NAMES[index])} ${escapeHtmlAttribute(date)}: ${escapeHtmlAttribute(workout?.name||"Geen training")}, ${state}">
+      <span class="today-week-overview-date"><small>${safe(DAY_NAMES[index].slice(0,2))}</small><strong>${Number(date.slice(8))}</strong></span>
+      <span class="today-week-overview-session"><strong>${safe(workout?.name||"Geen training")}</strong><small>${time}</small></span>
+      <span class="today-week-overview-state">${state}</span>
+    </button>`;
+  }).join("");
+  summary.textContent=`${completed}/${planned} trainingen voltooid · ${saved?"Beschikbaarheid ingevuld":"Vul je beschikbaarheid in"}${conflicts?` · ${conflicts} tijdconflict${conflicts===1?"":"en"}`:""}`;
+}
+
 function dailyTrainingIcon(type){
   const paths={
     Run:'<circle cx="13" cy="5" r="2"/><path d="m7 20 3-5 2-4 4 2 3 4M4 12l5-3 3 2 3-4 4 1M9 15l-4 5"/>',
@@ -12237,6 +12273,7 @@ function dailyTrainingSourceLabel(date,workout){
 function renderCurrentTodayWorkout(workout){
   if(typeof renderSupportTraining==="function") renderSupportTraining();
   renderTodayWeekStrip();
+  renderTodayWeekOverview();
 
   const statusBadge=document.getElementById("todayTrainingStatus");
   const icon=document.getElementById("todayTrainingIcon");
