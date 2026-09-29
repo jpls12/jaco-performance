@@ -201,6 +201,15 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
 .weekly-plan-rows{gap:4px}
 .weekly-plan-row{background:#222f46;border-radius:12px;padding:10px 12px}
 .weekly-plan-row.conflict{border-color:#bc805e;background:#42352f}
+.weekly-conflict-guide{margin:0 0 14px;padding:14px;border:1px solid #bc805e;border-radius:14px;background:#42352f;color:#f8e7d9}
+.weekly-conflict-guide>strong{display:block;margin-bottom:4px}
+.weekly-conflict-guide p{margin:0 0 10px;font-size:.84rem;line-height:1.45;color:#e5c5ac}
+.weekly-conflict-guide ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.weekly-conflict-guide li{display:grid;gap:8px;padding:10px;background:#322d32;border-radius:10px;font-size:.82rem;line-height:1.45}
+.weekly-conflict-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.weekly-conflict-actions a,.weekly-conflict-actions button{font-size:.79rem}
+.weekly-conflict-actions a{color:#d7f4a7;text-decoration:underline;text-underline-offset:3px}
+.weekly-conflict-actions button{min-height:34px;padding:5px 10px}
 .weekly-defaults>summary{color:#d1e3f1}
 
 /* Progress: the actual numbers lead, and unknown values remain visibly unknown. */

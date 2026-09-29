@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.24 · Hulp bij echte tijdconflicten**
+
+Als de coach geen veilige verdeling vindt, toont de weekplanning nu per betrokken training de benodigde en beschikbare minuten, de extra tijd in stappen van vijf minuten en directe acties om de beschikbaarheid of training te openen. De app verwijdert geen training op eigen houtje; wedstrijden en verstuurde trainingen blijven beschermd. De melding verdwijnt zodra de week past. 99 tests slagen. App-shell en backupmetadata gebruiken 10.10.24.
+
 **10.10.23 · Tijdvenster zonder schijnruimte**
 
 De planner gebruikt nu exact de opgegeven minuten per dag. Een training van 51 minuten past niet meer kunstmatig in een venster van 45 minuten, waardoor het voorstel en het weekoverzicht dezelfde conflictstatus tonen. Dagen met nul minuten blijven uitgesloten. De regressietest dekt deze grens, met 98 geslaagde tests. App-shell en backupmetadata gebruiken 10.10.23.
