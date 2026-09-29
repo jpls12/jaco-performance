@@ -508,6 +508,103 @@ function weekReplanMove(schedule,fromDate,toDate,reason){
   }
 }
 
+// Reassign the remaining sessions when a saved week changes. Moving only into an
+// empty slot misses weeks where a recovery/easy session can trade places.
+function replanSavedAvailabilityWeek(start){
+  if(!autoWeekReplanReady || !autoWeekReplanEnabled()) return{applied:false};
+  const today=todayDateString();
+  const end=addDays(start,6);
+  const dates=weekReplanDateList(start,end).filter(date=>date>today);
+  const workouts=allWorkouts();
+  const original=Object.fromEntries(dates.map(date=>[date,weekReplanClone(workouts[date],date)]));
+  const pinned=new Map();
+  const sessions=[];
+  for(const date of dates){
+    const workout=original[date];
+    if(!workout || workout.type==="Rest") continue;
+    if(workout.type==="Race" || weekReplanIsDone(date,workout) || uploadedWorkouts[date]){
+      pinned.set(date,workout);
+    }else sessions.push({date,workout});
+  }
+  const conflicts=sessions.filter(({date,workout})=>!weekReplanFitsAvailability(workout,date));
+  if(!conflicts.length) return{applied:false,conflicts:0};
+  if(!sessions.length) return{applied:false,conflicts:conflicts.length};
+
+  const assigned=new Map(pinned);
+  let best=null;
+  let bestScore=Infinity;
+  const stress=workout=>weekReplanIsStressWorkout(workout);
+  const candidates=({date,workout})=>dates.filter(target=>{
+    if(pinned.has(target) || !weekReplanFitsAvailability(workout,target)) return false;
+    if(stress(workout) && weekReplanProtection(target).protected) return false;
+    return true;
+  }).sort((a,b)=>Number(a!==date)-Number(b!==date) || a.localeCompare(b));
+  const ordered=sessions.map(item=>({...item,choices:candidates(item)}))
+    .sort((a,b)=>a.choices.length-b.choices.length || Number(stress(b.workout))-Number(stress(a.workout)));
+  if(ordered.some(item=>!item.choices.length)) return{applied:false,conflicts:conflicts.length};
+
+  function safeStress(date,workout){
+    if(!stress(workout)) return true;
+    for(const [otherDate,other] of assigned){
+      if(other.type==="Race" && dateGapDays(otherDate,date)<=(Number(other.distanceKm)>=15?2:1)) return false;
+      if(stress(other) && dateGapDays(otherDate,date)<2) return false;
+    }
+    // A finished session or race just outside this week must still count.
+    for(const offset of [-2,-1,1,2]){
+      const otherDate=addDays(date,offset);
+      if(dates.includes(otherDate)) continue;
+      const other=workouts[otherDate];
+      if(!other) continue;
+      if(other.type==="Race" && Math.abs(offset)<=(Number(other.distanceKm)>=15?2:1)) return false;
+      if(Math.abs(offset)===1 && stress(other)) return false;
+    }
+    return true;
+  }
+  function placementCost(item,target){
+    if(target===item.date) return 0;
+    const preference=weekReplanAvailability(target).preference;
+    const type=String(item.workout.planType||"").toLowerCase();
+    const mismatch=preference==="herstel" && stress(item.workout)?5:
+      preference==="kwaliteit" && !stress(item.workout)?2:
+      preference==="lange-duur" && type!=="long"?2:0;
+    return 2+dateGapDays(item.date,target)*.2+mismatch;
+  }
+  function search(index,score){
+    if(score>=bestScore) return;
+    if(index===ordered.length){best=new Map(assigned);bestScore=score;return;}
+    const item=ordered[index];
+    for(const target of item.choices){
+      if(assigned.has(target) || !safeStress(target,item.workout)) continue;
+      assigned.set(target,item.workout);
+      search(index+1,score+placementCost(item,target));
+      assigned.delete(target);
+    }
+  }
+  search(0,0);
+  if(!best) return{applied:false,conflicts:conflicts.length};
+
+  const schedule={};
+  const changes=[];
+  for(const date of dates){
+    const assignedWorkout=best.get(date);
+    const from=sessions.find(item=>item.workout===assignedWorkout);
+    const after=assignedWorkout?weekReplanClone(assignedWorkout,date):
+      original[date]?.type==="Rest"?weekReplanClone(original[date],date):
+      original[date]?weekReplanRestWorkout(date,"Vrijgemaakt voor aangepaste beschikbaarheid"):null;
+    if(from && from.date!==date){
+      after.sourceReplanner="9.5";
+      after.replanReason=`Beschikbaarheid aangepast: verplaatst van ${from.date}`;
+    }
+    schedule[date]=after;
+    if(weekReplanWorkoutSignature(original[date])!==weekReplanWorkoutSignature(after)){
+      changes.push({date,before:original[date],after,reason:after.replanReason||"Beschikbaarheid aangepast"});
+    }
+  }
+  if(!changes.length) return{applied:false,conflicts:conflicts.length};
+  const proposal={bounds:{today,start,end},changes,original,schedule};
+  return{applied:applyAutomaticWeekReplan(proposal),conflicts:conflicts.length};
+}
+
 function weekReplanRescheduleMissedQuality(missed,schedule,bounds,stress){
   if(!missed || !isHardWorkout(missed.workout)) return null;
   if(stress.level!=="stable") return null;
