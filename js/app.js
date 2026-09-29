@@ -7079,12 +7079,14 @@ function renderRaces(){
     return;
   }
 
-  const cards=rows=>rows.map(race=>{
+  const cards=(rows,highlightNext=false)=>rows.map((race,index)=>{
     const remaining=daysUntil(race.date);
+    const featured=highlightNext && index===0;
     return `
-          <div class="race-card ${race.calendarSource?"provisional":String(race.priority).toLowerCase()}">
+          <div class="race-card ${race.calendarSource?"provisional":String(race.priority).toLowerCase()}${featured?" featured":""}">
         <div class="race-top">
           <div>
+            ${featured?'<span class="race-featured-label">Eerstvolgende wedstrijd</span>':""}
             <strong>${safe(race.name)}</strong>
             <small>
               ${fullDate.format(new Date(race.date+"T12:00:00"))}
@@ -7092,7 +7094,7 @@ function renderRaces(){
               · ${race.calendarSource?"Uit kalender · prioriteit nog kiezen":`${safe(race.priority)}-wedstrijd`}
             </small>
           </div>
-          <div class="race-time">${safe(race.targetTime || "—")}</div>
+          ${race.targetTime?`<div class="race-time">${safe(race.targetTime)}</div>`:""}
         </div>
         <p class="countdown">${remaining>=0 ? `${remaining===0?"Vandaag":`Over ${remaining} dagen`}` : `${Math.abs(remaining)} dagen geleden`}</p>
         ${race.notes ? `<p class="help">${safe(race.notes)}</p>` : ""}
@@ -7104,7 +7106,7 @@ function renderRaces(){
         </div>
       </div>`;
   }).join("");
-  list.innerHTML=(future.length?cards(future):"")+
+  list.innerHTML=(future.length?cards(future,true):"")+
     (past.length?`<details class="race-history"><summary>Eerdere wedstrijden (${past.length})</summary>${cards(past)}</details>`:"");
 }
 

@@ -75,6 +75,8 @@ test('race overview explains missing goals and shows upcoming races before histo
   assert.match(status.textContent,/1 komende wedstrijd/);
   assert.ok(list.innerHTML.indexOf('Komend doel')<list.innerHTML.indexOf('Eerdere race'));
   assert.match(list.innerHTML,/Eerdere wedstrijden \(1\)/);
+  assert.equal((list.innerHTML.match(/race-featured-label/g)||[]).length,1);
+  assert.match(list.innerHTML,/Eerstvolgende wedstrijd/);
 });
 
 test('a calendar Race becomes a provisional upcoming goal without duplication',()=>{
