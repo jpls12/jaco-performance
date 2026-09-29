@@ -870,14 +870,17 @@ function weekReplanDayRows(proposal,recent){
       const dateLabel=new Date(date+"T12:00:00").toLocaleDateString("nl-NL",
         {weekday:"short",day:"numeric",month:"short"});
       const label=pending?"Voorgesteld":applied?"Automatisch aangepast":
-        workout?.type==="Race"?"Wedstrijd":workout?"Gepland":"Vrij";
+        workout?.type==="Race"?"Wedstrijd":workout?.type==="Rest"?"Rustdag":workout?"Gepland":"Vrij";
       const name=workout?.name||"Geen training gepland";
-      return `<div class="week-replanner-day${pending||applied?" changed":""}">
-        <div class="week-replanner-day-head"><strong>${safe(dateLabel)}</strong><span>${safe(label)}</span></div>
-        <div class="week-replanner-day-main"><strong>${safe(name)}</strong>
-          <small>${workout?safe(trainingVolumeLabel(workout)):"Geen trainingsbelasting ingevuld"}</small></div>
-        ${reason?`<p class="week-replanner-day-reason">${previous?`Was: ${safe(previous.name||"Lege dag")}. `:""}${applied?"Reden bij wijziging":"Waarom"}: ${safe(reason)}</p>`:""}
-      </div>`;
+      const volume=workout?.type==="Rest"?"Herstelmoment":workout
+        ?trainingVolumeLabel(workout):"Geen training ingepland";
+      return `<button type="button" class="week-replanner-day${pending||applied?" changed":""}"
+        onclick="openTodayWeekDate('${date}')">
+        <span class="week-replanner-day-head"><strong>${safe(dateLabel)}</strong><small>${safe(label)}</small></span>
+        <span class="week-replanner-day-main"><strong>${safe(name)}</strong>
+          <small>${safe(volume)} · Open dag →</small></span>
+        ${reason?`<span class="week-replanner-day-reason">${previous?`Was: ${safe(previous.name||"Lege dag")}. `:""}${applied?"Reden bij wijziging":"Waarom"}: ${safe(reason)}</span>`:""}
+      </button>`;
     }).join("");
 }
 

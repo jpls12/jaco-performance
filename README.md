@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.19 · Directe bediening van week en resultaat**
+
+De zeven dagen in de weekcoach zijn nu direct te openen in de kalender en onderscheiden rust, wedstrijd en voorgestelde wijzigingen. Bovenaan Vandaag staan alleen de snelle routes naar beoordeling, weekplan en kracht/mobiliteit. De coachscore begint onbekend in plaats van een verzonnen 70 tijdens het laden; handmatig vernieuwen staat bij de onderbouwing. Na afronden opent Beoordeel resultaat de juiste gesynchroniseerde training van die datum, met voorrang voor een nog niet beoordeelde activiteit. Als het resultaat nog ontbreekt, vraagt de app om synchronisatie. De tekst maakt onderscheid tussen een verstuurd trainingsplan en een werkelijk resultaat. App-shell en backupmetadata gebruiken 10.10.19.
+
 **10.10.18 · Weekcoach zichtbaar en uitlegbaar**
 
 Het weekplan staat rechtstreeks op Vandaag en toont alle zeven komende dagen, met per voorgestelde aanpassing de vorige training, het nieuwe plan en de reden. Automatisch toegepaste wijzigingen bewaren ook hun reden en blijven als recente verandering zichtbaar zolang de aangepaste training nog in de kalender staat; de terugzetknop blijft beschikbaar. De instellingen staan in een uitklapbaar gedeelte. Een opgeslagen beoordeling verwijst direct naar het weekplan. Een scenario met zware beoordeling en klachten controleert dat de volgende kwaliteitstraining rust wordt en de wedstrijd behouden blijft. App-shell en backupmetadata gebruiken 10.10.18.
