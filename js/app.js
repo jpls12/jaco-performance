@@ -12174,6 +12174,7 @@ function renderTodayWeekOverview(){
   const summary=document.getElementById("todayWeekOverviewSummary");
   const title=document.getElementById("todayWeekOverviewTitle");
   const toggle=document.getElementById("toggleTodayWeekOverview");
+  const progress=document.getElementById("todayWeekProgress");
   if(!root || !summary || !title || !toggle) return;
   const start=todayWeekStartDate();
   const todayString=todayDateString();
@@ -12210,6 +12211,7 @@ function renderTodayWeekOverview(){
     </button>`;
   }).join("");
   summary.textContent=`${start} t/m ${addDays(start,6)} · ${completed}/${planned} voltooid · ${saved?"Tijd ingevuld":"Tijd nog invullen"}${conflicts?` · ${conflicts} tijdconflict${conflicts===1?"":"en"}`:""}`;
+  if(progress){progress.hidden=!planned;progress.max=Math.max(planned,1);progress.value=completed;}
   toggle.textContent=expanded?"Toon minder dagen":"Toon hele week";
 }
 
