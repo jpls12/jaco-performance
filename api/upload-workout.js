@@ -1,3 +1,4 @@
+import { authorizedAppRequest } from "./_app-auth.js";
 import { WORKOUTS } from "../lib/workouts.js";
 
 function sendJson(res, status, payload) {
@@ -134,9 +135,7 @@ export default async function handler(req, res) {
   }
 
   const workoutDate = cleanText(requestBody?.workoutDate, 10);
-  const pin = req.headers["x-jaco-pin"] ?? requestBody?.pin;
-
-  if (String(pin ?? "") !== String(appPin)) {
+  if (!authorizedAppRequest(req, requestBody?.pin)) {
     return sendJson(res, 401, { error: "Onjuiste app-pincode." });
   }
 

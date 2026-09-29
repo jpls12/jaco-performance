@@ -1,3 +1,4 @@
+import { authorizedAppRequest } from "./_app-auth.js";
 function sendJson(res,status,payload){
   res.status(status);
   res.setHeader("Content-Type","application/json; charset=utf-8");
@@ -42,7 +43,7 @@ export default async function handler(req,res){
   const apiKey=process.env.INTERVALS_API_KEY;
   const appPin=process.env.JACO_APP_PIN;
   if(!apiKey || !appPin) return sendJson(res,500,{error:"API-configuratie ontbreekt."});
-  if(String(req.headers["x-jaco-pin"]??"")!==String(appPin)){
+  if(!authorizedAppRequest(req)){
     return sendJson(res,401,{error:"App-pincode is nodig voor routegegevens."});
   }
   const activityId=String(req.query?.activityId||"").trim();

@@ -380,6 +380,7 @@ document.getElementById("saveAdaptiveWeek").onclick=saveAdaptiveWeek;
 document.getElementById("planMyWeek").onclick=generatePersonalWeek;
 document.getElementById("saveWeekPlan").onclick=savePersonalWeek;
 document.getElementById("exportLocalBackup").onclick=exportLocalBackup;
+document.getElementById("signOutAppSession").onclick=signOutAppSession;
 document.getElementById("chooseBackupFile").onclick=()=>{
   document.getElementById("backupFileInput").click();
 };

@@ -1,3 +1,4 @@
+import { authorizedAppRequest } from "./_app-auth.js";
 function sendJson(res, status, payload) {
   res.status(status);
   res.setHeader("Content-Type", "application/json; charset=utf-8");
@@ -53,8 +54,7 @@ export default async function handler(req, res) {
     });
   }
 
-  const providedPin = req.headers["x-jaco-pin"];
-  if (String(providedPin ?? "") !== String(appPin)) {
+  if (!authorizedAppRequest(req)) {
     return sendJson(res, 401, {
       error: "App-pincode is nodig voor persoonlijke wellnessdata."
     });
