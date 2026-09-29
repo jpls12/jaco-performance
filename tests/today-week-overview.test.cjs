@@ -26,6 +26,7 @@ function setup(today,start,workouts={},saved=true){
     weeklyAvailabilityComplete:()=>saved,weekdayIndexFromDate:date=>(new Date(`${date}T12:00:00Z`).getUTCDay()+6)%7,
     addDays,availabilityForDate:()=>({available:true,maxMinutes:60}),
     workoutWasCompleted:()=>false,estimatedWorkoutMinutes:()=>90,
+    weeklyTimeUsagePercent:(minutes,available)=>available?Math.min(100,Math.round(minutes/available*100)):100,
     safe:text=>text,escapeHtmlAttribute:text=>text
   });
   vm.runInContext(renderer,context);
@@ -40,6 +41,7 @@ test('the current week initially shows today and up to two next days',()=>{
   assert.equal((root.innerHTML.match(/class="today-week-overview-day/g)||[]).length,7);
   assert.equal((root.innerHTML.match(/hidden\s+onclick/g)||[]).length,4);
   assert.match(root.innerHTML,/Tijdconflict/);
+  assert.match(root.innerHTML,/today-week-time-track conflict/);
   assert.match(summary.textContent,/1 tijdconflict/);
   context.toggleTodayWeekOverview();
   assert.equal(toggle.state,'true');

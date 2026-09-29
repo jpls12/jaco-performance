@@ -90,6 +90,7 @@ test('upcoming race shows a live estimate separately from the personal target',(
     fullDate:new Intl.DateTimeFormat('nl-NL',{timeZone:'UTC'}),
     safe:value=>String(value),formatRaceDistance:()=> 'Halve marathon',
     formatRaceTime:n=>`${Math.round(n/60)} min`,formatPace:()=> '4:01',
+    parseTimeToSeconds:()=>4920,
     performanceModelRangeText:()=> '84–88 min',
     performanceModelPredictionForDistance:()=>({seconds:5160,confidence:'Goed',
       range:{low:5040,high:5280},primaryEvidence:{source:'Rotterdam 20 september'},
@@ -101,6 +102,8 @@ test('upcoming race shows a live estimate separately from the personal target',(
   assert.match(list.innerHTML,/Haalbare tijd · huidige vorm/);
   assert.match(list.innerHTML,/86 min/);
   assert.match(list.innerHTML,/84–88 min/);
+  assert.match(list.innerHTML,/Je doel is 4 min sneller dan de huidige inschatting/);
+  assert.match(list.innerHTML,/race-estimate-spectrum/);
   assert.match(list.innerHTML,/Rotterdam 20 september · training 2026-09-28/);
 });
 
