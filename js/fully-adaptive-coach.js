@@ -740,9 +740,12 @@ function renderFullyAdaptiveCoach(){
     <span>${safe(state.dailyDecision.effort)}</span>
   `;
 
+  const recentWeek=weekReplanRecentChanges(state.week).size;
   document.getElementById("fullyAdaptiveWeek").innerHTML=`
     <strong>${state.week.changes.length
       ?`${state.week.changes.length} wijziging${state.week.changes.length===1?"":"en"}`
+      :recentWeek
+        ?`${recentWeek} dag(en) bijgestuurd`
       :weekReplanHasPlanned(state.week)?"Planning staat goed":"Nog geen planning"}</strong>
     <span>${safe(state.week.stress?.level||"onbekend")}</span>
   `;

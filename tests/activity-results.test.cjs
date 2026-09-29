@@ -140,11 +140,21 @@ test('quick review needs only RPE and feeling, leaving optional signals unknown'
 });
 
 test('old manual day check-in is preserved while a new review updates advice',()=>{
-  const {diary,status,submit}=resultsContext();
+  const {context,diary,status,submit}=resultsContext();
   diary['2026-09-26']={sessionRpe:7,note:'Eigen beoordeling'};
   submit('i1',{sessionRpe:9,legs:5,energy:1,enjoyment:1,complaintSeverity:3});
   assert.equal(diary['2026-09-26'].sessionRpe,7);
   assert.match(status.textContent,/coachadvies is opnieuw berekend/);
+  const app=fs.readFileSync('js/app.js','utf8');
+  const recovery=app.slice(app.indexOf('function effectiveCoachDiary('),
+    app.indexOf('function buildDiaryContext('));
+  context.diaryNumber=value=>value==null?null:Number(value);
+  context.calendarDayDifference=(today,date)=>
+    Math.round((Date.parse(today)-Date.parse(date))/86400000);
+  vm.runInContext(recovery,context);
+  const signal=context.latestDiaryRecoverySignal(undefined,'2026-09-26');
+  assert.equal(signal.level,'elevated');
+  assert.equal(signal.complaint,true);
 });
 
 test('deleting one of two ratings keeps the remaining daily signal',()=>{

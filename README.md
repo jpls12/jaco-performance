@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.18 · Weekcoach zichtbaar en uitlegbaar**
+
+Het weekplan staat rechtstreeks op Vandaag en toont alle zeven komende dagen, met per voorgestelde aanpassing de vorige training, het nieuwe plan en de reden. Automatisch toegepaste wijzigingen bewaren ook hun reden en blijven als recente verandering zichtbaar zolang de aangepaste training nog in de kalender staat; de terugzetknop blijft beschikbaar. De instellingen staan in een uitklapbaar gedeelte. Een opgeslagen beoordeling verwijst direct naar het weekplan. Een scenario met zware beoordeling en klachten controleert dat de volgende kwaliteitstraining rust wordt en de wedstrijd behouden blijft. App-shell en backupmetadata gebruiken 10.10.18.
+
 **10.10.17 · Eén plek voor trainingsfeedback**
 
 Het aparte Coach Dagboek is uit de interface gehaald. Uitgevoerde trainingen beoordeel je bij Resultaten; die feedback blijft de dag- en weekcoach voeden. Bestaande handmatige check-ins worden bewaard en blijven in backups beschikbaar. Bij een beoordeling op dezelfde dag heeft die actuele beoordeling voor het coachadvies voorrang, zonder de oude gegevens te verwijderen. Afronden van een training opent geen dubbel formulier meer. App-shell en backupmetadata gebruiken 10.10.17.
