@@ -158,6 +158,9 @@ function setupPwaExperience(){
   document.querySelectorAll(".app-menu-item[data-menu-view]").forEach(button=>{
     button.onclick=()=>navigateAppView(button.dataset.menuView);
   });
+  document.querySelectorAll("[data-race-tool]").forEach(button=>{
+    button.onclick=()=>openRaceTool(button.dataset.raceTool);
+  });
 
   document.getElementById("openAppMenu").onclick=openAppMenu;
   document.getElementById("closeAppMenu").onclick=closeAppMenu;
