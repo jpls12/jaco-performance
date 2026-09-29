@@ -308,6 +308,47 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
 .race-tool>summary::after{color:#c4bbff}
 .race-tool>.card{background:#151e30;border-top-color:#3c4d69}
 
+/* Training creation keeps the quick path visible and the detailed form scannable. */
+.editor-smart-card,.editor-form-card,.editor-preview-card,.saved-workouts-card{background:#151e30;border-color:#36425e;border-radius:24px;padding:clamp(18px,3vw,28px)}
+.editor-smart-card{background:linear-gradient(135deg,#2f315f,#202b48 62%,#1a2a3c);border-color:#6869a1}
+.editor-smart-card h2{font-size:1.6rem;font-weight:810}
+.editor-smart-card .help{color:#d2d9e9}
+.editor-smart-card label{color:#eef0fa}
+.editor-smart-card #smartInput{min-height:104px;background:rgba(10,17,43,.4);border-color:#7275aa;font-size:1rem;line-height:1.5}
+.editor-smart-card #smartInput::placeholder{color:#b9c2da}
+.editor-smart-card>.grid2{margin-top:14px}
+.editor-smart-card #generateSmartWorkout{background:rgba(10,17,43,.28);border-color:#a2a0d1;color:#f4f5ff}
+.editor-examples{margin-top:18px;border-top:1px solid rgba(224,226,255,.22);padding-top:12px}
+.editor-examples>summary{cursor:pointer;color:#e8e6ff;font-size:.85rem;font-weight:750}
+.editor-examples>summary:focus-visible{outline:2px solid #c6ef79;outline-offset:4px}
+.editor-examples ul{margin:12px 0 0;padding-left:19px;color:#d2d9eb;font-size:.85rem;line-height:1.65}
+.editor-examples li+li{margin-top:5px}
+.editor-form-card .form-mode{background:#222f49;border-color:#455575;border-radius:17px;padding:15px}
+.editor-form-card .form-mode strong{font-size:1.2rem;letter-spacing:-.035em}
+.editor-form-card>p.help{margin:12px 0 20px}
+.editor-form-card #workoutForm{gap:17px}
+.editor-form-card .section{border:1px solid #3c4d69;border-radius:17px;padding:16px;background:#1d2940}
+.editor-form-card .section h3{font-size:1rem;margin-bottom:13px;color:#e9e5ff}
+.editor-form-card label{color:#dce4ef;font-size:.85rem}
+.editor-form-card input,.editor-form-card select,.editor-form-card textarea{min-height:44px}
+.editor-form-card #saveButton{min-height:50px;font-size:1rem}
+.editor-preview-card{background:#1b263b}
+.editor-preview-card pre{max-height:320px;overflow:auto;line-height:1.55}
+.exact-run-panel{background:#202b48;border-color:#7777ac;border-radius:17px}
+
+.saved-workouts-card .notice{background:#24334b;border-left:3px solid #bcb5ff;border-radius:0 12px 12px 0;padding:11px 14px;color:#dae3f0;font-size:.85rem}
+.saved-workouts-card .saved-list{gap:10px;margin-top:18px}
+.saved-workouts-card .saved-row{background:#202b42;border:1px solid #3b4b68;border-radius:18px;padding:16px}
+.saved-row-top{display:flex;align-items:flex-start;gap:12px}
+.saved-row-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:#343866;font-size:1.22rem}
+.saved-row-copy{min-width:0;flex:1}
+.saved-row-copy strong{font-size:1.02rem;line-height:1.25;letter-spacing:-.025em}
+.saved-row-copy small{display:block;margin-top:5px;color:#c2cddd;font-size:.78rem;line-height:1.45}
+.saved-row-status{flex:none;padding:5px 8px;border-radius:999px;background:#2d4939;color:#d2f1bc;font-size:.68rem;font-weight:750}
+.saved-workouts-card .mini-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}
+.saved-workouts-card .mini-actions button{width:auto;min-height:37px;padding:7px 11px;font-size:.8rem}
+.saved-workouts-card .mini-actions .danger{margin-left:auto;background:#3e2937;border-color:#684454;color:#ffd7df}
+
 @media(max-width:650px){
   main{padding-top:13px;padding-bottom:calc(115px + env(safe-area-inset-bottom))}
   .app-header{margin-bottom:10px;padding-bottom:5px}
@@ -351,6 +392,15 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
   .race-card.featured .race-top{flex-direction:column;gap:8px}
   .race-overview-card .race-card{padding:14px}
   .season-block-row{grid-template-columns:96px minmax(0,1fr)}
+  .editor-smart-card>.grid2{grid-template-columns:1fr}
+  .editor-form-card .grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .saved-row-status{align-self:flex-start}
+  .saved-workouts-card .mini-actions .danger{margin-left:0}
+}
+@media(max-width:430px){
+  .editor-form-card .grid2{grid-template-columns:1fr}
+  .saved-row-top{flex-wrap:wrap}
+  .saved-row-status{margin-left:54px}
 }
 @media(max-width:390px){
   .today-week-overview-head{flex-direction:column;gap:8px}
