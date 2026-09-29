@@ -1,0 +1,166 @@
+/* 11.0 · A distinct, focused visual layer over the existing coach UI. */
+:root{
+  --bg:#090e1b;
+  --panel:#151e30;
+  --panel2:#1c2940;
+  --line:#34445d;
+  --text:#f7f8fb;
+  --muted:#b8c3d7;
+  --green:#c6ef79;
+  --blue:#b9b0ff;
+  --surface-raised:#202e48;
+  --surface-soft:#1b2840;
+  --shadow-card:0 20px 48px rgba(2,5,17,.25);
+}
+body{
+  background:
+    radial-gradient(ellipse 580px 390px at 12% -170px,rgba(102,84,190,.26),transparent 76%),
+    radial-gradient(ellipse 460px 300px at 98% 120px,rgba(45,88,133,.16),transparent 80%),
+    var(--bg);
+  color:var(--text);
+  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  letter-spacing:0;
+}
+main{max-width:1080px;padding-top:24px}
+h1,h2,h3{color:var(--text);letter-spacing:-.04em}
+.help,.subtitle{color:var(--muted)}
+.label,.eyebrow{color:var(--blue);font-weight:800;letter-spacing:.135em}
+button{background:var(--green);color:#17240c}
+button.secondary{background:#25324a;color:#f5f7fb;border:1px solid #495a75}
+button:focus-visible,a:focus-visible,summary:focus-visible{outline-color:#d9ff9f}
+.card{background:var(--panel);border-color:#2e3b54;border-radius:24px;box-shadow:var(--shadow-card)}
+.app-header{border-bottom:0;margin:0 0 20px;padding:0 2px 8px}
+.brand-mark{
+  border:0;background:linear-gradient(145deg,#bfb2ff,#7975dd);
+  color:#15142a;border-radius:17px;box-shadow:0 12px 28px rgba(70,55,169,.28)
+}
+.brand-mark-dot{background:var(--green);box-shadow:0 0 0 2px #292449}
+.brand-copy .eyebrow{color:#bcb5db;letter-spacing:.16em}
+.brand-copy h1{font-size:1.35rem;font-weight:840;letter-spacing:-.045em}
+.brand-copy .subtitle{font-size:.8rem}
+
+/* The primary navigation is intentionally quieter than the training content. */
+.tabs{background:#111a2b;border-color:#2d3b54;border-radius:18px;padding:5px;margin-bottom:22px}
+.tabs .tab{color:#b2bfd3;border-radius:13px}
+.tabs .tab.active{background:#34345f;border-color:#6560a9;color:#fff;box-shadow:none}
+.tabs .tab:hover{background:#283451;color:#fff}
+.view-intro h2,.today-intro h2{font-weight:840;letter-spacing:-.055em}
+.today-intro{margin-top:17px;margin-bottom:18px}
+.today-intro h2{font-size:clamp(2.2rem,6vw,3.5rem);line-height:1.04}
+.today-intro .help{color:#c7cfe0}
+.today-shortcuts a,.today-shortcuts button,.view-jumps a{
+  background:#1b263b;border:1px solid #3a4a64;color:#d9e1f0;
+  font-weight:680;box-shadow:none
+}
+.today-shortcuts a:hover,.today-shortcuts button:hover,.view-jumps a:hover{background:#2c3655;border-color:#786fd0}
+
+/* A high-contrast training hero: one primary action and lightweight supporting data. */
+.daily-training-card{
+  position:relative;overflow:hidden;padding:clamp(20px,3.5vw,34px);
+  background:linear-gradient(125deg,#38337c 0%,#2a315f 46%,#1a3252 100%);
+  border:1px solid #6d70bb;border-radius:28px;
+  box-shadow:0 22px 58px rgba(23,24,82,.34)
+}
+.daily-training-card::before{
+  content:"";position:absolute;width:290px;height:290px;right:-115px;top:-130px;
+  border:1px solid rgba(255,255,255,.16);border-radius:50%;pointer-events:none
+}
+.daily-training-card::after{
+  content:"";position:absolute;width:210px;height:210px;right:-76px;top:-90px;
+  border:1px solid rgba(255,255,255,.12);border-radius:50%;pointer-events:none
+}
+.daily-training-card>*{position:relative;z-index:1}
+.daily-training-head .label{color:#d5d0ff}
+.daily-training-head h2{font-size:1rem;font-weight:650;color:#edf0ff}
+.daily-training-status{border-radius:999px;padding:8px 12px;font-size:.69rem;letter-spacing:.06em;text-transform:uppercase}
+.daily-training-status.planned,.daily-training-status.loading{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
+.daily-training-hero{background:transparent;border:0;box-shadow:none;padding:24px 0 18px;align-items:flex-start}
+.daily-training-icon{
+  width:58px;height:58px;flex-basis:58px;border:1px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.12);color:#e8e8ff;border-radius:17px;box-shadow:none
+}
+.daily-training-icon[data-type="Race"],.daily-training-icon[data-type="Strength"],
+.daily-training-icon[data-type="Core"],.daily-training-icon[data-type="Rest"],
+.daily-training-icon[data-type="Mobility"]{background:rgba(255,255,255,.12);color:#f4f3ff;border-color:rgba(255,255,255,.2)}
+.daily-training-copy h2{font-size:clamp(1.75rem,4vw,2.55rem);line-height:1.08;margin:5px 0 11px;font-weight:820;letter-spacing:-.055em}
+.daily-training-copy .help{color:#e1e5fa;max-width:56ch}
+.daily-training-type{color:#d7d2ff}
+.daily-training-stats{gap:0;border-top:1px solid rgba(255,255,255,.2);border-bottom:1px solid rgba(255,255,255,.2);margin:2px 0 18px}
+.daily-training-stats>div{background:transparent;border:0;border-radius:0;box-shadow:none;padding:13px 10px 13px 0}
+.daily-training-stats span{color:#d6ddf4}
+.daily-training-stats strong{color:#fff;font-size:1rem}
+.daily-training-actions{margin-top:17px}
+.daily-training-actions button:first-child:not(:disabled){box-shadow:0 8px 22px rgba(13,24,11,.2)}
+.daily-training-card .daily-training-actions button.secondary{background:rgba(10,17,48,.28);border-color:rgba(255,255,255,.28);color:#fff}
+.daily-training-details{background:rgba(13,19,56,.28);border-color:rgba(255,255,255,.24)}
+
+/* The week is a calm list with one visible rhythm and one meaningful status. */
+.today-week-overview{background:#151e30;border-color:#36425e;padding:clamp(20px,3vw,29px)}
+.today-week-overview-head h2{font-size:1.55rem;font-weight:800}
+.today-week-overview-head .help{font-size:.83rem}
+.today-week-overview-head button.secondary{font-size:.82rem;padding:9px 12px;min-height:38px}
+.today-week-progress{display:block;width:100%;height:7px;margin:2px 0 17px;border:0;border-radius:99px;overflow:hidden;background:#2b3651;accent-color:var(--green)}
+.today-week-progress[hidden]{display:none}
+.today-week-progress::-webkit-progress-bar{background:#2b3651;border-radius:99px}
+.today-week-progress::-webkit-progress-value{background:var(--green);border-radius:99px}
+.today-week-progress::-moz-progress-bar{background:var(--green);border-radius:99px}
+.today-week-overview-days{gap:0}
+.today-week-overview-day{
+  border:0;border-bottom:1px solid #2d3952;border-radius:0;background:transparent;
+  min-height:64px;padding:9px 3px;gap:14px
+}
+.today-week-overview-day:last-child{border-bottom:0}
+.today-week-overview-day.is-today{background:#242c4a;border:0;border-radius:14px;padding-left:10px;padding-right:10px}
+.today-week-overview-day:hover{background:#25314c;border-radius:14px}
+.today-week-overview-date{background:#25324b;border-radius:11px;width:45px;min-height:44px;align-content:center}
+.today-week-overview-day.is-today .today-week-overview-date{background:#bcb5ff;color:#171a38}
+.today-week-overview-day.is-today .today-week-overview-date small{color:#27264b}
+.today-week-overview-date strong{font-size:1.02rem}
+.today-week-overview-session strong{font-weight:750}
+.today-week-overview-state{padding:5px 8px;border-radius:999px;background:#273751;color:#dbe5f4}
+.today-week-overview-day.is-done .today-week-overview-state{background:#263e38;color:#c9f6c4}
+.today-week-overview-day.is-conflict .today-week-overview-state{background:#503b2e;color:#ffdb9d}
+.today-week-overview-toggle,.today-week-overview-link{color:#c9f27b}
+.today-week-overview-link{text-decoration:none}
+
+/* Supporting information recedes without hiding the coach's reasoning. */
+.support-today-card{background:#172b2d;border-color:#365b51}
+.today-card-icon{background:#254837;color:#c9f27b}
+.today-context-details,.today-monitor-details,.daily-training-details{border-radius:15px}
+.week-replanner-card,.fully-adaptive-coach-card{border-radius:18px}
+input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px}
+
+@media(max-width:650px){
+  main{padding-top:13px;padding-bottom:calc(115px + env(safe-area-inset-bottom))}
+  .app-header{margin-bottom:10px;padding-bottom:5px}
+  .brand-mark{width:42px;height:42px;flex-basis:42px;border-radius:13px}
+  .brand-copy h1{font-size:1.14rem}
+  .today-intro{margin-top:13px}
+  .today-intro h2{font-size:2.45rem}
+  .today-shortcuts{gap:7px}
+  .today-shortcuts a,.today-shortcuts button{font-size:.75rem;min-height:36px;padding:6px 10px}
+  .daily-training-card{padding:21px;margin-top:15px}
+  .daily-training-hero{padding:21px 0 13px;gap:13px}
+  .daily-training-icon{width:48px;height:48px;flex-basis:48px}
+  .daily-training-icon svg{width:27px;height:27px}
+  .daily-training-copy h2{font-size:1.85rem}
+  .daily-training-stats strong{font-size:.86rem}
+  .today-week-overview-head{flex-direction:row;align-items:flex-start}
+  .today-week-overview-head button{align-self:auto}
+  .today-week-overview-day{grid-template-columns:45px minmax(0,1fr) auto;gap:10px}
+  .today-week-overview-state{font-size:.68rem}
+  .mobile-bottom-nav{
+    left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));
+    padding:7px;border:1px solid #56617f;border-radius:22px;
+    background:rgba(20,27,47,.97);box-shadow:0 18px 36px rgba(0,0,0,.4)
+  }
+  .mobile-bottom-nav .mobile-nav-button{min-height:51px;border-radius:15px;color:#aebbd2}
+  .mobile-bottom-nav .mobile-nav-button.active{background:#3a3a70;color:#fff}
+  .mobile-bottom-nav .mobile-nav-button.active .mobile-nav-icon{color:var(--green)}
+}
+@media(max-width:390px){
+  .today-week-overview-head{flex-direction:column;gap:8px}
+  .today-week-overview-day{grid-template-columns:42px minmax(0,1fr) auto}
+  .today-week-overview-state{padding:4px 6px;font-size:.64rem}
+}
+@media(prefers-reduced-motion:reduce){button{transition:none}}

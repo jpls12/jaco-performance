@@ -1177,22 +1177,6 @@
     .daily-training-status.done{border-color:#3e8c65;color:#c8f5da;background:#153627}
     .daily-training-status.race{border-color:#b26565;color:#ffd7d7;background:#421e27}
     .daily-training-status.rest{border-color:#647387;color:#d6dfeb;background:#202a37}
-    .today-week-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin:15px 0}
-    .today-week-day{
-      min-width:0;padding:8px 2px;border-radius:12px;border:1px solid #29415e;
-      background:#0c1a2a;color:#8da3b9;text-align:center
-    }
-    .today-week-day strong{display:block;font-size:.88rem;color:#dce9f5}
-    .today-week-day small{display:block;font-size:.62rem;text-transform:uppercase;margin-bottom:3px}
-    .today-week-day .week-dot{
-      display:block;width:6px;height:6px;border-radius:50%;margin:5px auto 0;background:#40556d
-    }
-    .today-week-day.has-workout .week-dot{background:#58aee0}
-    .today-week-day.done .week-dot{background:#3bc77b}
-    .today-week-day.race .week-dot{background:#e56868}
-    .today-week-day.today{
-      border-color:#69c4ff;background:#15334a;box-shadow:0 0 0 1px rgba(105,196,255,.15)
-    }
     .daily-training-hero{
       display:flex;gap:14px;align-items:center;padding:15px;border-radius:16px;
       background:#0d1c2c;border:1px solid #294a67
@@ -1276,8 +1260,6 @@
 
     @media(max-width:650px){
       .daily-training-card{margin-top:7px;padding:14px}
-      .today-week-strip{gap:4px}
-      .today-week-day{padding:7px 1px}
       .daily-training-actions{grid-template-columns:1fr 1fr}
       .daily-training-actions button:first-child{grid-column:1/-1}
       .guided-training-player{padding-top:calc(9px + env(safe-area-inset-top))}
@@ -2959,8 +2941,6 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .reason-item,.week-plan-row,.availability-row,.profile-chip{background:var(--surface-soft);border-color:#365267}
 .recommendation-card{background:#1b3936;border-color:#588672}
 .recommendation-title{font-weight:780;letter-spacing:-.025em}
-.today-week-day{background:var(--surface-soft);border-color:#3b596b}
-.today-week-day.today{background:#234859;border-color:#87c5db}
 
 /* Coach Dagboek: snelle check-in, met verdieping op verzoek. */
 .coach-diary-card{background:var(--panel);border-color:#426b7b}
@@ -3100,6 +3080,29 @@ input:focus,select:focus,textarea:focus{border-color:#93d9f3;box-shadow:0 0 0 3p
 .activity-rpe-ends{display:flex;justify-content:space-between;color:var(--muted);font-size:.75rem}
 .activity-rpe-hint{margin:.45rem 0 0;font-size:.78rem;line-height:1.4;color:var(--muted)}
 .weekly-availability-prompt{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin:1rem 0;padding:1rem;border:1px solid #40866f;border-radius:14px;background:#173b37}
+.today-week-overview{margin-top:14px}
+.today-week-overview-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.today-week-overview-head h2{margin:0 0 4px}
+.today-week-overview-head .help{margin:0}
+.today-week-overview-head button{width:auto;flex:none}
+.today-week-overview-days{display:grid;gap:6px}
+.today-week-overview-day{display:grid;grid-template-columns:45px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;min-height:62px;padding:7px 12px;text-align:left;border:1px solid #375367;border-radius:12px;background:#172d3c;color:var(--text);cursor:pointer}
+.today-week-overview-day[hidden]{display:none}
+.today-week-overview-day.is-today{border-color:#82c9d8;background:#214553}
+.today-week-overview-day.is-done .today-week-overview-state{color:#9ce8b5}
+.today-week-overview-day.is-conflict .today-week-overview-state{color:#ffc188}
+.today-week-overview-day:hover{background:#244657}
+.today-week-overview-day:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.today-week-overview-date,.today-week-overview-session{display:grid;gap:2px;min-width:0}
+.today-week-overview-date{justify-items:center}
+.today-week-overview-date small,.today-week-overview-session small{font-size:.74rem;color:var(--muted)}
+.today-week-overview-date strong{font-size:1.15rem;line-height:1}
+.today-week-overview-session strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.89rem}
+.today-week-overview-state{font-size:.75rem;font-weight:700;color:#b6d7e6;white-space:nowrap}
+.today-week-overview-link{display:inline-flex;gap:7px;margin-top:14px;font-size:.85rem;font-weight:700;color:#a7e5ed}
+.today-week-overview-toggle{display:block;width:auto;margin-top:10px;padding:7px 0;border:0;background:transparent;color:#a7e5ed;font-size:.84rem;font-weight:700;cursor:pointer}
+.today-week-overview-toggle:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+@media(max-width:480px){.today-week-overview-head{align-items:stretch;flex-direction:column}.today-week-overview-head button{align-self:flex-start}.today-week-overview-day{grid-template-columns:36px minmax(0,1fr) auto;gap:8px;padding:7px 9px}.today-week-overview-state{font-size:.68rem}}
 .weekly-availability-prompt[hidden]{display:none}.weekly-availability-prompt p{margin:.3rem 0 0;font-size:.85rem;line-height:1.4}
 .weekly-availability-prompt button{width:auto;min-width:max-content}
 .mobile-nav-button[data-mobile-view="planning"]{position:relative}

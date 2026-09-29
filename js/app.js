@@ -12157,10 +12157,7 @@ Easy
 }
 
 function todayWeekStartDate(){
-  const todayString=todayDateString();
-  const date=new Date(todayString+"T12:00:00");
-  const mondayOffset=(date.getDay()+6)%7;
-  return addDays(todayString,-mondayOffset);
+  return weeklyAvailabilityStart();
 }
 
 function openTodayWeekDate(date){
@@ -12172,37 +12169,56 @@ function openTodayWeekDate(date){
   renderSelected();
 }
 
-function renderTodayWeekStrip(){
-  const strip=document.getElementById("todayWeekStrip");
-  if(!strip) return;
-
+function renderTodayWeekOverview(){
+  const root=document.getElementById("todayWeekOverviewDays");
+  const summary=document.getElementById("todayWeekOverviewSummary");
+  const title=document.getElementById("todayWeekOverviewTitle");
+  const toggle=document.getElementById("toggleTodayWeekOverview");
+  const progress=document.getElementById("todayWeekProgress");
+  if(!root || !summary || !title || !toggle) return;
   const start=todayWeekStartDate();
   const todayString=todayDateString();
+  const upcoming=start>todayString;
+  title.textContent=upcoming?"Volgende week":"Mijn week";
   const workouts=allWorkouts();
-  const shortDay=new Intl.DateTimeFormat("nl-NL",{weekday:"short"});
-
-  strip.innerHTML=Array.from({length:7},(_,index)=>{
+  const saved=weeklyAvailabilityComplete(start);
+  const expanded=toggle.getAttribute("aria-expanded")==="true";
+  const firstVisible=upcoming?0:weekdayIndexFromDate(todayString);
+  let planned=0;
+  let completed=0;
+  let conflicts=0;
+  root.innerHTML=DAY_KEYS.map((key,index)=>{
     const date=addDays(start,index);
     const workout=workouts[date]||null;
-    const parsed=new Date(date+"T12:00:00");
-    const done=workout ? workoutWasCompleted(date,workout) : false;
+    const availability=availabilityForDate(date);
+    const done=Boolean(workout && workoutWasCompleted(date,workout));
     const race=workout?.type==="Race";
-    const classes=[
-      "today-week-day",
-      date===todayString?"today":"",
-      workout?"has-workout":"",
-      done?"done":"",
-      race?"race":""
-    ].filter(Boolean).join(" ");
-
-    return`
-      <button type="button" class="${classes}" onclick="openTodayWeekDate('${date}')"
-        aria-label="${escapeHtmlAttribute(fullDate.format(parsed))}${workout?` · ${escapeHtmlAttribute(workout.name)}`:""}">
-        <small>${safe(shortDay.format(parsed).replace(".",""))}</small>
-        <strong>${parsed.getDate()}</strong>
-        <span class="week-dot"></span>
-      </button>`;
+    const rest=workout?.type==="Rest";
+    const minutes=workout && !race && !rest ? estimatedWorkoutMinutes(workout) : 0;
+    const conflict=Boolean(saved && workout && !done && !race && !rest &&
+      (!availability.available || minutes>availability.maxMinutes));
+    if(workout && !rest) planned++;
+    if(done && !rest) completed++;
+    if(conflict) conflicts++;
+    const state=done?"Voltooid":race?"Wedstrijd":rest?"Rust":conflict?"Tijdconflict":workout?"Gepland":"Vrij";
+    const time=saved?availability.maxMinutes?`${availability.maxMinutes} min beschikbaar`:"Geen tijd opgegeven":"Tijd nog invullen";
+    return `<button type="button" class="today-week-overview-day${date===todayString?" is-today":""}${done?" is-done":""}${conflict?" is-conflict":""}"
+      ${!expanded && (index<firstVisible || index>=firstVisible+3)?"hidden":""}
+      onclick="openTodayWeekDate('${date}')" aria-label="${escapeHtmlAttribute(DAY_NAMES[index])} ${escapeHtmlAttribute(date)}: ${escapeHtmlAttribute(workout?.name||"Geen training")}, ${state}">
+      <span class="today-week-overview-date"><small>${safe(DAY_NAMES[index].slice(0,2))}</small><strong>${Number(date.slice(8))}</strong></span>
+      <span class="today-week-overview-session"><strong>${safe(workout?.name||"Geen training")}</strong><small>${time}</small></span>
+      <span class="today-week-overview-state">${state}</span>
+    </button>`;
   }).join("");
+  summary.textContent=`${start} t/m ${addDays(start,6)} · ${completed}/${planned} voltooid · ${saved?"Tijd ingevuld":"Tijd nog invullen"}${conflicts?` · ${conflicts} tijdconflict${conflicts===1?"":"en"}`:""}`;
+  if(progress){progress.hidden=!planned;progress.max=Math.max(planned,1);progress.value=completed;}
+  toggle.textContent=expanded?"Toon minder dagen":"Toon hele week";
+}
+
+function toggleTodayWeekOverview(){
+  const toggle=document.getElementById("toggleTodayWeekOverview");
+  toggle.setAttribute("aria-expanded",toggle.getAttribute("aria-expanded")==="true"?"false":"true");
+  renderTodayWeekOverview();
 }
 
 function dailyTrainingIcon(type){
@@ -12236,7 +12252,7 @@ function dailyTrainingSourceLabel(date,workout){
 
 function renderCurrentTodayWorkout(workout){
   if(typeof renderSupportTraining==="function") renderSupportTraining();
-  renderTodayWeekStrip();
+  renderTodayWeekOverview();
 
   const statusBadge=document.getElementById("todayTrainingStatus");
   const icon=document.getElementById("todayTrainingIcon");

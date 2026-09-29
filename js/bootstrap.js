@@ -384,6 +384,7 @@ document.getElementById("fuelHydrationForm").onsubmit=saveFuelHydrationProfile;
 document.getElementById("planningForm").onsubmit=savePlanning;
 document.getElementById("weeklyAvailabilityForm").onsubmit=saveWeeklyAvailability;
 document.getElementById("reviewNextActivity").onclick=openNextActivityReview;
+document.getElementById("toggleTodayWeekOverview").onclick=toggleTodayWeekOverview;
 document.getElementById("undoWeeklyPlan").onclick=undoWeeklyPlan;
 document.getElementById("weeklyAvailabilityDate").onchange=()=>{
   if(!confirmWeeklyAvailabilityWeekChange()) return;
@@ -395,6 +396,18 @@ document.getElementById("weeklyAvailabilityDays").oninput=updateWeeklyAvailabili
 document.getElementById("copyPreviousAvailability").onclick=copyPreviousAvailability;
 document.getElementById("openWeeklyAvailability").onclick=()=>{
   navigateAppView("planning");
+  document.getElementById("planningAvailability").scrollIntoView({behavior:"smooth",block:"start"});
+};
+document.getElementById("editTodayWeekAvailability").onclick=()=>{
+  navigateAppView("planning");
+  const field=document.getElementById("weeklyAvailabilityDate");
+  if(field && field.value!==todayWeekStartDate()){
+    if(confirmWeeklyAvailabilityWeekChange()){
+      field.value=todayWeekStartDate();
+      renderWeeklyAvailabilityEditor();
+      renderWeeklyPlanSummary();
+    }
+  }
   document.getElementById("planningAvailability").scrollIntoView({behavior:"smooth",block:"start"});
 };
 document.getElementById("buildFullSeasonSchedule").onclick=buildFullSeasonSchedulePreview;
