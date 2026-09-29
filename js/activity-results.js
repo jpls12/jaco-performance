@@ -138,10 +138,13 @@ function activityReviewInsight(activity,review){
   if(review.complaintSeverity!=null && review.complaintSeverity>=2){
     tone="caution";title="Klachten vragen aandacht";
     explanation="Je meldde duidelijke klachten. Controleer het actuele coachadvies voordat je de volgende zware training uitvoert.";
-  }else if(review.sessionRpe>=8 && review.legs!=null && review.legs>=4 &&
-    review.energy!=null && review.energy<=2){
+  }else if(review.sessionRpe>=9 && review.energy!=null && review.energy<=2){
     tone="caution";title="Zware trainingsrespons";
-    explanation="De combinatie van hoge zwaarte, zware benen en lage energie is een herstelsignaal voor de coach.";
+    explanation="De combinatie van hoge zwaarte en lage energie is een herstelsignaal voor de coach.";
+  }else if(review.sessionRpe>=8 && ((review.legs!=null && review.legs>=4) ||
+    (review.energy!=null && review.energy<=2))){
+    tone="attention";title="Herstel in de gaten houden";
+    explanation="De hoge RPE samen met zware benen of weinig energie vraagt aandacht in het coachadvies.";
   }else if(review.sessionRpe>=8){
     tone="attention";title="Zware training voltooid";
     explanation="Je gaf een hoge RPE op zonder extra klachten- of vermoeidheidssignaal in deze beoordeling. De coach weegt de overige daggegevens mee.";

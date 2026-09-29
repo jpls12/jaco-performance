@@ -788,13 +788,17 @@ function buildAdaptiveWeekReplan(){
             schedule,
             date,
             swap.targetDate,
-            `Meer herstelruimte door ${stress.level==="elevated"?"verhoogde belasting":"een belastingssignaal met aandacht"}`
+            stress.diary?.reason && ["attention","elevated"].includes(stress.diary.level)
+              ?`Meer herstelruimte door trainingsfeedback: ${stress.diary.reason}`
+              :`Meer herstelruimte door ${stress.level==="elevated"?"verhoogde belasting":"een belastingssignaal met aandacht"}`
           );
         }else if(stress.level==="elevated"){
           schedule[date]=weekReplanRecoveryWorkout(
             workout,
             date,
-            "Verhoogde actuele belasting"
+            stress.diary?.level==="elevated"
+              ?`Trainingsfeedback: ${stress.diary.reason}`
+              :"Verhoogde actuele belasting"
           );
         }else{
           notes.push(

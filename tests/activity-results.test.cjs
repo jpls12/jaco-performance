@@ -334,6 +334,10 @@ test('review insight distinguishes high RPE from a combined recovery signal',()=
   assert.match(context.activityReviewInsight(activities.i1,base).explanation,/overige daggegevens/);
   const heavy={...base,legs:4,energy:2};
   assert.equal(context.activityReviewInsight(activities.i1,heavy).tone,'caution');
+  assert.equal(context.activityReviewInsight(activities.i1,
+    {sessionRpe:9,energy:2}).tone,'caution');
+  assert.match(context.activityReviewInsight(activities.i1,
+    {sessionRpe:8,energy:2}).explanation,/weinig energie/);
   assert.equal(context.activityReviewInsight(activities.i1,{...base,complaintSeverity:2}).tone,'caution');
   diary['2026-09-26']={sessionRpe:5,note:'handmatig'};
   assert.match(context.activityReviewInsight(activities.i1,base).coach,/telt mee voor het coachadvies/);

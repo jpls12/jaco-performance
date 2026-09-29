@@ -48,6 +48,10 @@ test('recent diary uses combined feedback; planned hard effort alone stays stabl
   const heavy=signal({'2026-09-25':{sessionRpe:9,legs:4,energy:2,complaintSeverity:0}});
   assert.equal(heavy.level,'elevated');
   assert.equal(heavy.complaint,false);
+  const quickReview=signal({'2026-09-25':{sessionRpe:9,energy:2,complaintSeverity:0}});
+  assert.equal(quickReview.level,'elevated');
+  assert.match(quickReview.reason,/lage energie/);
+  assert.equal(signal({'2026-09-25':{sessionRpe:5,energy:1,complaintSeverity:0}}).level,'attention');
   assert.equal(signal({'2026-09-25':{sessionRpe:8,legs:4,energy:3,complaintSeverity:0}}).level,'attention');
   const complaint=signal({'2026-09-26':{sessionRpe:5,legs:2,energy:4,complaintSeverity:2}});
   assert.equal(complaint.level,'elevated');
@@ -147,6 +151,16 @@ test('week proposal replaces next quality with rest for complaints and preserves
   assert.equal(proposal.changes.length,1);
   assert.equal(proposal.changes[0].date,'2026-09-25');
   assert.equal(weekContext({level:'stable',complaint:false,reason:''}).proposal.changes.length,0);
+});
+
+test('quick RPE and feeling review adjusts the next quality session without optional fields',()=>{
+  const review=signal({'2026-09-24':{sessionRpe:9,energy:1,complaintSeverity:0}},
+    '2026-09-24');
+  const {proposal}=weekContext(review);
+  assert.equal(proposal.stress.level,'elevated');
+  assert.equal(proposal.schedule['2026-09-25'].planType,'recovery');
+  assert.equal(proposal.schedule['2026-09-27'].type,'Race');
+  assert.match(proposal.changes[0].reason,/Trainingsfeedback: RPE 9 en lage energie/);
 });
 
 test('heavy reviewed training protects the next quality day and shows the reason',()=>{

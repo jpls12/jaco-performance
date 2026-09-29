@@ -4,6 +4,10 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**10.10.25 · Snelle beoordeling stuurt de weekcoach**
+
+RPE 9 of 10 samen met weinig energie is nu een sterk herstelsignaal, ook als het optionele veld benen leeg blijft. Weinig energie of zware benen bij een lagere RPE geven aandacht. Het resultaatenscherm benoemt diezelfde signalen. De zevendaagse coach kan de nabije zware training lichter maken of meer herstelruimte geven en toont het concrete beoordelingssignaal als reden; wedstrijden blijven beschermd. 100 tests slagen. App-shell en backupmetadata gebruiken 10.10.25.
+
 **10.10.24 · Hulp bij echte tijdconflicten**
 
 Als de coach geen veilige verdeling vindt, toont de weekplanning nu per betrokken training de benodigde en beschikbare minuten, de extra tijd in stappen van vijf minuten en directe acties om de beschikbaarheid of training te openen. De app verwijdert geen training op eigen houtje; wedstrijden en verstuurde trainingen blijven beschermd. De melding verdwijnt zodra de week past. 99 tests slagen. App-shell en backupmetadata gebruiken 10.10.24.
