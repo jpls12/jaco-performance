@@ -5317,20 +5317,21 @@ function renderSaved(){
   list.innerHTML=entries.map(([date,workout])=>`
     <div class="saved-row">
       <div class="saved-row-top">
-        <div>
+        <span class="saved-row-icon" aria-hidden="true">${trainingTypeInfo(workout.type).icon}</span>
+        <div class="saved-row-copy">
           <strong>${safe(workout.name)}</strong>
           <small>
             ${fullDate.format(new Date(date+"T12:00:00"))}
             · ${trainingVolumeLabel(workout)}
             · ${trainingTypeInfo(workout.type).label}
-            · RPE ${safe(workout.rpe)}
-            ${workoutUploadIsCurrent(date,workout) ? " · In Intervals ✓" : ""}
+            ${workout.rpe?` · RPE ${safe(workout.rpe)}`:""}
           </small>
         </div>
+        ${workoutUploadIsCurrent(date,workout)?'<span class="saved-row-status">In Intervals ✓</span>':""}
       </div>
 
       <div class="mini-actions">
-        <button class="secondary" type="button" onclick="openSaved('${date}')">Open</button>
+        <button type="button" onclick="openSaved('${date}')">Open training</button>
         <button class="secondary" type="button" onclick="editWorkout('${date}');switchView('editor')">Bewerk</button>
         <button class="secondary" type="button" onclick="openDuplicate('${date}')">Dupliceer</button>
         <button class="danger" type="button" onclick="deleteWorkout('${date}')">Verwijder</button>
