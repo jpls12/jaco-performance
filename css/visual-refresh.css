@@ -258,6 +258,56 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
 .activity-result-comparison,.activity-result-intervals{background:#25334a;border-color:#465675}
 .manual-completion-review{background:#202b43;border-color:#5f648e;border-radius:18px}
 
+/* Races: one highlighted next event, with the season roadmap as a second layer. */
+.race-overview-card,.season-planner-card{background:#151e30;border-color:#36425e;border-radius:24px;padding:clamp(18px,3vw,28px)}
+.race-overview-head h2,.season-planner-card .ai-generator-head h2{font-size:1.55rem;font-weight:800}
+.race-overview-card .saved-list{gap:9px;margin-top:18px}
+.race-overview-card .race-card{
+  background:#202b42;border:1px solid #41516d;border-radius:18px;padding:16px 18px
+}
+.race-overview-card .race-card.a{border-left:4px solid #ff9eaa}
+.race-overview-card .race-card.b{border-left:4px solid #ffd48f}
+.race-overview-card .race-card.c,.race-overview-card .race-card.provisional{border-left:4px solid #bcb5ff}
+.race-overview-card .race-card.featured{
+  background:linear-gradient(125deg,#433457,#30325c 56%,#233b53);
+  border:1px solid #9176ad;padding:clamp(18px,3vw,25px);
+  box-shadow:0 16px 34px rgba(22,16,53,.25)
+}
+.race-featured-label{display:inline-block;color:#f4d8ea;font-size:.68rem;font-weight:820;letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px}
+.race-top strong{display:block;font-size:1.03rem;line-height:1.2;letter-spacing:-.025em}
+.race-card.featured .race-top strong{font-size:clamp(1.45rem,3vw,1.9rem);letter-spacing:-.05em}
+.race-top small{display:block;color:#cbd4e3;font-size:.79rem;line-height:1.45;margin-top:5px}
+.race-time{color:#ffe1e5;font-size:1.25rem;font-variant-numeric:tabular-nums}
+.race-card .countdown{color:#e8edfa;font-size:.83rem;font-weight:740}
+.race-card.featured .countdown{display:inline-flex;color:#19220d;background:#c6ef79;border-radius:999px;padding:5px 10px;margin:14px 0}
+.race-overview-card .race-card .mini-actions{margin-top:14px}
+.race-overview-card .race-card .mini-actions button{font-size:.8rem;min-height:38px;padding:7px 11px}
+.race-history>summary{color:#d7e0ed}
+.race-form-disclosure,.race-form-extra{background:#1d2940;border-color:#3b4a67;border-radius:17px}
+.race-form-disclosure>summary,.race-form-extra>summary{color:#e7ecf7}
+.race-form-disclosure>.card{background:transparent}
+.season-planner-card{background:linear-gradient(155deg,#24284f,#172439 58%,#151e30);border-color:#66669c}
+.season-planner-card .season-metrics{gap:10px;margin-top:22px}
+.season-planner-card .today-metric{background:rgba(11,17,43,.34);border:1px solid rgba(224,224,255,.14);border-radius:16px;padding:15px}
+.season-planner-card .today-metric span,.season-planner-card .today-metric small{color:#d0d6e8}
+.season-planner-card .today-metric strong{font-size:1.2rem;line-height:1.2}
+.season-context{display:inline-flex;flex-wrap:wrap;gap:5px;padding:8px 12px;border-radius:11px;background:rgba(12,18,48,.34);color:#dce1f1}
+.season-context strong{color:#d7f7a4}
+.season-planner-card .coach-box{background:#253a34;border-color:#4c7462;border-radius:18px;padding:17px;margin:17px 0}
+.season-planner-card .coach-box .label{color:#c9f27b}
+.season-planner-card .coach-box h3{font-size:1.18rem}
+.season-details>summary{color:#d9e5f7}
+.season-roadmap{gap:7px}
+.season-block-row{background:#202c44;border-color:#3d4e6e;border-radius:16px;padding:13px}
+.season-block-row.current{background:#30345f;border-color:#a7a1df;box-shadow:inset 0 0 0 1px #a7a1df}
+.season-block-phase{background:#303b58;border-color:#596a90;border-radius:11px;color:#edf1fb}
+.season-block-phase.race{background:#583c4c;border-color:#cb8799;color:#ffe9eb}
+.season-block-phase.recovery{background:#294838;border-color:#74a984;color:#d7f4de}
+.race-tool{background:#1c2940;border-color:#3c4d69;border-radius:17px}
+.race-tool[open]{border-color:#7773ad}
+.race-tool>summary::after{color:#c4bbff}
+.race-tool>.card{background:#151e30;border-top-color:#3c4d69}
+
 @media(max-width:650px){
   main{padding-top:13px;padding-bottom:calc(115px + env(safe-area-inset-bottom))}
   .app-header{margin-bottom:10px;padding-bottom:5px}
@@ -298,6 +348,9 @@ input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px
   .activity-result-row{gap:8px;padding:10px}
   .activity-result-row .activity-result-icon{width:32px;height:32px;font-size:1rem}
   .activity-result-side small{max-width:100px;line-height:1.2}
+  .race-card.featured .race-top{flex-direction:column;gap:8px}
+  .race-overview-card .race-card{padding:14px}
+  .season-block-row{grid-template-columns:96px minmax(0,1fr)}
 }
 @media(max-width:390px){
   .today-week-overview-head{flex-direction:column;gap:8px}
