@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "10.10.22";
+const APP_VERSION = "10.10.23";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -2161,9 +2161,9 @@ function estimatedWorkoutMinutes(workout){
 }
 
 function fitsTime(workout,dayInfo){
-  if(!dayInfo) return false;
-  const max=Number(dayInfo.maxMinutes)||999;
-  return estimatedWorkoutMinutes(workout)<=max+10;
+  if(!dayInfo || dayInfo.available===false) return false;
+  const max=Number(dayInfo.maxMinutes);
+  return Number.isFinite(max) && max>0 && estimatedWorkoutMinutes(workout)<=max;
 }
 
 function dateGapDays(a,b){
