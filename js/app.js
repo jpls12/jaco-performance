@@ -7064,12 +7064,21 @@ function raceCardEstimate(race){
   }
   const source=prediction.primaryEvidence?.source||prediction.source;
   const training=prediction.trainingSignal?.evidence;
+  const target=parseTimeToSeconds(race.targetTime);
+  const gap=target?prediction.seconds-target:null;
+  const goalNote=gap===null?"":Math.abs(gap)<30
+    ?"Je doel ligt rond de huidige inschatting."
+    :gap>0
+      ?`Je doel is ${formatRaceTime(gap)} sneller dan de huidige inschatting.`
+      :`Je doel is ${formatRaceTime(-gap)} rustiger dan de huidige inschatting.`;
   return `<div class="race-estimate">
     <div class="race-estimate-head"><span>Haalbare tijd · huidige vorm</span>
       <strong>${safe(formatRaceTime(prediction.seconds))}</strong></div>
     <div class="race-estimate-meta"><span>${safe(prediction.confidence)} vertrouwen</span>
       <span>${safe(formatPace(prediction.seconds/Number(race.distanceKm)))}/km</span></div>
+    <div class="race-estimate-spectrum" aria-hidden="true"><span></span><i></i></div>
     <small>Bandbreedte ${safe(performanceModelRangeText(prediction))}</small>
+    ${goalNote?`<p class="race-estimate-goal">${safe(goalNote)}</p>`:""}
     <small>Gebaseerd op ${safe(source)}${training?` · training ${safe(training.date)}`:""}</small>
   </div>`;
 }
@@ -7972,6 +7981,12 @@ function weeklyPlanRows(start){
   });
 }
 
+function weeklyTimeUsagePercent(minutes,availableMinutes){
+  if(minutes<=0) return 0;
+  if(availableMinutes<=0) return 100;
+  return Math.min(100,Math.round(minutes/availableMinutes*100));
+}
+
 function renderWeeklyPlanSummary(){
   const box=document.getElementById("weeklyPlanSummary");
   if(!box) return;
@@ -7981,6 +7996,13 @@ function renderWeeklyPlanSummary(){
   const scheduled=rows.filter(row=>row.workoutName && row.state!=="rust").length;
   box.innerHTML=`<h3>Schema · ${start} t/m ${addDays(start,6)}</h3>
     <p class="help">${scheduled} geplande sessie(s)${conflicts?` · ${conflicts} tijdconflict(en)`:""} · Coach kijkt 7 dagen vooruit.</p>
+    <div class="weekly-time-chart" role="group" aria-label="Geplande tijd ten opzichte van beschikbare tijd per dag">
+      ${rows.map(row=>`<div class="weekly-time-day${row.state==="tijdconflict"?" conflict":""}" role="img"
+        aria-label="${row.dayName}: ${row.minutes} van ${row.availableMinutes} beschikbare minuten gepland">
+        <span class="weekly-time-track"><span style="height:${weeklyTimeUsagePercent(row.minutes,row.availableMinutes)}%"></span></span>
+        <small>${row.dayName.slice(0,2)}</small>
+      </div>`).join("")}
+    </div>
     <div class="weekly-plan-rows">${rows.map(row=>`<div class="weekly-plan-row${row.state==="tijdconflict"?" conflict":""}">
       <div><strong><time datetime="${row.date}" aria-label="${row.dayName} ${row.date}">${row.dayName.slice(0,2)} ${Number(row.date.slice(8))}</time></strong><small>${row.availableMinutes?`${row.availableMinutes} min ruimte`:"Geen tijd"}</small></div>
       <div><span>${escapeHtmlAttribute(row.workoutName||"Vrij")}</span><small>${row.minutes?`± ${row.minutes} min · `:""}${row.state==="past binnen je tijd"?"Past":row.state==="geen training"?"Geen training":row.state}</small></div>
@@ -12241,11 +12263,13 @@ function renderTodayWeekOverview(){
     if(conflict) conflicts++;
     const state=done?"Voltooid":race?"Wedstrijd":rest?"Rust":conflict?"Tijdconflict":workout?"Gepland":"Vrij";
     const time=saved?availability.maxMinutes?`${availability.maxMinutes} min beschikbaar`:"Geen tijd opgegeven":"Tijd nog invullen";
+    const timeBar=saved && minutes>0
+      ?`<span class="today-week-time-track${conflict?" conflict":""}" aria-hidden="true"><span style="width:${weeklyTimeUsagePercent(minutes,availability.maxMinutes)}%"></span></span>`:"";
     return `<button type="button" class="today-week-overview-day${date===todayString?" is-today":""}${done?" is-done":""}${conflict?" is-conflict":""}"
       ${!expanded && (index<firstVisible || index>=firstVisible+3)?"hidden":""}
       onclick="openTodayWeekDate('${date}')" aria-label="${escapeHtmlAttribute(DAY_NAMES[index])} ${escapeHtmlAttribute(date)}: ${escapeHtmlAttribute(workout?.name||"Geen training")}, ${state}">
       <span class="today-week-overview-date"><small>${safe(DAY_NAMES[index].slice(0,2))}</small><strong>${Number(date.slice(8))}</strong></span>
-      <span class="today-week-overview-session"><strong>${safe(workout?.name||"Geen training")}</strong><small>${time}</small></span>
+      <span class="today-week-overview-session"><strong>${safe(workout?.name||"Geen training")}</strong><small>${time}</small>${timeBar}</span>
       <span class="today-week-overview-state">${state}</span>
     </button>`;
   }).join("");

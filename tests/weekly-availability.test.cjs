@@ -205,8 +205,28 @@ test('week summary keeps all seven days in a compact view',()=>{
   ctx.renderWeeklyPlanUndo=()=>{};
   ctx.renderWeeklyPlanSummary();
   assert.equal((box.innerHTML.match(/class="weekly-plan-row(?: conflict)?"/g)||[]).length,7);
+  assert.equal((box.innerHTML.match(/class="weekly-time-day/g)||[]).length,7);
   assert.match(box.innerHTML,/Ma 5/);
   assert.match(box.innerHTML,/Zo 11/);
+});
+
+test('the weekly time chart scales training to available minutes and marks a blocked day',()=>{
+  const profile={weeklyAvailability:{'2026-10-05':{
+    mon:0,tue:100,wed:0,thu:0,fri:0,sat:0,sun:0
+  }}};
+  const ctx=contextFor(profile);
+  const box={innerHTML:''};
+  ctx.document={getElementById:id=>({weeklyPlanSummary:box,
+    weeklyAvailabilityDate:{value:'2026-10-05'}})[id]};
+  ctx.allWorkouts=()=>({'2026-10-06':{name:'Easy',type:'Run',durationMinutes:50},
+    '2026-10-10':{name:'Lang',type:'Run',durationMinutes:80}});
+  ctx.estimatedWorkoutMinutes=workout=>workout.durationMinutes;
+  ctx.escapeHtmlAttribute=value=>value;
+  ctx.renderWeeklyPlanUndo=()=>{};
+  ctx.renderWeeklyPlanSummary();
+  assert.match(box.innerHTML,/height:50%/);
+  assert.match(box.innerHTML,/Zaterdag: 80 van 0 beschikbare minuten gepland/);
+  assert.match(box.innerHTML,/weekly-time-day conflict/);
 });
 
 test('undo removes only untouched generated sessions and pauses automatic changes',()=>{
