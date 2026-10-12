@@ -3594,6 +3594,31 @@ function switchView(id){
   }
 }
 
+function workoutCompletionDisplayLabel(date,workout){
+  if(!workoutWasCompleted(date,workout)){
+    const raceOnDate=Object.values(races).some(race=>race.date===date);
+    if(raceOnDate && workout?.type==="Race") return "Wedstrijd";
+    return customWorkouts[date]?"Eigen training":"Schema";
+  }
+
+  const marker=doneWorkouts[date];
+  const status=String(marker?.executionStatus||"");
+  const labels={
+    complete:"Volledig uitgevoerd",
+    partial:"Gedeeltelijk uitgevoerd",
+    replaced:"Vervangen"
+  };
+
+  if(marker?.source==="intervals" && labels[status]){
+    const shifted=marker.activityDate && marker.activityDate!==date
+      ?` · ${marker.activityDate}`
+      :"";
+    return `${labels[status]}${shifted}`;
+  }
+
+  return "Voltooid";
+}
+
 function workoutState(date,workout){
   if(workoutWasCompleted(date,workout)) return "done";
   if(workout?.type==="Race" || /wedstrijd|race/i.test(workout?.name || "")) return "race";
@@ -3681,7 +3706,7 @@ function renderSelected(){
       </span>
       <span class="pill">${trainingVolumeLabel(workout)}</span>
       <span class="pill">RPE ${safe(workout.rpe)}</span>
-      <span class="pill">${done?"Voltooid":isCalendarRace?"Wedstrijd":isCustom?"Eigen training":"Schema"}</span>
+      <span class="pill">${safe(workoutCompletionDisplayLabel(selectedDate,workout))}</span>
       ${uploaded?`<span class="pill">In Intervals ✓</span>`:""}
     </div>
 
