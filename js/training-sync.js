@@ -748,6 +748,52 @@ function activityStressSignal(activity){
   return{level:"stable",reason:""};
 }
 
+function syncedLoadEntriesBetween(minDaysAgo,maxDaysAgo){
+  return Object.values(syncedActivities)
+    .filter(activity=>{
+      if(syncedSportFamily(activity?.type)!=="run") return false;
+      const age=calendarDayDifference(todayDateString(),activity.date);
+      return age!==null && age>=minDaysAgo && age<=maxDaysAgo;
+    })
+    .map(activity=>{
+      const review=activityReviewForSync(activity.id);
+      const effort=activityEffortClass(activity);
+      const rpe=finiteNumberOrNull(review?.sessionRpe) ??
+        finiteNumberOrNull(activity.perceivedExertion);
+      return{
+        date:activity.date,
+        sourceActivityId:activity.id,
+        actualActivity:activity,
+        workout:{
+          date:activity.date,
+          type:"Run",
+          planType:effort==="hard"?"quality":effort==="easy"?"easy":"run",
+          name:activity.name||"Uitgevoerde run",
+          distanceKm:finiteNumberOrNull(activity.distanceKm),
+          durationMinutes:finiteNumberOrNull(activity.durationMinutes),
+          rpe:rpe===null?"":`${Math.round(rpe)}/10`,
+          status:"done",
+          actualActivityId:activity.id
+        }
+      };
+    });
+}
+
+function mergeSyncedLoadEntries(plannedEntries,minDaysAgo,maxDaysAgo){
+  const actual=syncedLoadEntriesBetween(minDaysAgo,maxDaysAgo);
+  if(!actual.length) return plannedEntries;
+
+  const actualIds=new Set(actual.map(item=>item.sourceActivityId));
+  const planned=(plannedEntries||[]).filter(item=>{
+    if(!item?.workout) return false;
+    if(typeof trainingExecutionForDate!=="function") return true;
+    const execution=trainingExecutionForDate(item.date,item.workout);
+    return !execution?.actual?.id || !actualIds.has(execution.actual.id);
+  });
+
+  return planned.concat(actual).sort((a,b)=>a.date.localeCompare(b.date));
+}
+
 function buildAdaptiveExecutionFeedback(){
   if(!activitySyncMeta?.fetchedAt){
     return{level:"unknown",
