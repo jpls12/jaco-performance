@@ -2,6 +2,16 @@
 
 Persoonlijke running- en performancecoach als mobiele web-app.
 
+## Ontwikkeling 11.4.2
+
+Activiteitsbehoud en conservatieve dubbelherkenning, optionele herstelcheck,
+uitvoeringsfeedback, correctie van koppelingen, vastzetten en wijzigingshistorie,
+plus blijvende exportstatus en bescherming tegen gelijktijdige uploads.
+Bouwt voort op PR #83; nog niet samengevoegd of uitgerold.
+
+Zie [implementatie, 121 tests en resterende grenzen](docs/adaptive-coach-11.4.2.md).
+Dit is nog geen complete triathlon-seizoensplanner of directe COROS-koppeling.
+
 ## Huidige release
 
 **11.4.1 · Eén adaptieve planningsroute**

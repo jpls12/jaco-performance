@@ -91,6 +91,7 @@ function applyAutomaticWeekReplan(proposal){
   try{
     // Save the recovery point before changing the calendar.
     saveObject(AUTO_WEEK_REPLAN_UNDO_KEY,record);
+    if(typeof recordCoachChange==="function") recordCoachChange("week",record);
     proposal.changes.forEach(change=>{
       clearWorkoutMarkersForDate(change.date);
       customWorkouts[change.date]=weekReplanClone(change.after,change.date);
@@ -135,6 +136,7 @@ function undoAutomaticWeekReplan(){
     saveObject(UPLOAD_KEY,uploadedWorkouts);
     localStorage.setItem(AUTO_WEEK_REPLAN_KEY,"off");
     localStorage.removeItem(AUTO_WEEK_REPLAN_UNDO_KEY);
+    if(typeof recordCoachChange==="function") recordCoachChange("undo",record);
     pendingWeekReplan=null;
     refreshAfterCalendarMutation();
     renderAutoWeekReplanControls("Laatste wijziging teruggezet. Automatisch aanpassen staat uit; zet het weer aan wanneer je wilt.");
@@ -715,53 +717,10 @@ function weekReplanMove(schedule,fromDate,toDate,reason){
 // Beschikbaarheidswijzigingen lopen vanaf 11.4 uitsluitend via buildAdaptiveWeekReplan().
 
 function weekReplanRescheduleMissedQuality(missed,schedule,bounds,stress){
-  if(!missed || !isHardWorkout(missed.workout)) return null;
-  if(stress.level!=="stable") return null;
-  if(!stress.readiness.sufficientData || stress.readiness.level!=="good"){
-    return null;
-  }
-
-  const race=getRaceFocus();
-  const phase=classifyRacePhase(race);
-  if(["race-week","taper"].includes(phase.phase)) return null;
-
-  const futureQuality=Object.entries(schedule)
-    .filter(([,workout])=>workout && isHardWorkout(workout));
-
-  if(futureQuality.length) return null;
-
-  const candidateDates=weekReplanDateList(
-    addDays(bounds.today,1),
-    bounds.weekEnd
-  );
-
-  for(const date of candidateDates){
-    const current=schedule[date];
-    if(!current || current.type==="Race") continue;
-
-    const type=String(current.planType||current.type||"").toLowerCase();
-    if(!["easy","recovery"].includes(type)) continue;
-
-    const replacement=weekReplanClone(missed.workout,date);
-    replacement.replanOriginDate=missed.workout.replanOriginDate||missed.date;
-    replacement.sourceReplanner="9.5";
-    replacement.replanReason=`Veilig doorgeschoven na gemiste kwaliteit op ${missed.date}`;
-
-    if(!weekReplanCanPlaceStress(replacement,date,schedule,null)){
-      continue;
-    }
-
-    schedule[date]=replacement;
-    return{
-      date,
-      fromDate:missed.date,
-      missedWorkout:missed.workout,
-      replaced:current
-    };
-  }
-
+  // Missed work is never automatically made up. Current goals guide future sessions.
   return null;
 }
+
 
 function weekReplanWorkoutSignature(workout){
   if(!workout) return "empty";
@@ -1353,6 +1312,14 @@ function applyAdaptiveWeekReplan(){
   );
   if(!confirmed) return;
 
+  const record={createdAt:new Date().toISOString(),changes:proposal.changes.map(change=>({
+    date:change.date,hadCustom:Object.hasOwn(customWorkouts,change.date),
+    beforeSnapshot:weekReplanClone(change.before,change.date),previousCustom:weekReplanClone(customWorkouts[change.date]),
+    previousDone:weekReplanClone(doneWorkouts[change.date]),previousUpload:weekReplanClone(uploadedWorkouts[change.date]),
+    afterSignature:weekReplanWorkoutSignature(change.after),afterSnapshot:weekReplanClone(change.after,change.date),reason:change.reason
+  }))};
+  saveObject(AUTO_WEEK_REPLAN_UNDO_KEY,record);
+  if(typeof recordCoachChange==="function") recordCoachChange("week",record);
   proposal.changes.forEach(change=>{
     const next=weekReplanClone(change.after,change.date);
     if(!next) return;

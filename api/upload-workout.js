@@ -221,6 +221,10 @@ export default async function handler(req, res) {
       ? responseBody[0] || null
       : null;
 
+    if (!updatedEvent || updatedEvent.id == null) {
+      return sendJson(res, 502, { error: "Intervals.icu heeft geen ontvangstbewijs teruggegeven. Probeer opnieuw; dezelfde training wordt bijgewerkt." });
+    }
+
     return sendJson(res, 200, {
       ok: true,
       message: "Training toegevoegd of bijgewerkt in Intervals.icu.",

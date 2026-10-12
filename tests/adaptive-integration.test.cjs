@@ -24,7 +24,7 @@ function fixture({workouts={},activities={},minutes={},assignments={}}={}){
     availabilityForDate:d=>({available:(minutes[d]??90)>0,maxMinutes:minutes[d]??90}),
     fitsTime:(w,d)=>(w.durationMinutes||w.distanceKm*5.5||0)<=d.maxMinutes,
     activityReviews:{},document:{getElementById:()=>null},
-    localStorage:{getItem:k=>stored[k]||null,setItem:(k,v)=>{stored[k]=v;},removeItem:k=>{delete stored[k];}},
+    localStorage:{getItem:k=>typeof stored[k]==="object"?JSON.stringify(stored[k]):stored[k]||null,setItem:(k,v)=>{stored[k]=v;},removeItem:k=>{delete stored[k];}},
     STORAGE_KEY:'workouts',DONE_KEY:'done',UPLOAD_KEY:'uploaded',
     clearWorkoutMarkersForDate:d=>{delete done[d];delete uploaded[d];},refreshAfterCalendarMutation:()=>{}
   });
@@ -110,5 +110,73 @@ test('malformed sync retains stored data and concurrent callers share one reques
   assert.equal(requests,1);assert.equal(first,second);
   resolve({ok:true,json:async()=>({oldest:'2026-09-01',newest:'2026-10-12'})});
   assert.equal((await first).ok,false);
+  assert.equal(vm.runInContext('syncedActivities.a.id',f.c),'a');
+});
+
+test('recovery run cannot complete an interval session',()=>{
+  const f=fixture({workouts:{'2026-10-12':run('3 x 3 km','quality',12)},activities:{a:{id:'a',date:'2026-10-12',type:'Run',distanceKm:12,durationMinutes:60,perceivedExertion:3}}});
+  f.c.rebuildActivityPlanAssignments();
+  assert.notEqual(f.c.assignmentForActivity('a')?.status,'complete');
+});
+test('missing intensity cannot automatically complete quality',()=>{
+  const f=fixture({workouts:{'2026-10-12':run('3 x 3 km','quality',12)},activities:{a:{id:'a',date:'2026-10-12',type:'Run',distanceKm:12,durationMinutes:50}}});
+  f.c.rebuildActivityPlanAssignments();
+  assert.equal(f.c.assignmentForActivity('a'),null);
+});
+test('partial execution counts actual RPE load and is never fully completed',()=>{
+  const f=fixture({workouts:{'2026-10-12':run('Duurloop')},activities:{a:{id:'a',date:'2026-10-12',type:'Run',distanceKm:6,durationMinutes:30,perceivedExertion:3}}});
+  f.c.rebuildActivityPlanAssignments();
+  assert.equal(f.c.assignmentForActivity('a').status,'partial');
+  assert.equal(f.c.buildAdaptiveExecutionFeedback().perceivedLoad,90);
+});
+test('delayed synchronization is unknown, even after yesterday is covered',()=>{
+  const f=fixture({workouts:{'2026-10-11':run('Yesterday')}});
+  assert.equal(f.c.assessActivityMatch('2026-10-11',f.workouts['2026-10-11']).status,'unmatched');
+  assert.equal(f.c.weekReplanRescheduleMissedQuality({workout:run('Missed','quality')}),null);
+});
+test('two providers count once, preserve source evidence and remain idempotent',()=>{
+  const f=fixture();
+  const a={id:'a',source:'COROS',type:'Run',date:'2026-10-12',startDateLocal:'2026-10-12T08:00:00',distanceKm:10,durationMinutes:50,perceivedExertion:4};
+  const b={...a,id:'b',source:'STRAVA',startDateLocal:'2026-10-12T08:00:02'};
+  f.c.incoming=[a,b];
+  vm.runInContext('syncedActivities=mergeActivityImports(incoming)',f.c);
+  assert.equal(vm.runInContext('Object.keys(syncedActivities).length',f.c),1);
+  assert.equal(f.c.buildAdaptiveExecutionFeedback().perceivedLoad,200);
+  f.c.rebuildActivityPlanAssignments();
+  vm.runInContext('syncedActivities=mergeActivityImports(incoming)',f.c);
+  assert.equal(f.c.rebuildActivityPlanAssignments(),false);
+  assert.equal(f.c.buildAdaptiveExecutionFeedback().perceivedLoad,200);
+  assert.equal(vm.runInContext('Object.keys(syncedActivities.a.sourceRecords).length',f.c),2);
+  assert.equal(f.c.sameRecordedActivity(a,{...b,startDateLocal:'2026-10-12T18:00:00'}),false);
+  assert.equal(f.c.sameRecordedActivity({...a,startDateLocal:''},{...b,startDateLocal:''}),false);
+});
+test('bounded sync does not delete a historical activity absent from the response',()=>{
+  const f=fixture({activities:{a:{id:'a',type:'Run',date:'2026-10-11'}}});
+  assert.equal(Object.keys(f.c.mergeActivityImports([])).length,1);
+});
+test('Saturday unavailable and locked race remain protected',()=>{
+  const f=fixture({workouts:{'2026-10-13':{...run('Locked','quality'),locked:true},'2026-10-17':run('Saturday'),'2026-10-18':{name:'Race',type:'Race'}},minutes:{'2026-10-13':0,'2026-10-17':0}});
+  const p=f.c.buildAdaptiveWeekReplan();
+  assert.equal(p.schedule['2026-10-13'].name,'Locked');
+  assert.equal(p.schedule['2026-10-18'].type,'Race');
+  assert.notEqual(p.schedule['2026-10-17']?.type,'Run');
+  assert.equal(JSON.stringify(p.schedule),JSON.stringify(f.c.buildAdaptiveWeekReplan().schedule));
+});
+test('reported partial completion overrides misleading full distance',()=>{
+  const f=fixture({workouts:{'2026-10-12':run('Quality','quality')},activities:{a:{id:'a',type:'Run',date:'2026-10-12',distanceKm:10,durationMinutes:50,perceivedExertion:8}}});
+  f.c.activityReviews={a:{completion:'partial',sessionRpe:8}};
+  f.c.rebuildActivityPlanAssignments();
+  assert.equal(f.c.assignmentForActivity('a').status,'partial');
+});
+
+test('undo restores the calendar and retains imported activities and change history',()=>{
+  const f=fixture({workouts:{'2026-10-13':run('Easy')},minutes:{'2026-10-13':0},activities:{a:{id:'a',date:'2026-10-12',type:'Ride',durationMinutes:30}}});
+  vm.runInContext(fs.readFileSync('js/coach-state.js','utf8'),f.c);
+  const proposal=f.c.buildAdaptiveWeekReplan();
+  assert.equal(f.c.applyAutomaticWeekReplan(proposal),true);
+  assert.equal(f.stored.jp_coach_history_v1.entries.length,1);
+  f.c.undoAutomaticWeekReplan();
+  assert.equal(Object.keys(f.custom).length,0);
+  assert.equal(f.stored.jp_coach_history_v1.entries.length,2);
   assert.equal(vm.runInContext('syncedActivities.a.id',f.c),'a');
 });

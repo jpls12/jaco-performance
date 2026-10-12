@@ -56,6 +56,8 @@ function normalizeActivity(activity){
 
   return{
     id,
+    source:String(activity?.source||"intervals"),
+    externalId:activity?.external_id==null?null:String(activity.external_id),
     date,
     name:String(activity?.name||"Training"),
     type:String(activity?.type||""),

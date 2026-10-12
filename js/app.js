@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "11.4.1";
+const APP_VERSION = "11.4.2";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -1416,6 +1416,12 @@ function diaryAverage(items,key){
 }
 
 function latestDiaryRecoverySignal(entries=effectiveCoachDiary(),today=todayDateString()){
+  const check=typeof dailyRecoveryEvidence==="function"?dailyRecoveryEvidence(today):null;
+  const severeFeedback=Object.entries(entries||{}).some(([date,entry])=>{
+    const age=calendarDayDifference(today,date);
+    return age!==null&&age>=0&&age<=2&&(entry?.complaintSeverity>=2 || (entry?.sessionRpe>=9&&entry?.energy!=null&&entry.energy<=2));
+  });
+  if(check && (check.level==="elevated" || check.level==="attention"&&!severeFeedback)) return check;
   const latest=Object.entries(entries||{})
     .filter(([date,entry])=>{
       const age=calendarDayDifference(today,date);
@@ -3471,7 +3477,7 @@ function upgradeCompletionMarkers(){
 
   Object.keys(uploadedWorkouts).forEach(date=>{
     const workout=workouts[date]||null;
-    if(!workout || !workoutUploadIsCurrent(date,workout)){
+    if(!workout){
       delete uploadedWorkouts[date];
       uploadChanged=true;
     }
@@ -3743,7 +3749,8 @@ function renderSelected(){
       `:""}
     </div>
 
-    <p id="uploadStatus" class="status"></p>`;
+    ${workout.type!=="Race"&&!done?`<button type="button" class="secondary" onclick="toggleWorkoutLock('${selectedDate}')">${workout.locked?"Training vrijgeven":"Training vastzetten"}</button>`:""}
+    <p id="uploadStatus" class="status">${typeof exportStateText==="function"?safe(exportStateText(selectedDate,workout)):""}</p>`;
 }
 
 function selectDate(date){
@@ -3772,9 +3779,13 @@ function toggleDone(){
 
 }
 
+const workoutExportsInFlight=new Set();
 async function uploadSelected(){
-  const workout=allWorkouts()[selectedDate];
-  if(!workout) return;
+  const uploadDate=selectedDate;
+  if(workoutExportsInFlight.has(uploadDate)) return;
+  const current=allWorkouts()[uploadDate];
+  if(!current) return;
+  const workout=JSON.parse(JSON.stringify(current));
 
   if(!trainingTypeInfo(workout.type).uploadable){
     const status=document.getElementById("uploadStatus");
@@ -3788,15 +3799,22 @@ async function uploadSelected(){
   const status=document.getElementById("uploadStatus");
   if(!status) return;
 
-  const wasUploaded=workoutUploadIsCurrent(selectedDate,workout);
+  const wasUploaded=workoutUploadIsCurrent(uploadDate,workout);
   status.className="status";
   status.textContent=wasUploaded
     ?"Workout wordt bijgewerkt in Intervals.icu…"
     :"Workout wordt verstuurd naar Intervals.icu…";
 
+  const setAttempt=(state,error=null)=>{
+    const latest=loadObject("jp_export_attempts_v1");
+    latest[uploadDate]={state,error,fingerprint:workoutUploadFingerprint(workout),updatedAt:new Date().toISOString()};
+    saveObject("jp_export_attempts_v1",latest);
+  };
+  workoutExportsInFlight.add(uploadDate);
+  setAttempt("pending");
   try{
-    const payload={workoutDate:selectedDate};
-    if(customWorkouts[selectedDate]){
+    const payload={workoutDate:uploadDate};
+    if(customWorkouts[uploadDate]){
       const customWorkout=JSON.parse(JSON.stringify(workout));
 
       if(["Core","Mobility"].includes(customWorkout.type)){
@@ -3824,18 +3842,19 @@ async function uploadSelected(){
     });
 
     const data=await response.json();
-    if(!response.ok){
+    if(!response.ok || data.ok!==true || data.eventId==null){
       throw new Error(data.error || "Upload mislukt");
     }
 
-    uploadedWorkouts[selectedDate]={
+    uploadedWorkouts[uploadDate]={
       uploadedAt:new Date().toISOString(),
       name:workout.name,
-      externalId:data.externalId||`jaco-performance-${selectedDate}`,
+      externalId:data.externalId||`jaco-performance-${uploadDate}`,
       eventId:data.eventId??null,
       fingerprint:workoutUploadFingerprint(workout)
     };
     saveObject(UPLOAD_KEY,uploadedWorkouts);
+    setAttempt("synced");
 
     status.className="status ok";
     status.textContent=wasUploaded
@@ -3843,8 +3862,12 @@ async function uploadSelected(){
       :"Gelukt: workout staat in Intervals.icu.";
     renderMonth();
   }catch(error){
+    setAttempt("failed",error.message);
     status.className="status error";
     status.textContent=error.message;
+  }finally{
+    workoutExportsInFlight.delete(uploadDate);
+    if(typeof renderTodayPurpose==="function") renderTodayPurpose();
   }
 }
 
@@ -7130,7 +7153,7 @@ function raceCardEstimate(race){
     <div class="race-estimate-meta"><span>${safe(prediction.confidence)} vertrouwen</span>
       <span>${safe(formatPace(prediction.seconds/Number(race.distanceKm)))}/km</span></div>
     <div class="race-estimate-spectrum" aria-hidden="true"><span></span><i></i></div>
-    <small>Bandbreedte ${safe(performanceModelRangeText(prediction))}</small>
+    <small>Bandbreedte ${safe(performanceModelRangeText(prediction))} · berekend ${safe(todayDateString())}</small>
     ${goalNote?`<p class="race-estimate-goal">${safe(goalNote)}</p>`:""}
     <small>Gebaseerd op ${safe(source)}${training?` · training ${safe(training.date)}`:""}</small>
   </div>`;
@@ -7709,6 +7732,9 @@ function resetGeneratedPlannerPreviews(){
 }
 
 function refreshDerivedCoachViews(){
+  if(typeof renderRecoveryCheck==="function") renderRecoveryCheck();
+  if(typeof renderCoachHistory==="function") renderCoachHistory();
+  if(typeof renderTodayPurpose==="function") renderTodayPurpose();
   // renderTodayCoach ververst ook Load Monitor, Performance Engine en AI-previews.
   // Houd die keten op één plek om dubbele DOM-renders op mobiel te voorkomen.
   renderTrainingQualityAnalyzer();
@@ -12048,12 +12074,12 @@ function phaseLabel(phase){
 function createTodayRecommendation(readiness,race,phase,availability,currentWorkout,executionFeedback=null,diarySignal=latestDiaryRecoverySignal()){
   const date=todayDateString();
 
-  if(currentWorkout?.type==="Race"){
+  if(currentWorkout?.type==="Race" || currentWorkout?.locked===true){
     return{
       kind:"keep",
       workout:currentWorkout,
       title:currentWorkout.name,
-      text:"Vandaag is een wedstrijddag. De coach vervangt je wedstrijd niet automatisch door een andere training.",
+      text:currentWorkout.locked?"Deze training staat vast. Geef haar vrij voordat je het dagadvies toepast.":"Vandaag is een wedstrijddag. De coach vervangt je wedstrijd niet automatisch door een andere training.",
       steps:currentWorkout.displaySteps||[]
     };
   }
@@ -12080,14 +12106,13 @@ function createTodayRecommendation(readiness,race,phase,availability,currentWork
     };
   }
 
-  if(currentWorkout && !availability.available){
-    return{
-      kind:"keep",
-      workout:currentWorkout,
-      title:currentWorkout.name,
-      text:"Je terugkerende beschikbaarheid staat vandaag op niet beschikbaar, maar er staat al expliciet een training in je kalender. De coach wijzigt die niet automatisch; verplaats hem als je vandaag echt niet kunt trainen.",
-      steps:currentWorkout.displaySteps||[]
-    };
+  if(currentWorkout && (!availability.available || !fitsTime(currentWorkout,availability)) &&
+    typeof weekReplanShortenToAvailability==="function"){
+    const shortened=availability.available?weekReplanShortenToAvailability(currentWorkout,date):null;
+    const recovery=availability.available&&!shortened?weekReplanRecoveryWorkout(currentWorkout,date,"Minder tijd beschikbaar"):null;
+    const workout=shortened || (recovery&&fitsTime(recovery,availability)?recovery:weekReplanRestWorkout(date,"Geen passende training binnen je beschikbare tijd"));
+    return {kind:"replace",workout,title:workout.name,
+      text:"Je beschikbare tijd is leidend. Dit alternatief past binnen vandaag; gemiste belasting wordt niet ingehaald.",steps:workout.displaySteps||[]};
   }
 
   if(!availability.available){
@@ -13123,6 +13148,12 @@ function applyTodayRecommendation(){
   const date=todayDateString();
   const existing=currentTodayWorkout();
   const status=document.getElementById("todayStatus");
+
+  if(existing?.locked===true){
+    status.className="status error";
+    status.textContent="Deze training staat vast. Geef haar eerst vrij om het dagadvies toe te passen.";
+    return;
+  }
 
   if(existing?.type==="Race"){
     status.className="status error";
