@@ -120,25 +120,35 @@ function qualityRecentCandidate(){
     .map(([date,workout])=>({
       date,
       workout,
-      age:calendarDayDifference(today,date)
+      execution:workout
+        ?trainingExecutionForDate(date,workout)
+        :null
     }))
     .filter(item=>
-      item.age!==null &&
-      item.age>=0 &&
-      item.age<=21 &&
       item.workout &&
       item.workout.type==="Run" &&
-      (isHardWorkout(item.workout)||isLongWorkout(item.workout))
-    )
-    .map(item=>({
-      ...item,
-      execution:trainingExecutionForDate(item.date,item.workout)
-    }))
-    .filter(item=>
+      (isHardWorkout(item.workout)||isLongWorkout(item.workout)) &&
       item.execution?.matched &&
       item.execution?.actual?.id
     )
-    .sort((a,b)=>b.date.localeCompare(a.date))[0]||null;
+    .map(item=>({
+      ...item,
+      actualAge:calendarDayDifference(
+        today,
+        item.execution.actual.date
+      )
+    }))
+    .filter(item=>
+      item.actualAge!==null &&
+      item.actualAge>=0 &&
+      item.actualAge<=21
+    )
+    .sort((a,b)=>
+      String(b.execution.actual.startDateLocal||b.execution.actual.date)
+        .localeCompare(
+          String(a.execution.actual.startDateLocal||a.execution.actual.date)
+        )
+    )[0]||null;
 }
 
 function qualityIntervalPace(interval){
