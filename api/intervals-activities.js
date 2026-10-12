@@ -46,6 +46,13 @@ function normalizeActivity(activity){
   const distance=numberOrNull(activity?.distance);
   const movingTime=numberOrNull(activity?.moving_time);
   const elapsedTime=numberOrNull(activity?.elapsed_time);
+  const averageSpeed=numberOrNull(activity?.average_speed);
+  const paceSecondsPerKm=
+    averageSpeed!==null && averageSpeed>0
+      ?1000/averageSpeed
+      :distance!==null && distance>0 && movingTime!==null && movingTime>0
+        ?movingTime/(distance/1000)
+        :null;
 
   return{
     id,
@@ -56,15 +63,25 @@ function normalizeActivity(activity){
     distanceKm:distance===null?null:distance/1000,
     durationMinutes:movingTime===null?null:movingTime/60,
     elapsedMinutes:elapsedTime===null?null:elapsedTime/60,
+    paceSecondsPerKm,
     elevationM:numberOrNull(activity?.total_elevation_gain),
-    averageSpeed:numberOrNull(activity?.average_speed),
+    averageSpeed,
     averageHeartRate:numberOrNull(activity?.average_heartrate),
     maxHeartRate:numberOrNull(activity?.max_heartrate),
-    averageWatts:numberOrNull(activity?.icu_average_watts),
-    weightedAverageWatts:numberOrNull(activity?.icu_weighted_avg_watts),
+    averageWatts:numberOrNull(activity?.icu_average_watts ?? activity?.average_watts),
+    weightedAverageWatts:numberOrNull(
+      activity?.icu_weighted_avg_watts ?? activity?.weighted_average_watts
+    ),
+    maxWatts:numberOrNull(activity?.icu_max_watts ?? activity?.max_watts),
+    averageCadence:numberOrNull(
+      activity?.average_cadence ?? activity?.icu_average_cadence
+    ),
     trainingLoad:numberOrNull(activity?.icu_training_load),
     intensity:numberOrNull(activity?.icu_intensity),
     perceivedExertion:numberOrNull(activity?.perceived_exertion),
+    intervalCount:numberOrNull(
+      activity?.interval_count ?? activity?.icu_interval_count
+    ),
     hasGps:Array.isArray(activity?.stream_types)
       ?activity.stream_types.includes("latlng")
       :null
@@ -172,9 +189,13 @@ export default async function handler(req,res){
       metricsCoverage:{
         distanceKm:coverage("distanceKm"),
         durationMinutes:coverage("durationMinutes"),
+        paceSecondsPerKm:coverage("paceSecondsPerKm"),
         averageHeartRate:coverage("averageHeartRate"),
         trainingLoad:coverage("trainingLoad"),
-        weightedAverageWatts:coverage("weightedAverageWatts")
+        averageWatts:coverage("averageWatts"),
+        weightedAverageWatts:coverage("weightedAverageWatts"),
+        maxWatts:coverage("maxWatts"),
+        averageCadence:coverage("averageCadence")
       },
       activities
     });
