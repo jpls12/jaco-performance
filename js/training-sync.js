@@ -504,9 +504,25 @@ function rebuildActivityPlanAssignments(){
   });
   const unassigned=Object.values(syncedActivities)
     .filter(activity=>!next[activity.id])
-    .sort((a,b)=>String(a.startDateLocal||a.date)
-      .localeCompare(String(b.startDateLocal||b.date)));
-  for(const activity of unassigned){
+    .map(activity=>{
+      const candidates=activityPlanCandidates(activity,{
+        excludeWorkoutKeys:usedWorkoutKeys
+      });
+      const best=candidates[0]?.score||0;
+      const gap=candidates[1]
+        ?best-candidates[1].score
+        :best;
+      return{activity,best,gap};
+    })
+    .sort((a,b)=>
+      b.best-a.best ||
+      b.gap-a.gap ||
+      String(a.activity.startDateLocal||a.activity.date)
+        .localeCompare(String(b.activity.startDateLocal||b.activity.date))
+    );
+
+  for(const item of unassigned){
+    const activity=item.activity;
     const candidates=activityPlanCandidates(activity,{excludeWorkoutKeys:usedWorkoutKeys});
     if(shouldAutoAssignActivity(activity,candidates)){
       const best=candidates[0];
