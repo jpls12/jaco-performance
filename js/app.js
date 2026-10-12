@@ -2737,6 +2737,33 @@ function validateRaceBackupObject(value){
 }
 
 function validateKnownBackupContents(key,value){
+  if(key==="jp_activity_plan_matches_v1"){
+    const allowedStatuses=new Set(["complete","partial","replaced","extra"]);
+    const allowedSources=new Set(["auto","manual"]);
+    for(const [id,assignment] of Object.entries(value)){
+      if(
+        !/^[A-Za-z0-9_-]{1,80}$/.test(id) ||
+        !isPlainBackupObject(assignment) ||
+        assignment.activityId!==id ||
+        calendarDayNumber(assignment.activityDate)===null ||
+        !allowedStatuses.has(assignment.status) ||
+        !allowedSources.has(assignment.source) ||
+        (
+          assignment.status!=="extra" &&
+          (
+            calendarDayNumber(assignment.workoutDate)===null ||
+            typeof assignment.workoutIdentity!=="string" ||
+            assignment.workoutIdentity.length>1200 ||
+            !isPlainBackupObject(assignment.workoutSnapshot)
+          )
+        )
+      ){
+        throw new Error(`Activiteitskoppeling ${id} bevat ongeldige gegevens.`);
+      }
+    }
+    return;
+  }
+
   if(key==="jp_activity_reviews_v1"){
     for(const [id,review] of Object.entries(value)){
       if(!/^[A-Za-z0-9_-]{1,80}$/.test(id) ||
@@ -2842,6 +2869,7 @@ function validateBackupPayload(input){
       PROFILE_KEY,
       DIARY_KEY,
       "jp_activity_reviews_v1",
+      "jp_activity_plan_matches_v1",
       HM_AMSTERDAM_BACKUP_KEY,
       HM_AMSTERDAM_RACEWEEK_BACKUP_KEY,
       "jp_race_simulations_v1",
