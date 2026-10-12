@@ -180,3 +180,13 @@ test('undo restores the calendar and retains imported activities and change hist
   assert.equal(f.stored.jp_coach_history_v1.entries.length,2);
   assert.equal(vm.runInContext('syncedActivities.a.id',f.c),'a');
 });
+
+test('mobility and strength do not complete each other or deduplicate across disciplines',()=>{
+  const f=fixture({workouts:{'2026-10-12':{type:'Strength',name:'Kracht',durationMinutes:30,planType:'strength',rpe:'3/10'}},activities:{a:{id:'a',date:'2026-10-12',type:'Yoga',durationMinutes:30,perceivedExertion:3}}});
+  assert.equal(f.c.activityPlanCandidates(f.c.normalizeSyncedActivity({id:'a',date:'2026-10-12',type:'Yoga',durationMinutes:30})).length,0);
+  f.c.rebuildActivityPlanAssignments();
+  assert.notEqual(f.c.assignmentForActivity('a')?.status,'complete');
+  assert.equal(f.c.syncedSportFamily('Mobility'),'mobility');
+  assert.equal(f.c.syncedSportFamily('WeightTraining'),'strength');
+  assert.equal(f.c.sameRecordedActivity({id:'a',externalId:'same',type:'Yoga'},{id:'b',externalId:'same',type:'WeightTraining'}),false);
+});

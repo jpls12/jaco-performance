@@ -35,12 +35,11 @@ function syncedSportFamily(type){
     value.includes("cycling")
   ) return "ride";
   if(value.includes("swim")) return "swim";
+  if(value.includes("yoga") || value.includes("mobility") || value.includes("stretch")) return "mobility";
   if(
     value.includes("strength") ||
     value.includes("weight") ||
-    value.includes("core") ||
-    value.includes("yoga") ||
-    value.includes("mobility")
+    value.includes("core")
   ) return "strength";
 
   return "other";
@@ -52,7 +51,8 @@ function workoutSportFamilyForSync(workout){
   if(type==="run") return "run";
   if(type==="ride") return "ride";
   if(type==="swim") return "swim";
-  if(["strength","core","mobility"].includes(type)) return "strength";
+  if(type==="mobility") return "mobility";
+  if(["strength","core"].includes(type)) return "strength";
   return "other";
 }
 
