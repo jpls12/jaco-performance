@@ -777,6 +777,9 @@ function saveActivityReview(event){
     startDateLocal:activity.startDateLocal,name:activity.name,type:activity.type,
     ...scores,note:form.elements.note.value.trim().slice(0,500),savedAt:new Date().toISOString()};
   saveObject(ACTIVITY_REVIEWS_KEY,activityReviews);
+  if(typeof refreshActivityAssignmentFromReview==="function"){
+    refreshActivityAssignmentFromReview(activity.id);
+  }
   const diary=coachDiary[activity.date];
   if(!diary || diary.source==="activity_reviews"){
     coachDiary[activity.date]=deriveActivityDiary(activity.date);
@@ -799,6 +802,9 @@ function deleteActivityReview(){
     !confirm(`Beoordeling van ${activity.name} verwijderen?`)) return;
   delete activityReviews[activity.id];
   saveObject(ACTIVITY_REVIEWS_KEY,activityReviews);
+  if(typeof refreshActivityAssignmentFromReview==="function"){
+    refreshActivityAssignmentFromReview(activity.id);
+  }
   if(coachDiary[activity.date]?.source==="activity_reviews"){
     const derived=deriveActivityDiary(activity.date);
     if(derived) coachDiary[activity.date]=derived;
