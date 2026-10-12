@@ -328,7 +328,7 @@ test('automatic planner blocks exported sessions and undo refuses subsequent edi
   uploaded['2026-09-25']={name:'Intervals'};
   assert.equal(context.applyAutomaticWeekReplan(context.buildAdaptiveWeekReplan()),false);
   assert.equal(custom['2026-09-25'],undefined);
-  assert.match(elements.autoWeekReplanStatus.textContent,/Intervals/);
+  assert.ok(context.buildAdaptiveWeekReplan().notes.some(note=>note.includes('Intervals') && note.includes('beschermd')));
   delete uploaded['2026-09-25'];
   assert.equal(context.applyAutomaticWeekReplan(context.buildAdaptiveWeekReplan()),true);
   custom['2026-09-25']={type:'Run',name:'Handmatig'};

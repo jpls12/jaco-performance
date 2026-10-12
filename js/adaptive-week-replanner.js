@@ -31,7 +31,7 @@ function autoWeekReplanSafety(proposal){
         change.after?.type==="Mobility"
       );
     if(change.date<=todayDateString() || change.date>proposal.bounds.end ||
-      !change.after || current?.type==="Race" || change.after.type==="Race" ||
+      !change.after || current?.locked===true || current?.type==="Race" || change.after.type==="Race" ||
       weekReplanProtection(change.date).kind==="race" ||
       (done && !safeEarlyReplacement)){
       return "Een wedstrijddag of afgeronde training is betrokken. Bekijk het voorstel handmatig.";
@@ -208,10 +208,34 @@ function weekReplanImportance(workout){
   return 35;
 }
 
+function weekReplanLocked(date){
+  const workout=allWorkouts()[date];
+  return workout?.type==="Race" || workout?.locked===true ||
+    (typeof uploadedWorkouts!=="undefined" && Boolean(uploadedWorkouts[date])) ||
+    (weekReplanIsDone(date,workout) && !weekReplanCompletedEarly(date,workout));
+}
+
 function weekReplanShortenToAvailability(workout,date){
-  if(!workout || workout.type!=="Run" || isHardWorkout(workout)) return null;
+  if(!workout || isHardWorkout(workout)) return null;
   const day=weekReplanAvailability(date);
   const maxMinutes=Number(day?.maxMinutes)||0;
+  if(workout.type!=="Run"){
+    const minimum={Ride:20,Swim:15,Strength:15,Core:10,Mobility:5}[workout.type];
+    const duration=finiteNumberOrNull(workout.durationMinutes);
+    if(!minimum || !day?.available || maxMinutes<minimum ||
+      duration===null || duration<=maxMinutes) return null;
+    // Structured intervals cannot safely be truncated as a continuous session.
+    if(!["easy","recovery","endurance","mobility"].includes(workout.planType)) return null;
+    const copy=weekReplanClone(workout,date);
+    copy.durationMinutes=maxMinutes;
+    copy.distanceKm=0;
+    copy.name=`${workout.type==="Ride"?"Rustig fietsen":workout.type==="Swim"?"Rustig zwemmen":"Mobiliteit"} ${maxMinutes} min`;
+    copy.uploadName=`Jaco - ${copy.name}`;
+    copy.displaySteps=[`${maxMinutes} minuten rustig, zonder intensieve blokken`];
+    copy.intervalsDescription=`${copy.name}\n\n- ${maxMinutes}m Z1`;
+    copy.replanReason="Ingekort om binnen je actuele beschikbaarheid te passen";
+    return copy;
+  }
   if(!day?.available || maxMinutes<25) return null;
   const type=String(workout.planType||"").toLowerCase();
   const paceMinutes=
@@ -238,6 +262,7 @@ function weekReplanShortenToAvailability(workout,date){
     `Ingekort naar maximaal ${maxMinutes} minuten beschikbare tijd`,
     "Geen gemiste kilometers later inhalen"
   ];
+  copy.intervalsDescription=`${copy.name}\n\n- ${km}km Z1 Pace`;
   copy.sourceReplanner="11.4";
   copy.replanReason="Ingekort om binnen je actuele beschikbaarheid te passen";
   return copy;
@@ -251,7 +276,7 @@ function weekReplanFindLowerPrioritySlot(date,workout,schedule,bounds){
     if(targetDate===date) continue;
     const target=schedule[targetDate];
     if(!target || target.type==="Race") continue;
-    if(uploadedWorkouts[targetDate] || weekReplanIsDone(targetDate,target)) continue;
+    if(weekReplanLocked(targetDate)) continue;
     if(weekReplanImportance(target)>=importance) continue;
     if(!weekReplanFitsAvailability(workout,targetDate)) continue;
     if(
@@ -305,6 +330,9 @@ function weekReplanLatestActualStressDate(bounds){
 
       return(
         activityEffortClass(activity)==="hard" ||
+        (typeof activityStressSignal==="function" &&
+          activityStressSignal(activity).level!=="stable") ||
+        (Number(activity.durationMinutes)>=120 && syncedSportFamily(activity.type)==="ride") ||
         (planned && weekReplanIsStressWorkout(planned)) ||
         (
           syncedSportFamily(activity.type)==="run" &&
@@ -325,7 +353,11 @@ function weekReplanRecentMissed(bounds){
       item.date<bounds.today &&
       item.workout &&
       !["Rest","Race"].includes(item.workout.type) &&
-      !weekReplanIsDone(item.date,item.workout)
+      !weekReplanIsDone(item.date,item.workout) &&
+      !Object.values(workouts).some(workout=>workout?.replanOriginDate===item.date) &&
+      !(typeof activityPlanAssignments!=="undefined" &&
+        Object.values(activityPlanAssignments).some(assignment=>
+          assignment?.workoutSnapshot?.replanOriginDate===item.date))
     )
     .sort((a,b)=>b.date.localeCompare(a.date));
 }
@@ -401,7 +433,9 @@ function weekReplanIsStressWorkout(workout){
   return Boolean(
     workout &&
     workout.type!=="Race" &&
-    (isHardWorkout(workout)||isLongWorkout(workout))
+    (isHardWorkout(workout)||isLongWorkout(workout) ||
+      Number(String(workout.rpe||"").split("/")[0])>=7 ||
+      (workout.type==="Ride" && Number(workout.durationMinutes)>=120))
   );
 }
 
@@ -417,7 +451,7 @@ function weekReplanStressLevel(){
   const readiness=determineReadiness(getWellnessSnapshot());
   const load=buildLoadMonitor();
   const execution=buildAdaptiveExecutionFeedback();
-  const diary=latestDiaryRecoverySignal();
+  const diary={...latestDiaryRecoverySignal()};
 
   let level="stable";
   const reasons=[];
@@ -458,6 +492,17 @@ function weekReplanStressLevel(){
     reasons.push(`trainingsfeedback: ${diary.reason}`);
   }
 
+  const support=typeof supportLoadSummary==="function"?supportLoadSummary(3):null;
+  if(support?.recentPain){
+    level="elevated";
+    reasons.push("klachten bij aanvullende kracht of mobiliteit");
+    diary.complaint=true;
+    diary.reason=diary.reason||"klachten bij aanvullende training";
+  }else if(support?.recentHard){
+    if(level!=="elevated") level="attention";
+    reasons.push("recente zware krachtsessie");
+  }
+
   return{level,reasons,readiness,load,execution,diary};
 }
 
@@ -488,6 +533,16 @@ Recovery
       sourceReplanner:"9.5",
       replanReason:reason
     };
+  }
+
+  if(["Ride","Swim"].includes(original?.type)){
+    const minutes=Math.min(original.type==="Ride"?40:25,
+      Math.max(10,Math.floor((Number(original.durationMinutes)||30)*.6)));
+    const name=`${original.type==="Ride"?"Herstelfietsen":"Herstelzwemmen"} ${minutes} min`;
+    return{...weekReplanClone(original,date),name,uploadName:`Jaco - ${name}`,
+      distanceKm:0,durationMinutes:minutes,planType:"recovery",rpe:"2/10",
+      displaySteps:[`${minutes} minuten zeer rustig, geen intensieve blokken`],
+      intervalsDescription:`${name}\n\n- ${minutes}m Z1`,replanReason:reason};
   }
 
   return{
@@ -535,12 +590,15 @@ function weekReplanRestWorkout(date,reason){
 }
 
 function weekReplanCanPlaceStress(workout,date,schedule,ignoreDate=null){
+  if(weekReplanLocked(date)) return false;
   if(!weekReplanFitsAvailability(workout,date)) return false;
 
   const protection=weekReplanProtection(date);
   if(protection.protected) return false;
 
   const today=todayDateString();
+  const actual=weekReplanLatestActualStressDate({today});
+  if(actual && dateGapDays(actual,date)<2) return false;
   const outside=allWorkouts();
   for(const adjacent of [addDays(date,-1),addDays(date,1)]){
     if(adjacent!==today && adjacent<today) continue;
@@ -577,6 +635,7 @@ function weekReplanFindLaterSwap(date,workout,schedule,bounds){
   const dates=weekReplanDateList(addDays(date,1),bounds.end);
 
   for(const targetDate of dates){
+    if(weekReplanLocked(targetDate)) continue;
     const target=schedule[targetDate];
 
     if(!target) continue;
@@ -607,6 +666,7 @@ function weekReplanFindEmptyMove(date,workout,schedule,bounds){
   const dates=weekReplanDateList(addDays(bounds.today,1),bounds.end);
 
   for(const targetDate of dates){
+    if(weekReplanLocked(targetDate)) continue;
     if(targetDate===date) continue;
     const target=schedule[targetDate];
 
@@ -683,6 +743,7 @@ function weekReplanRescheduleMissedQuality(missed,schedule,bounds,stress){
     if(!["easy","recovery"].includes(type)) continue;
 
     const replacement=weekReplanClone(missed.workout,date);
+    replacement.replanOriginDate=missed.workout.replanOriginDate||missed.date;
     replacement.sourceReplanner="9.5";
     replacement.replanReason=`Veilig doorgeschoven na gemiste kwaliteit op ${missed.date}`;
 
@@ -710,7 +771,11 @@ function weekReplanWorkoutSignature(workout){
     finiteNumberOrNull(workout.distanceKm),
     finiteNumberOrNull(workout.durationMinutes),
     workout.planType||"",
-    workout.rpe||""
+    workout.rpe||"",
+    workout.displaySteps||[],
+    workout.intervalsDescription||"",
+    workout.locked===true,
+    workout.replanOriginDate||null
   ]);
 }
 
@@ -741,11 +806,17 @@ function buildAdaptiveWeekReplan(){
   if(stress.reasons.length){
     triggers.push(...stress.reasons);
   }
+  futureDates.filter(weekReplanLocked).forEach(date=>{
+    const workout=original[date];
+    if(workout?.type!=="Race") notes.push(
+      `${date}: ${workout?.name||"Training"} is beschermd (afgerond, vastgezet of naar Intervals verstuurd). Controleer deze training zelf bij gewijzigde belasting of beschikbaarheid.`);
+  });
 
   // Een sessie die al op een eerdere dag is uitgevoerd, blijft verwerkt
   // maar wordt niet nogmaals aangeboden op de oorspronkelijke plandatum.
   futureDates.forEach(date=>{
     const planned=original[date];
+    if(weekReplanLocked(date)) return;
     if(!planned || ["Rest","Race"].includes(planned.type)) return;
     if(!weekReplanCompletedEarly(date,planned)) return;
 
@@ -808,6 +879,7 @@ function buildAdaptiveWeekReplan(){
   // Bescherm ook de dagen direct rond een C-race, inclusief over de weekgrens.
   futureDates.forEach(date=>{
     const workout=schedule[date];
+    if(weekReplanLocked(date)) return;
     if(!weekReplanIsStressWorkout(workout)) return;
 
     const protection=weekReplanProtection(date);
@@ -831,7 +903,7 @@ function buildAdaptiveWeekReplan(){
   // Als belasting verhoogd is, geef de eerste nabije zware prikkel meer ruimte.
   if(["attention","elevated"].includes(stress.level)){
     const stressEntries=Object.entries(schedule)
-      .filter(([,workout])=>weekReplanIsStressWorkout(workout))
+      .filter(([date,workout])=>!weekReplanLocked(date) && weekReplanIsStressWorkout(workout))
       .sort((a,b)=>a[0].localeCompare(b[0]));
 
     const first=stressEntries[0]||null;
@@ -880,9 +952,11 @@ function buildAdaptiveWeekReplan(){
 
   // Bij minder tijd behoudt de coach eerst de belangrijkste haalbare sessies.
   // Rustige/recovery-sessies mogen daarvoor wijken; gemist volume wordt niet ingehaald.
-  futureDates.forEach(date=>{
+  [...futureDates].sort((a,b)=>weekReplanImportance(schedule[b])-weekReplanImportance(schedule[a]) ||
+    a.localeCompare(b)).forEach(date=>{
     const workout=schedule[date];
     if(
+      weekReplanLocked(date) ||
       !workout ||
       ["Rest","Race"].includes(workout.type) ||
       weekReplanFitsAvailability(workout,date)
@@ -943,30 +1017,18 @@ function buildAdaptiveWeekReplan(){
       return;
     }
 
-    if(importance<70){
-      schedule[date]=weekReplanRestWorkout(
-        date,
-        "Lagere-prioriteitssessie vervalt door beperkte beschikbaarheid"
-      );
-      schedule[date].sourceReplanner="11.4";
-      notes.push(
-        `${workout.name} vervalt op ${date}: er is geen veilige beschikbare plek. Deze kilometers worden niet ingehaald.`
-      );
-      triggers.push("lagere prioriteit geschrapt");
-      return;
-    }
-
-    notes.push(
-      `${workout.name} past niet veilig binnen je beschikbare tijd. De coach laat deze belangrijke sessie staan ter controle in plaats van hem stilzwijgend te schrappen.`
+    schedule[date]=weekReplanRestWorkout(
+      date,
+      "Training vervalt: geen veilige plek binnen je beschikbare tijd"
     );
-    triggers.push("beschikbaarheidsconflict sleuteltraining");
+    schedule[date].sourceReplanner="11.4.1";
+    notes.push(
+      `${workout.name} vervalt op ${date}: er is geen veilige beschikbare plek. Dit volume wordt niet ingehaald.`
+    );
+    triggers.push("onhaalbare training geschrapt");
   });
 
   // Laat zware/lange prikkels ook rond de grens van het venster niet opeenvolgen.
-  const stressDates=Object.entries(schedule)
-    .filter(([,workout])=>weekReplanIsStressWorkout(workout))
-    .sort((a,b)=>a[0].localeCompare(b[0]));
-
   const todayWorkout=workouts[bounds.today];
   let previousDate=weekReplanLatestActualStressDate(bounds);
 
@@ -980,8 +1042,10 @@ function buildAdaptiveWeekReplan(){
     previousDate=yesterday;
   }
 
-  for(const [date,workout] of stressDates){
-    if(!weekReplanIsStressWorkout(schedule[date])) continue;
+  for(const date of futureDates){
+    const workout=schedule[date];
+    if(!weekReplanIsStressWorkout(workout)) continue;
+    if(weekReplanLocked(date)){previousDate=date;continue;}
     if(!previousDate){
       previousDate=date;
       continue;
@@ -1014,6 +1078,14 @@ function buildAdaptiveWeekReplan(){
       );
       triggers.push("zware sessies te dicht op elkaar");
     }
+  }
+
+  // A recovery substitution must also fit the remaining time. Re-check after swaps.
+  for(const date of futureDates){
+    if(weekReplanLocked(date) || weekReplanFitsAvailability(schedule[date],date)) continue;
+    const shorter=weekReplanShortenToAvailability(schedule[date],date);
+    schedule[date]=shorter && weekReplanFitsAvailability(shorter,date)?shorter:
+      weekReplanRestWorkout(date,"Geen passende training binnen je beschikbare tijd");
   }
 
   const changes=futureDates

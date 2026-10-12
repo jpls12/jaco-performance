@@ -4,6 +4,36 @@ Persoonlijke running- en performancecoach als mobiele web-app.
 
 ## Huidige release
 
+**11.4.1 · Eén adaptieve planningsroute**
+
+De bestaande centrale weekcoach verwerkt activiteitkoppelingen, actuele herstelgegevens,
+wedstrijd/taperbescherming en beschikbaarheid. Kracht en mobiliteit blijven via de
+bestaande ondersteuningsplanner binnen de resterende tijd passen.
+
+- Opnieuw synchroniseren herziet omvang/status van bestaande koppelingen zonder de
+  gekozen training te veranderen. Dubbele koppelingen uit backups worden opgeschoond;
+  handmatige keuzes hebben voorrang. Gelijktijdige syncs delen één request. Een ongeldig
+  antwoord overschrijft de cache niet. De bevestigingskeuze gebruikt een stabiele
+  trainingssleutel, ook als de volgorde van kandidaten intussen wijzigt.
+- Belangrijke trainingen krijgen eerst ruimte. Onhaalbare sessies vervallen met een
+  zichtbare reden; gemist volume wordt niet opgestapeld. Ingekorte trainingen krijgen
+  ook een ingekort exportrecept. Herstelzwemmen/fietsen blijft dezelfde sport.
+- Lange fietssessies, zware kracht en gezamenlijke RPE-minuten van alle gesynchroniseerde
+  sporten tellen mee bij herstelbeslissingen. RPE-minuten en Intervals-load worden nooit
+  als dezelfde eenheid opgeteld. Vaste grenswaarden zijn conservatieve signalen, geen
+  individueel gevalideerd fysiologisch model; ontbrekende metingen blijven onbekend.
+- Wedstrijden, afgeronde/vastgezette en reeds geëxporteerde sessies blijven beschermd.
+  Een beschermde sessie blokkeert niet alle andere veilige correcties. Bekijk de
+  expliciete melding en wijzig een reeds geëxporteerde sessie zo nodig in Intervals.
+- Automatische correcties blijven beperkt tot morgen t/m zeven dagen vooruit.
+  Vandaag gebruikt het bestaande dagadvies; lange termijn en wedstrijdtempo's blijven
+  onder de bestaande seizoensplanner/prestatiemodellen vallen. Automatisch aanpassen
+  volgt de bestaande aan/uit-instelling en heeft herstel via de laatste wijziging.
+
+Validatie: `node --test tests/*.test.cjs`. Integratietests laden de echte sync- en
+weekplannercode samen. Verouderde tests voor de verwijderde tweede planner en vergelijking
+op dezelfde datum zijn bijgewerkt naar de centrale planner en opgeslagen koppeling.
+
 **10.10.25 · Snelle beoordeling stuurt de weekcoach**
 
 RPE 9 of 10 samen met weinig energie is nu een sterk herstelsignaal, ook als het optionele veld benen leeg blijft. Weinig energie of zware benen bij een lagere RPE geven aandacht. Het resultaatenscherm benoemt diezelfde signalen. De zevendaagse coach kan de nabije zware training lichter maken of meer herstelruimte geven en toont het concrete beoordelingssignaal als reden; wedstrijden blijven beschermd. 100 tests slagen. App-shell en backupmetadata gebruiken 10.10.25.

@@ -209,6 +209,7 @@ function assignmentWorkoutSnapshot(date,workout){
     distanceKm:finiteNumberOrNull(workout?.distanceKm),
     durationMinutes:finiteNumberOrNull(workout?.durationMinutes),
     rpe:String(workout?.rpe||""),
+    replanOriginDate:workout?.replanOriginDate||null,
     displaySteps:Array.isArray(workout?.displaySteps)
       ?workout.displaySteps.slice(0,12)
       :[]
@@ -486,8 +487,12 @@ function makeActivityAssignment(activity,candidate,{source="auto",status=null,re
 
 function cleanActivityPlanAssignments(){
   const next={};
+  const used=new Set();
   let changed=false;
-  for(const [activityId,assignment] of Object.entries(activityPlanAssignments)){
+  // Imported backups may contain duplicate links. Preserve explicit choices first.
+  const entries=Object.entries(activityPlanAssignments).sort((a,b)=>
+    Number(b[1]?.source==="manual")-Number(a[1]?.source==="manual") || a[0].localeCompare(b[0]));
+  for(const [activityId,assignment] of entries){
     const activity=syncedActivities[activityId];
     if(!activity || !isPlainBackupObject(assignment)){
       changed=true;
@@ -497,10 +502,26 @@ function cleanActivityPlanAssignments(){
       changed=true;
       continue;
     }
+    const key=`${assignment.workoutDate}|${assignment.workoutIdentity}`;
+    if(assignment.status!=="extra" && used.has(key)){
+      changed=true;
+      continue;
+    }
+    if(assignment.status!=="extra") used.add(key);
+    const workout=assignmentCurrentWorkout(assignment)||assignment.workoutSnapshot;
+    const status=workout && assignment.status!=="extra"
+      ?classifyExecutionStatus(activity,workout):assignment.status;
+    const ratio=workout && assignment.status!=="extra"
+      ?executionVolumeRatio(workout,activity):assignment.ratio;
+    const updated=assignment.activityDate!==activity.date ||
+      assignment.status!==status || assignment.ratio!==ratio;
+    if(updated) changed=true;
     next[activityId]={
       ...assignment,
       activityId,
-      activityDate:activity.date
+      activityDate:activity.date,
+      status,ratio,
+      ...(updated?{updatedAt:new Date().toISOString()}: {})
     };
   }
   if(changed){
@@ -511,7 +532,7 @@ function cleanActivityPlanAssignments(){
 }
 
 function rebuildActivityPlanAssignments(){
-  cleanActivityPlanAssignments();
+  const cleaned=cleanActivityPlanAssignments();
   const next={...activityPlanAssignments};
   const usedWorkoutKeys=new Set();
   Object.values(next).forEach(assignment=>{
@@ -568,7 +589,7 @@ function rebuildActivityPlanAssignments(){
     saveActivityPlanAssignments();
     return true;
   }
-  return false;
+  return cleaned;
 }
 
 function refreshActivityAssignmentFromReview(activityId){
@@ -871,6 +892,22 @@ function buildAdaptiveExecutionFeedback(){
     .map(activity=>finiteNumberOrNull(activity.trainingLoad))
     .filter(value=>value!==null)
     .reduce((sum,value)=>sum+value,0);
+  // RPE-minutes are kept separate from provider load: they are different units.
+  const perceivedLoad=recent.reduce((sum,activity)=>{
+    if((calendarDayDifference(todayDateString(),activity.date)??99)>2) return sum;
+    const rpe=finiteNumberOrNull(activityReviewForSync(activity.id)?.sessionRpe) ??
+      finiteNumberOrNull(activity.perceivedExertion);
+    const minutes=finiteNumberOrNull(activity.durationMinutes);
+    return rpe!==null && rpe>=1 && rpe<=10 && minutes!==null && minutes>0
+      ?sum+rpe*minutes:sum;
+  },0);
+  if(perceivedLoad>=1800 && rank[level]<rank.elevated){
+    level="elevated";
+    text=`Gecombineerde belasting van alle sporten: ${Math.round(perceivedLoad)} RPE-minuten in drie kalenderdagen. Extra herstelruimte aanbevolen.`;
+  }else if(perceivedLoad>=1200 && rank[level]<rank.attention){
+    level="attention";
+    text=`Gecombineerde belasting van alle sporten: ${Math.round(perceivedLoad)} RPE-minuten in drie kalenderdagen. Geen extra intensiteit toevoegen.`;
+  }
   if(recentLoad>=260 && rank[level]<rank.elevated){
     level="elevated";
     text=`De bekende trainingsbelasting van de laatste 72 uur is ${Math.round(recentLoad)}. De volgende zware prikkel krijgt extra herstelruimte.`;
@@ -920,7 +957,7 @@ function buildAdaptiveExecutionFeedback(){
           chosen.assignment.workoutSnapshot
       )
     :null;
-  return{level,text,execution,recentActivities:recent,signals,recentLoad};
+  return{level,text,execution,recentActivities:recent,signals,recentLoad,perceivedLoad};
 }
 
 function setIntervalsCompletionMarker(date,workout,activity,executionStatus="complete"){
@@ -1107,8 +1144,8 @@ function renderActivityMatchReview(){
   meta.textContent=
     `${item.activity.date} · ${formatSyncedActivitySummary(item.activity)} · ${item.reason}`;
   select.innerHTML=[
-    ...item.candidates.map((candidate,index)=>
-      `<option value="candidate:${index}">${safe(candidate.date)} · ${safe(candidate.workout.name)} · ${executionStatusLabel(candidate.executionStatus)}</option>`
+    ...item.candidates.map(candidate=>
+      `<option value="${safe(candidate.key)}">${safe(candidate.date)} · ${safe(candidate.workout.name)} · ${executionStatusLabel(candidate.executionStatus)}</option>`
     ),
     '<option value="extra">Dit was een extra training</option>'
   ].join("");
@@ -1137,9 +1174,8 @@ function saveActivityMatchChoice(){
       }
     );
   }else{
-    const index=Number(select.value.split(":")[1]);
-    const candidate=queueItem.candidates[index];
-    if(!candidate) return;
+    const candidate=queueItem.candidates.find(item=>item.key===select.value);
+    if(!candidate){renderActivityMatchReview();return;}
     const existing=Object.values(activityPlanAssignments).find(assignment=>
       assignment &&
       assignment.status!=="extra" &&
@@ -1463,7 +1499,16 @@ function renderActivitySyncStatus(){
   if(typeof renderActivityResults==="function") renderActivityResults();
 }
 
-async function syncCompletedActivities({silent=false,render=true}={}){
+let activitySyncInFlight=null;
+function syncCompletedActivities(options={}){
+  // Concurrent refreshes must not overwrite a newer cache with an older response.
+  if(activitySyncInFlight) return activitySyncInFlight;
+  activitySyncInFlight=performCompletedActivitySync(options)
+    .finally(()=>{activitySyncInFlight=null;});
+  return activitySyncInFlight;
+}
+
+async function performCompletedActivitySync({silent=false,render=true}={}){
   const status=document.getElementById("activitySyncStatus");
   if(typeof navigator!=="undefined" && navigator.onLine===false){
     if(status && !silent){
@@ -1489,6 +1534,14 @@ async function syncCompletedActivities({silent=false,render=true}={}){
     }
     const oldest=String(data.oldest||"");
     const newest=String(data.newest||"");
+    if(!Array.isArray(data.activities) || calendarDayNumber(oldest)===null ||
+      calendarDayNumber(newest)===null || oldest>newest){
+      throw new Error("Onvolledig synchronisatieantwoord; bestaande trainingen zijn behouden.");
+    }
+    const normalized=data.activities.map(normalizeSyncedActivity);
+    if(normalized.some(activity=>!activity)){
+      throw new Error("Ongeldige activiteit ontvangen; bestaande trainingen zijn behouden.");
+    }
     const next={};
     Object.values(syncedActivities).forEach(activity=>{
       if(
@@ -1497,9 +1550,7 @@ async function syncCompletedActivities({silent=false,render=true}={}){
       ) return;
       next[activity.id]=activity;
     });
-    (Array.isArray(data.activities)?data.activities:[])
-      .map(normalizeSyncedActivity)
-      .filter(Boolean)
+    normalized
       .forEach(activity=>{
         const age=calendarDayDifference(todayDateString(),activity.date);
         if(age!==null && age>=0 && age<=120){
