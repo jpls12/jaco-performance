@@ -241,6 +241,46 @@ function assignmentForWorkout(date,workout){
   )||null;
 }
 
+function plannedTargetPaceSecondsForSync(workout){
+  const text=[
+    ...(Array.isArray(workout?.displaySteps)?workout.displaySteps:[]),
+    String(workout?.intervalsDescription||"")
+  ].join("\n");
+
+  const match=text.match(
+    /(?:@|pace\s*)?\s*(\d):(\d{2})\s*[–-]\s*(\d):(\d{2})\s*\/?\s*km/i
+  ) || text.match(/(?:@|pace\s*)\s*(\d):(\d{2})\s*\/?\s*km/i);
+
+  if(!match) return null;
+
+  if(match.length>=5 && match[3]!==undefined){
+    const low=Number(match[1])*60+Number(match[2]);
+    const high=Number(match[3])*60+Number(match[4]);
+    return Number.isFinite(low)&&Number.isFinite(high)
+      ?(low+high)/2
+      :null;
+  }
+
+  const value=Number(match[1])*60+Number(match[2]);
+  return Number.isFinite(value)?value:null;
+}
+
+function plannedTargetPowerForSync(workout){
+  for(const key of ["targetWatts","powerWatts","watts"]){
+    const value=finiteNumberOrNull(workout?.[key]);
+    if(value!==null && value>0) return value;
+  }
+  const text=[
+    ...(Array.isArray(workout?.displaySteps)?workout.displaySteps:[]),
+    String(workout?.intervalsDescription||"")
+  ].join("\n");
+  const values=[...text.matchAll(/(\d{2,4})\s*(?:W|watt)\b/g)]
+    .map(match=>Number(match[1]))
+    .filter(value=>Number.isFinite(value)&&value>=50&&value<=1000);
+  if(!values.length) return null;
+  return values.reduce((sum,value)=>sum+value,0)/values.length;
+}
+
 function activityMatchScore(activity,workout,plannedDate=activity?.date){
   if(!activity || !workout) return -Infinity;
   const family=syncedSportFamily(activity.type);
@@ -284,6 +324,28 @@ function activityMatchScore(activity,workout,plannedDate=activity?.date){
     actualDistance>=plannedDistance*.82){
     score+=8;
   }
+
+  const plannedPace=plannedTargetPaceSecondsForSync(workout);
+  const actualPace=activityPaceSeconds(activity);
+  if(
+    syncedSportFamily(activity.type)==="run" &&
+    plannedPace!==null &&
+    actualPace!==null &&
+    plannedPace>0
+  ){
+    const paceDelta=Math.abs(actualPace-plannedPace)/plannedPace;
+    score+=Math.max(0,15-Math.min(15,paceDelta*75));
+  }
+
+  const plannedPower=plannedTargetPowerForSync(workout);
+  const actualPower=
+    finiteNumberOrNull(activity.weightedAverageWatts) ??
+    finiteNumberOrNull(activity.averageWatts);
+  if(plannedPower!==null && actualPower!==null && plannedPower>0){
+    const powerDelta=Math.abs(actualPower-plannedPower)/plannedPower;
+    score+=Math.max(0,15-Math.min(15,powerDelta*60));
+  }
+
   score+=activityNameOverlapScore(activity,workout);
   return Math.round(score*10)/10;
 }
