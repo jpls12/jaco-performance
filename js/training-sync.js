@@ -861,6 +861,31 @@ function buildAdaptiveExecutionFeedback(){
     level="attention";
     text=`De bekende trainingsbelasting van de laatste 72 uur is ${Math.round(recentLoad)}. Bouw geen extra intensiteit in.`;
   }
+  if(typeof latestTrainingQualityFeedback==="function"){
+    for(const activity of recent){
+      const quality=latestTrainingQualityFeedback(activity.id);
+      if(!quality || quality.level==="unknown") continue;
+
+      signals.push({
+        level:quality.level,
+        text:quality.text,
+        activity,
+        assignment:assignmentForActivity(activity.id)
+      });
+
+      if(quality.level==="elevated"){
+        level="elevated";
+        text=quality.text;
+        chosen={activity,assignment:assignmentForActivity(activity.id)};
+      }else if(quality.level==="attention" && rank[level]<rank.attention){
+        level="attention";
+        text=quality.text;
+        chosen={activity,assignment:assignmentForActivity(activity.id)};
+      }
+      break;
+    }
+  }
+
   if(level==="stable"){
     const latest=recent[0];
     const assignment=assignmentForActivity(latest.id);
@@ -954,6 +979,13 @@ function formatSyncedActivitySummary(activity){
   if(watts!==null) parts.push(`${Math.round(watts)} W`);
   const load=finiteNumberOrNull(activity.trainingLoad);
   if(load!==null) parts.push(`load ${Math.round(load)}`);
+
+  let intensity=finiteNumberOrNull(activity.intensity);
+  if(intensity!==null){
+    if(intensity<=2) intensity*=100;
+    parts.push(`int. ${Math.round(intensity)}%`);
+  }
+
   return parts.join(" · ");
 }
 
