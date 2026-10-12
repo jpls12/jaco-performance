@@ -9627,9 +9627,19 @@ function buildLoadMonitor(){
   const readiness=determineReadiness(snapshot);
   const diary=buildDiaryContext();
 
-  const last7=completedWorkoutEntries(7);
-  const last14=completedWorkoutEntries(14);
-  const previous21=completedWorkoutEntriesBetween(7,27);
+  const plannedLast7=completedWorkoutEntries(7);
+  const plannedLast14=completedWorkoutEntries(14);
+  const plannedPrevious21=completedWorkoutEntriesBetween(7,27);
+
+  const last7=typeof mergeSyncedLoadEntries==="function"
+    ?mergeSyncedLoadEntries(plannedLast7,0,6)
+    :plannedLast7;
+  const last14=typeof mergeSyncedLoadEntries==="function"
+    ?mergeSyncedLoadEntries(plannedLast14,0,13)
+    :plannedLast14;
+  const previous21=typeof mergeSyncedLoadEntries==="function"
+    ?mergeSyncedLoadEntries(plannedPrevious21,7,27)
+    :plannedPrevious21;
 
   const runKm7=runKmFromEntries(last7);
   const previous21Km=runKmFromEntries(previous21);
@@ -9728,7 +9738,7 @@ function buildLoadMonitor(){
     signals.push({
       state:"warn",
       icon:"?",
-      text:"Onvoldoende lokaal voltooide looptrainingen om een volumeverandering te bepalen."
+      text:"Onvoldoende uitgevoerde looptrainingen om een volumeverandering te bepalen."
     });
   }
 
@@ -10002,7 +10012,7 @@ function renderLoadMonitor(prebuiltResult=null){
     `${result.availableSignals}/${result.totalSignalSlots} signalen`;
 
   document.getElementById("loadMonitorCoverageText").textContent=
-    "Bronnen: actuele Intervals.icu CTL/ATL en hersteldata plus lokaal als voltooid gemarkeerde trainingen. Ontbrekende data wordt niet geschat.";
+    "Bronnen: actuele Intervals.icu CTL/ATL, werkelijk gesynchroniseerde activiteiten en lokaal voltooide trainingen. Dubbele activiteiten worden uitgefilterd; ontbrekende data wordt niet geschat.";
 
   return result;
 }
