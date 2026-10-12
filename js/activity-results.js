@@ -105,25 +105,39 @@ function renderManualResultList(){
 }
 
 function activityResultPlanComparison(activity){
-  const workout=allWorkouts()[activity.date]||null;
-  if(!workout || ["Rest","Race"].includes(workout.type)) return null;
-  const execution=trainingExecutionForDate(activity.date,workout);
-  if(execution.actual?.id!==activity.id || !execution.matched) return null;
-  const difference=(actual,planned,unit,digits=0)=>{
-    const a=finiteNumberOrNull(actual),p=finiteNumberOrNull(planned);
+  const assignment=
+    typeof assignmentForActivity==="function"
+      ?assignmentForActivity(activity.id)
+      :null;
+  if(!assignment || assignment.status==="extra" || !assignment.workoutSnapshot){
+    return null;
+  }
+
+  const planned=assignment.workoutSnapshot;
+  const difference=(actual,plannedValue,unit,digits=0)=>{
+    const a=finiteNumberOrNull(actual);
+    const p=finiteNumberOrNull(plannedValue);
     if(a===null || p===null || p<=0) return null;
     const delta=a-p;
     const rounded=Math.abs(delta).toLocaleString("nl-NL",{
-      maximumFractionDigits:digits,minimumFractionDigits:digits
+      maximumFractionDigits:digits,
+      minimumFractionDigits:digits
     });
     return Math.abs(delta)<(digits?0.05:0.5)
       ?`Volgens plan (${resultNumber(p,digits,unit)})`
       :`${delta>0?"+":"−"}${rounded}${unit} t.o.v. ${resultNumber(p,digits,unit)} gepland`;
   };
+
   return{
-    name:workout.name,
-    distance:difference(activity.distanceKm,workout.distanceKm," km",1),
-    duration:difference(activity.durationMinutes,workout.durationMinutes," min")
+    name:planned.name||"Geplande training",
+    plannedDate:assignment.workoutDate||null,
+    actualDate:activity.date,
+    status:assignment.status,
+    statusLabel:typeof executionStatusLabel==="function"
+      ?executionStatusLabel(assignment.status)
+      :assignment.status,
+    distance:difference(activity.distanceKm,planned.distanceKm," km",1),
+    duration:difference(activity.durationMinutes,planned.durationMinutes," min")
   };
 }
 
@@ -409,12 +423,21 @@ function reconcileManualCompletionReviews(){
     if(!match.matched || !match.actual?.id) continue;
     const activity=match.actual;
     if(!activityReviews[activity.id]){
-      activityReviews[activity.id]={activityId:activity.id,date,
-        startDateLocal:activity.startDateLocal,name:activity.name,type:activity.type,
-        sessionRpe:entry.sessionRpe,energy:entry.energy,
-        legs:entry.legs??null,enjoyment:entry.enjoyment??null,
+      activityReviews[activity.id]={
+        activityId:activity.id,
+        date:activity.date,
+        plannedDate:date,
+        startDateLocal:activity.startDateLocal,
+        name:activity.name,
+        type:activity.type,
+        sessionRpe:entry.sessionRpe,
+        energy:entry.energy,
+        legs:entry.legs??null,
+        enjoyment:entry.enjoyment??null,
         complaintSeverity:entry.complaintSeverity??null,
-        note:entry.note||"",savedAt:entry.savedAt};
+        note:entry.note||"",
+        savedAt:entry.savedAt
+      };
     }
     coachDiary[date]={...entry,source:"manual_completion_archived",linkedActivityId:activity.id};
     changed=true;
@@ -586,9 +609,9 @@ function renderActivityResultDetail(activity){
         ${family==="ride" && activity.averageWatts!=null?metric("Gem. vermogen",resultNumber(activity.averageWatts,0," W")):""}
       </div>
       <div class="activity-result-comparison">
-        <strong>${comparison?`Vergeleken met ${safe(comparison.name)}`:workout?"Activiteit apart van de planning":"Geen geplande training op deze dag"}</strong>
+        <strong>${comparison?`Vergeleken met ${safe(comparison.name)}${comparison.plannedDate?` · gepland ${safe(comparison.plannedDate)}`:""}`:workout?"Activiteit apart van de planning":"Geen geplande training op deze dag"}</strong>
         <p>${comparison
-          ?safe([comparison.distance,comparison.duration].filter(Boolean).join(" · ")||"Geen vergelijkbare afstand of duur beschikbaar.")
+          ?safe([comparison.statusLabel,comparison.actualDate!==comparison.plannedDate?`uitgevoerd ${comparison.actualDate}`:null,comparison.distance,comparison.duration].filter(Boolean).join(" · ")||"Geen vergelijkbare afstand of duur beschikbaar.")
           :workout?"Deze activiteit is niet betrouwbaar aan de geplande training gekoppeld. De app schrijft het resultaat daarom niet aan dat plan toe.":"Dit resultaat blijft beschikbaar voor je beoordeling."}</p>
       </div>
       <div id="activityRoutePreview" class="activity-route-preview" role="status"></div>
@@ -665,22 +688,69 @@ function selectActivityResult(id){
 function deriveActivityDiary(date){
   const reviews=Object.values(activityReviews).filter(item=>item?.date===date);
   if(!reviews.length) return null;
-  const latest=reviews.slice().sort((a,b)=>String(b.startDateLocal||"").localeCompare(
-    String(a.startDateLocal||"")))[0];
-  const workout=diaryWorkoutForDate(date);
-  const known=key=>reviews.map(item=>finiteNumberOrNull(item[key]))
+
+  const ordered=reviews.slice().sort((a,b)=>
+    String(b.startDateLocal||"").localeCompare(String(a.startDateLocal||""))
+  );
+  const latest=ordered[0];
+  const activities=reviews
+    .map(review=>syncedActivities[review.activityId])
+    .filter(Boolean);
+
+  const assignments=activities
+    .map(activity=>
+      typeof assignmentForActivity==="function"
+        ?assignmentForActivity(activity.id)
+        :null
+    )
+    .filter(assignment=>
+      assignment &&
+      assignment.status!=="extra" &&
+      assignment.workoutSnapshot
+    );
+
+  const primaryAssignment=assignments[0]||null;
+  const planned=primaryAssignment?.workoutSnapshot ||
+    diaryWorkoutForDate(date) ||
+    null;
+
+  const known=key=>reviews
+    .map(item=>finiteNumberOrNull(item[key]))
     .filter(value=>value!==null);
   const max=key=>known(key).length?Math.max(...known(key)):null;
   const min=key=>known(key).length?Math.min(...known(key)):null;
+
+  const distanceValues=activities
+    .map(item=>finiteNumberOrNull(item.distanceKm))
+    .filter(value=>value!==null);
+  const durationValues=activities
+    .map(item=>finiteNumberOrNull(item.durationMinutes))
+    .filter(value=>value!==null);
+
   return{
-    date,source:"activity_reviews",activityIds:reviews.map(item=>item.activityId),
-    workoutName:latest.name,workoutType:latest.type,
-    plannedDistanceKm:finiteNumberOrNull(workout?.distanceKm),
-    plannedDurationMinutes:finiteNumberOrNull(workout?.durationMinutes),
-    actualDistanceKm:null,actualDurationMinutes:null,
-    sessionRpe:max("sessionRpe"),legs:max("legs"),energy:min("energy"),
-    enjoyment:min("enjoyment"),complaintSeverity:max("complaintSeverity"),
-    complaintText:"",note:latest.note||"",savedAt:new Date().toISOString()
+    date,
+    source:"activity_reviews",
+    activityIds:reviews.map(item=>item.activityId),
+    workoutName:planned?.name||latest.name,
+    workoutType:planned?.type||latest.type,
+    plannedDate:primaryAssignment?.workoutDate||date,
+    plannedDistanceKm:finiteNumberOrNull(planned?.distanceKm),
+    plannedDurationMinutes:finiteNumberOrNull(planned?.durationMinutes),
+    actualDistanceKm:distanceValues.length
+      ?distanceValues.reduce((sum,value)=>sum+value,0)
+      :null,
+    actualDurationMinutes:durationValues.length
+      ?durationValues.reduce((sum,value)=>sum+value,0)
+      :null,
+    executionStatus:primaryAssignment?.status||"extra",
+    sessionRpe:max("sessionRpe"),
+    legs:max("legs"),
+    energy:min("energy"),
+    enjoyment:min("enjoyment"),
+    complaintSeverity:max("complaintSeverity"),
+    complaintText:"",
+    note:latest.note||"",
+    savedAt:new Date().toISOString()
   };
 }
 
