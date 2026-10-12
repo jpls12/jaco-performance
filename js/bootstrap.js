@@ -324,6 +324,7 @@ document.getElementById("finishGuidedTraining").onclick=finishGuidedTrainingSess
 document.getElementById("refreshTodayCoach").onclick=refreshTodayCoach;
 document.getElementById("refreshActivitySync").onclick=()=>syncCompletedActivities();
 document.getElementById("copyActivitySyncDiagnostics").onclick=copyActivitySyncDiagnostics;
+document.getElementById("saveActivityMatchChoice").onclick=saveActivityMatchChoice;
 document.getElementById("activityResultsList").onclick=handleActivityResultClick;
 document.getElementById("manualResultList").onclick=handleActivityResultClick;
 document.getElementById("refreshActivityResults").onclick=()=>syncCompletedActivities();

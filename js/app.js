@@ -2737,6 +2737,33 @@ function validateRaceBackupObject(value){
 }
 
 function validateKnownBackupContents(key,value){
+  if(key==="jp_activity_plan_matches_v1"){
+    const allowedStatuses=new Set(["complete","partial","replaced","extra"]);
+    const allowedSources=new Set(["auto","manual"]);
+    for(const [id,assignment] of Object.entries(value)){
+      if(
+        !/^[A-Za-z0-9_-]{1,80}$/.test(id) ||
+        !isPlainBackupObject(assignment) ||
+        assignment.activityId!==id ||
+        calendarDayNumber(assignment.activityDate)===null ||
+        !allowedStatuses.has(assignment.status) ||
+        !allowedSources.has(assignment.source) ||
+        (
+          assignment.status!=="extra" &&
+          (
+            calendarDayNumber(assignment.workoutDate)===null ||
+            typeof assignment.workoutIdentity!=="string" ||
+            assignment.workoutIdentity.length>1200 ||
+            !isPlainBackupObject(assignment.workoutSnapshot)
+          )
+        )
+      ){
+        throw new Error(`Activiteitskoppeling ${id} bevat ongeldige gegevens.`);
+      }
+    }
+    return;
+  }
+
   if(key==="jp_activity_reviews_v1"){
     for(const [id,review] of Object.entries(value)){
       if(!/^[A-Za-z0-9_-]{1,80}$/.test(id) ||
@@ -2842,6 +2869,7 @@ function validateBackupPayload(input){
       PROFILE_KEY,
       DIARY_KEY,
       "jp_activity_reviews_v1",
+      "jp_activity_plan_matches_v1",
       HM_AMSTERDAM_BACKUP_KEY,
       HM_AMSTERDAM_RACEWEEK_BACKUP_KEY,
       "jp_race_simulations_v1",
@@ -3566,6 +3594,31 @@ function switchView(id){
   }
 }
 
+function workoutCompletionDisplayLabel(date,workout){
+  if(!workoutWasCompleted(date,workout)){
+    const raceOnDate=Object.values(races).some(race=>race.date===date);
+    if(raceOnDate && workout?.type==="Race") return "Wedstrijd";
+    return customWorkouts[date]?"Eigen training":"Schema";
+  }
+
+  const marker=doneWorkouts[date];
+  const status=String(marker?.executionStatus||"");
+  const labels={
+    complete:"Volledig uitgevoerd",
+    partial:"Gedeeltelijk uitgevoerd",
+    replaced:"Vervangen"
+  };
+
+  if(marker?.source==="intervals" && labels[status]){
+    const shifted=marker.activityDate && marker.activityDate!==date
+      ?` · ${marker.activityDate}`
+      :"";
+    return `${labels[status]}${shifted}`;
+  }
+
+  return "Voltooid";
+}
+
 function workoutState(date,workout){
   if(workoutWasCompleted(date,workout)) return "done";
   if(workout?.type==="Race" || /wedstrijd|race/i.test(workout?.name || "")) return "race";
@@ -3653,7 +3706,7 @@ function renderSelected(){
       </span>
       <span class="pill">${trainingVolumeLabel(workout)}</span>
       <span class="pill">RPE ${safe(workout.rpe)}</span>
-      <span class="pill">${done?"Voltooid":isCalendarRace?"Wedstrijd":isCustom?"Eigen training":"Schema"}</span>
+      <span class="pill">${safe(workoutCompletionDisplayLabel(selectedDate,workout))}</span>
       ${uploaded?`<span class="pill">In Intervals ✓</span>`:""}
     </div>
 
@@ -8155,11 +8208,13 @@ function saveWeeklyAvailability(event){
   const status=document.getElementById("weeklyAvailabilityStatus");
   const start=mondayOf(document.getElementById("weeklyAvailabilityDate").value);
   const current=mondayOf(todayDateString());
+
   if(start<current || start>addDays(current,56)){
     status.className="status error";
     status.textContent="Kies een week vanaf deze week, maximaal acht weken vooruit.";
     return;
   }
+
   const days={};
   for(const key of DAY_KEYS){
     const input=document.getElementById(`weekly-minutes-${key}`);
@@ -8171,12 +8226,16 @@ function saveWeeklyAvailability(event){
     }
     days[key]=minutes;
   }
+
   const existing=getProfile().weeklyAvailability||{};
-  const weeklyAvailability=Object.fromEntries(Object.entries(existing)
-    .filter(([week])=>week>=current && week<=addDays(current,56)));
+  const weeklyAvailability=Object.fromEntries(
+    Object.entries(existing)
+      .filter(([week])=>week>=current && week<=addDays(current,56))
+  );
   weeklyAvailability[start]=days;
   profile={...getProfile(),weeklyAvailability};
   saveObject(PROFILE_KEY,profile);
+
   resetGeneratedPlannerPreviews();
   renderWeeklyAvailabilityEditor();
   renderWeeklyAvailabilityPrompt();
@@ -8186,55 +8245,88 @@ function saveWeeklyAvailability(event){
   let added=0;
   let timeConflicts=0;
   const generated=[];
-  if((start===nextMonday() || (start===current && todayDateString()===current)) &&
-    typeof autoWeekReplanReady!=="undefined" && autoWeekReplanReady &&
-    typeof autoWeekReplanEnabled==="function" && autoWeekReplanEnabled() &&
+
+  // Alleen wanneer de week nog leeg is, mag de bestaande weekgenerator een basisplan
+  // maken. Zodra er al trainingen staan, is de centrale adaptieve weekcoach de enige
+  // component die de resterende kalender herschikt.
+  if(
+    (start===nextMonday() || (start===current && todayDateString()===current)) &&
+    typeof autoWeekReplanReady!=="undefined" &&
+    autoWeekReplanReady &&
+    typeof autoWeekReplanEnabled==="function" &&
+    autoWeekReplanEnabled() &&
     !DAY_KEYS.some((_,index)=>{
       const workout=allWorkouts()[addDays(start,index)];
       return workout && workout.type!=="Rest" && workout.type!=="Race";
-    })){
+    })
+  ){
     const context=weekPlanningContext();
     context.start=start;
     context.end=addDays(start,6);
     context.availability=availableDaysForPlanner(start);
     context.weekRaces=racesInRange(start,context.end);
     context.seasonBlock=seasonBlockForWeek(start);
+
     const recentLoad=buildLoadMonitor();
     if(recentLoad.level==="elevated") context.seasonLoadFactor=.75;
     else if(recentLoad.level==="attention") context.seasonLoadFactor=.9;
-    const option=assignAiWeekToAvailability(context,createUnscheduledAiWeek(context,0),0);
+
+    const option=assignAiWeekToAvailability(
+      context,
+      createUnscheduledAiWeek(context,0),
+      0
+    );
+
     for(const workout of option.workouts){
       const day=availabilityForDate(workout.date);
-      if(workout.date<=todayDateString() || allWorkouts()[workout.date] || !day.available) continue;
-      if(estimatedWorkoutMinutes(workout)>day.maxMinutes){timeConflicts++;continue;}
+      if(
+        workout.date<=todayDateString() ||
+        allWorkouts()[workout.date] ||
+        !day.available
+      ) continue;
+
+      if(estimatedWorkoutMinutes(workout)>day.maxMinutes){
+        timeConflicts++;
+        continue;
+      }
+
       customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
-      generated.push({date:workout.date,workout:JSON.parse(JSON.stringify(customWorkouts[workout.date]))});
+      generated.push({
+        date:workout.date,
+        workout:JSON.parse(JSON.stringify(customWorkouts[workout.date]))
+      });
       added++;
     }
+
     if(added){
-      saveObject(WEEKLY_PLAN_UNDO_KEY,{createdAt:new Date().toISOString(),changes:generated});
+      saveObject(WEEKLY_PLAN_UNDO_KEY,{
+        createdAt:new Date().toISOString(),
+        changes:generated
+      });
       saveObject(STORAGE_KEY,customWorkouts);
     }
   }
-  const rearranged=!added && typeof replanSavedAvailabilityWeek==="function"
-    ?replanSavedAvailabilityWeek(start):{applied:false};
+
   if(added){
-    // Keep this first render from immediately replacing the generated sessions.
+    // De eerste basisweek blijft zichtbaar zoals gegenereerd; daarna stuurt alleen
+    // de centrale adaptieve weekcoach wijzigingen op uitvoering/herstel/beschikbaarheid.
     autoWeekReplanApplying=true;
-    try{refreshAfterCalendarMutation();}finally{autoWeekReplanApplying=false;}
+    try{
+      refreshAfterCalendarMutation();
+    }finally{
+      autoWeekReplanApplying=false;
+    }
+  }else{
+    refreshDerivedCoachViews();
   }
-  else if(!rearranged.applied) refreshDerivedCoachViews();
+
   renderWeeklyPlanSummary();
   status.className="status ok";
-  status.textContent=rearranged.applied
-    ?"Week opgeslagen. De coach heeft je bestaande trainingen verplaatst naar beschikbare dagen. Bekijk het schema hieronder; je kunt de automatische aanpassing terugzetten."
-    :added
-    ?`Week opgeslagen. ${added} trainingen richting je doel ingepland op basis van bekende herstel- en trainingsdata en je wedstrijden.${timeConflicts?` ${timeConflicts} sessie(s) pasten niet binnen je tijd en zijn niet ingepland.`:""}`
-    :rearranged.conflicts && autoWeekReplanEnabled()
-      ?"Week opgeslagen. Er is geen veilige verdeling voor alle trainingen. Bekijk hieronder per training hoeveel tijd ontbreekt en kies wat je wilt aanpassen."
+  status.textContent=added
+    ?`Week opgeslagen. ${added} trainingen richting je doel ingepland.${timeConflicts?` ${timeConflicts} sessie(s) pasten niet binnen je tijd en zijn niet ingepland.`:""} De centrale weekcoach bewaakt vanaf nu de resterende planning.`
     :autoWeekReplanEnabled()
-      ?"Week opgeslagen. De coach heeft de bestaande trainingen met je beschikbaarheid vergeleken. Bekijk het schema hieronder voor eventuele conflicten."
-      :"Week opgeslagen. Automatisch aanpassen staat uit; bekijk het weekadvies en pas het voorstel zelf toe.";
+      ?"Week opgeslagen. De centrale weekcoach heeft uitvoering, herstel, wedstrijden en je nieuwe beschikbaarheid opnieuw gecombineerd."
+      :"Week opgeslagen. Automatisch aanpassen staat uit; het centrale weekadvies is wel opnieuw berekend.";
 }
 
 function availabilityPreferenceOptions(selected){
@@ -9560,9 +9652,19 @@ function buildLoadMonitor(){
   const readiness=determineReadiness(snapshot);
   const diary=buildDiaryContext();
 
-  const last7=completedWorkoutEntries(7);
-  const last14=completedWorkoutEntries(14);
-  const previous21=completedWorkoutEntriesBetween(7,27);
+  const plannedLast7=completedWorkoutEntries(7);
+  const plannedLast14=completedWorkoutEntries(14);
+  const plannedPrevious21=completedWorkoutEntriesBetween(7,27);
+
+  const last7=typeof mergeSyncedLoadEntries==="function"
+    ?mergeSyncedLoadEntries(plannedLast7,0,6)
+    :plannedLast7;
+  const last14=typeof mergeSyncedLoadEntries==="function"
+    ?mergeSyncedLoadEntries(plannedLast14,0,13)
+    :plannedLast14;
+  const previous21=typeof mergeSyncedLoadEntries==="function"
+    ?mergeSyncedLoadEntries(plannedPrevious21,7,27)
+    :plannedPrevious21;
 
   const runKm7=runKmFromEntries(last7);
   const previous21Km=runKmFromEntries(previous21);
@@ -9661,7 +9763,7 @@ function buildLoadMonitor(){
     signals.push({
       state:"warn",
       icon:"?",
-      text:"Onvoldoende lokaal voltooide looptrainingen om een volumeverandering te bepalen."
+      text:"Onvoldoende uitgevoerde looptrainingen om een volumeverandering te bepalen."
     });
   }
 
@@ -9935,7 +10037,7 @@ function renderLoadMonitor(prebuiltResult=null){
     `${result.availableSignals}/${result.totalSignalSlots} signalen`;
 
   document.getElementById("loadMonitorCoverageText").textContent=
-    "Bronnen: actuele Intervals.icu CTL/ATL en hersteldata plus lokaal als voltooid gemarkeerde trainingen. Ontbrekende data wordt niet geschat.";
+    "Bronnen: actuele Intervals.icu CTL/ATL, werkelijk gesynchroniseerde activiteiten en lokaal voltooide trainingen. Dubbele activiteiten worden uitgefilterd; ontbrekende data wordt niet geschat.";
 
   return result;
 }
