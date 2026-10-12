@@ -554,6 +554,57 @@ function rebuildActivityPlanAssignments(){
   return false;
 }
 
+function refreshActivityAssignmentFromReview(activityId){
+  const activity=syncedActivities[activityId];
+  if(!activity) return false;
+
+  const assignment=assignmentForActivity(activityId);
+  if(!assignment){
+    return rebuildActivityPlanAssignments();
+  }
+
+  if(assignment.status==="extra" && assignment.source==="auto"){
+    delete activityPlanAssignments[activityId];
+    const changed=rebuildActivityPlanAssignments();
+    reconcileSyncedCompletions({
+      oldest:activitySyncMeta.oldest,
+      newest:activitySyncMeta.newest
+    });
+    return changed;
+  }
+
+  if(assignment.status==="extra") return false;
+
+  const workout=assignmentCurrentWorkout(assignment) ||
+    assignment.workoutSnapshot;
+  if(!workout) return false;
+
+  const nextStatus=classifyExecutionStatus(activity,workout);
+  const nextRatio=executionVolumeRatio(workout,activity);
+  const changed=
+    assignment.status!==nextStatus ||
+    assignment.ratio!==nextRatio;
+
+  if(changed){
+    activityPlanAssignments[activityId]={
+      ...assignment,
+      status:nextStatus,
+      ratio:nextRatio,
+      reason:assignment.source==="manual"
+        ?assignment.reason
+        :"Koppeling opnieuw beoordeeld met de opgeslagen trainingsbeoordeling.",
+      updatedAt:new Date().toISOString()
+    };
+    saveActivityPlanAssignments();
+    reconcileSyncedCompletions({
+      oldest:activitySyncMeta.oldest,
+      newest:activitySyncMeta.newest
+    });
+  }
+
+  return changed;
+}
+
 function activityMatchCandidates(date,workout){
   if(!workout || ["Rest","Race"].includes(workout.type)) return [];
   return Object.values(syncedActivities)
