@@ -807,6 +807,26 @@ function buildAdaptiveWeekReplan(){
     triggers.push(...stress.reasons);
   }
 
+  // Een sessie die al op een eerdere dag is uitgevoerd, blijft verwerkt
+  // maar wordt niet nogmaals aangeboden op de oorspronkelijke plandatum.
+  futureDates.forEach(date=>{
+    const planned=original[date];
+    if(!planned || ["Rest","Race"].includes(planned.type)) return;
+    if(!weekReplanCompletedEarly(date,planned)) return;
+
+    const execution=weekReplanExecution(date,planned);
+    const actualDate=execution?.actual?.date||"een eerdere dag";
+    schedule[date]=weekReplanRestWorkout(
+      date,
+      `Al uitgevoerd op ${actualDate}: ${planned.name}`
+    );
+    schedule[date].sourceReplanner="11.4";
+    triggers.push("training eerder uitgevoerd");
+    notes.push(
+      `${planned.name} stond op ${date}, maar is al op ${actualDate} uitgevoerd. De sessie wordt niet opnieuw ingepland.`
+    );
+  });
+
   const missedEasy=missed.filter(item=>
     !isHardWorkout(item.workout) &&
     !isLongWorkout(item.workout)
@@ -923,7 +943,8 @@ function buildAdaptiveWeekReplan(){
     }
   }
 
-  // Corrigeer niet-beschikbare toekomstige dagen zonder races aan te raken.
+  // Bij minder tijd behoudt de coach eerst de belangrijkste haalbare sessies.
+  // Rustige/recovery-sessies mogen daarvoor wijken; gemist volume wordt niet ingehaald.
   futureDates.forEach(date=>{
     const workout=schedule[date];
     if(
@@ -949,12 +970,61 @@ function buildAdaptiveWeekReplan(){
         "Verplaatst naar beschikbare dag"
       );
       triggers.push("beschikbaarheid gewijzigd");
-    }else{
-      notes.push(
-        `${workout.name} past niet in je ingestelde beschikbaarheid op ${date}; geen veilige lege plek gevonden.`
-      );
-      triggers.push("beschikbaarheidsconflict");
+      return;
     }
+
+    const importance=weekReplanImportance(workout);
+
+    if(importance>=70){
+      const lower=weekReplanFindLowerPrioritySlot(
+        date,
+        workout,
+        schedule,
+        bounds
+      );
+
+      if(lower){
+        const dropped=weekReplanReplaceLowerPriority(
+          schedule,
+          date,
+          lower.targetDate,
+          `Belangrijkere sessie behouden binnen beschikbare tijd; ${lower.target?.name||"rustige training"} vervalt`
+        );
+        notes.push(
+          `${workout.name} is verplaatst naar ${lower.targetDate}. ${dropped?.name||"Een lagere-prioriteitssessie"} vervalt en wordt niet ingehaald.`
+        );
+        triggers.push("belangrijkste training behouden");
+        return;
+      }
+    }
+
+    const shortened=weekReplanShortenToAvailability(workout,date);
+    if(shortened){
+      schedule[date]=shortened;
+      notes.push(
+        `${workout.name} is ingekort zodat de training binnen je beschikbare tijd past.`
+      );
+      triggers.push("training ingekort op beschikbare tijd");
+      return;
+    }
+
+    if(importance<70){
+      schedule[date]=weekReplanRestWorkout(
+        date,
+        "Lagere-prioriteitssessie vervalt door beperkte beschikbaarheid"
+      );
+      schedule[date].sourceReplanner="11.4";
+      notes.push(
+        `${workout.name} vervalt op ${date}: er is geen veilige beschikbare plek. Deze kilometers worden niet ingehaald.`
+      );
+      triggers.push("lagere prioriteit geschrapt");
+      return;
+    }
+
+    notes.push(
+      `${workout.name} past niet veilig binnen je beschikbare tijd. De coach laat deze belangrijke sessie staan ter controle in plaats van hem stilzwijgend te schrappen.`
+    );
+    triggers.push("beschikbaarheidsconflict sleuteltraining");
   });
 
   // Laat zware/lange prikkels ook rond de grens van het venster niet opeenvolgen.
@@ -1253,9 +1323,18 @@ function applyAdaptiveWeekReplan(){
     return;
   }
 
-  if(proposal.changes.some(change=>weekReplanIsDone(change.date,change.before))){
+  if(proposal.changes.some(change=>
+    weekReplanIsDone(change.date,change.before) &&
+    !weekReplanCompletedEarly(change.date,change.before)
+  )){
     status.className="status error";
     status.textContent="Een betrokken training is inmiddels voltooid. Herbereken de week voordat je wijzigingen toepast.";
+    return;
+  }
+
+  if(proposal.changes.some(change=>uploadedWorkouts[change.date])){
+    status.className="status error";
+    status.textContent="Een betrokken training staat al in Intervals.icu. Pas die eerst daar handmatig aan en herbereken daarna de week.";
     return;
   }
 
