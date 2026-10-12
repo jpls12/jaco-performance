@@ -1,6 +1,6 @@
 # Adaptieve coach 11.4.2 — implementatie en controle
 
-Gebaseerd op de bestaande app en commit `aad037d30192d1c349bb9b4642495a3381ab91d1` uit PR #83. Deze uitbreiding is voorbereid voor publicatie als pull request en is nog niet met main samengevoegd of uitgerold.
+Gebaseerd op de bestaande app en commit `aad037d30192d1c349bb9b4642495a3381ab91d1` uit PR #83. Deze uitbreiding is via PR #84 samengevoegd met main. Versie 11.4.2 is op 12 oktober 2026 op het productieadres gecontroleerd.
 
 ## Onderzoek van de bestaande app
 
@@ -57,4 +57,4 @@ API-antwoorden in tests zijn gecontroleerde testfixtures, geen live synchronisat
 - Het intervalmodel gebruikt beschikbare samenvattingen en de bestaande detailanalyse. Een ontbrekende lap-/intervalstructuur wordt niet uit alleen een titel gereconstrueerd.
 - De herstelcheck maakt geen extra numerieke fitheidsscore. Bestaande horlogereadiness blijft onder het bestaande model; niet alle bestaande beslisregels zijn in deze wijziging opnieuw ontworpen.
 - De geschiedenis is lokaal en begrensd. Nieuwe `jp_`-gegevens reizen mee in de bestaande backup. De bestaande laatste-undo-key met `jaco_`-prefix blijft buiten die generieke backupselectie.
-- **Publicatietoestemming:** na de eerdere automatische blokkade heeft de gebruiker op 12 oktober 2026 expliciet toestemming gegeven om deze broncode naar `jpls12/jaco-performance` te publiceren en een pull request aan te maken. Samenvoegen en uitrollen zijn nog niet uitgevoerd.
+- **Publicatietoestemming:** na de eerdere automatische blokkade heeft de gebruiker op 12 oktober 2026 expliciet toestemming gegeven om deze broncode naar `jpls12/jaco-performance` te publiceren en een pull request aan te maken. De gebruiker heeft vervolgens ook samenvoegen en uitrollen toegestaan; deze zijn uitgevoerd.

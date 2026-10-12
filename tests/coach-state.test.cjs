@@ -75,3 +75,39 @@ test('today respects a blocked day and does not replace a locked training',()=>{
   const locked={...workout,locked:true};
   assert.equal(c.createTodayRecommendation({},null,{}, {available:false,maxMinutes:0},locked).workout,locked);
 });
+
+test('an empty blocked day never creates mobility or another session',()=>{
+  const {c}=fixture();
+  Object.assign(c,{latestDiaryRecoverySignal:()=>({level:'unknown'}),weekReplanRestWorkout:()=>({type:'Rest',durationMinutes:0,displaySteps:['Rust']})});
+  vm.runInContext(source.slice(source.indexOf('function createTodayRecommendation('),source.indexOf('function todayWeekStartDate(')),c);
+  assert.equal(c.createTodayRecommendation({level:'low'},null,{}, {available:false,maxMinutes:0},null).workout.type,'Rest');
+});
+
+test('daily fatigue preserves cycling and swimming and enforces the actual time budget',()=>{
+  const {c}=fixture();
+  Object.assign(c,{workoutWasCompleted:()=>false,finiteNumberOrNull:v=>v===''?null:Number(v),
+    fitsTime:(w,a)=>w.durationMinutes<=a.maxMinutes,
+    weekReplanClone:(w,date)=>({...w,date}),weekReplanAvailability:()=>({available:true,maxMinutes:90}),
+    isHardWorkout:w=>w.planType==='quality',isLongWorkout:()=>false,
+    buildLoadMonitor:()=>({level:'elevated'}),seasonBlockForDate:()=>null,
+    latestDiaryRecoverySignal:()=>({level:'unknown'})});
+  const week=fs.readFileSync('js/adaptive-week-replanner.js','utf8');
+  vm.runInContext(week.slice(week.indexOf('function weekReplanShortenToAvailability('),week.indexOf('\nfunction ',week.indexOf('function weekReplanShortenToAvailability(')+10)),c);
+  vm.runInContext(week.slice(week.indexOf('function weekReplanRecoveryWorkout('),week.indexOf('\nfunction ',week.indexOf('function weekReplanRestWorkout(')+10)),c);
+  vm.runInContext(source.slice(source.indexOf('function createTodayRecommendation('),source.indexOf('function todayWeekStartDate(')),c);
+  for(const type of ['Ride','Swim']){
+    const current={type,name:'Intervals',planType:'quality',durationMinutes:60,rpe:'8/10'};
+    const args=[{level:'low'},null,{}, {available:true,maxMinutes:45},current];
+    const advice=c.createTodayRecommendation(...args);
+    assert.equal(advice.workout.type,type);
+    assert.ok(advice.workout.durationMinutes<=45);
+    assert.equal(advice.workout.planType,'recovery');
+    const short=c.createTodayRecommendation({level:'low'},null,{}, {available:true,maxMinutes:5},current);
+    assert.equal(short.workout.type,'Rest');
+    assert.deepEqual(c.createTodayRecommendation(...args),advice);
+    assert.equal(current.planType,'quality');
+  }
+  // Explicit preview/day availability takes priority over stored week availability.
+  const shortened=c.weekReplanShortenToAvailability({type:'Ride',planType:'easy',durationMinutes:90},'2026-10-12',{available:true,maxMinutes:25});
+  assert.equal(shortened.durationMinutes,25);
+});

@@ -217,9 +217,9 @@ function weekReplanLocked(date){
     (weekReplanIsDone(date,workout) && !weekReplanCompletedEarly(date,workout));
 }
 
-function weekReplanShortenToAvailability(workout,date){
+function weekReplanShortenToAvailability(workout,date,availability=null){
   if(!workout || isHardWorkout(workout)) return null;
-  const day=weekReplanAvailability(date);
+  const day=availability || weekReplanAvailability(date);
   const maxMinutes=Number(day?.maxMinutes)||0;
   if(workout.type!=="Run"){
     const minimum={Ride:20,Swim:15,Strength:15,Core:10,Mobility:5}[workout.type];

@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "11.4.2";
+const APP_VERSION = "11.4.3";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -12073,6 +12073,22 @@ function phaseLabel(phase){
 
 function createTodayRecommendation(readiness,race,phase,availability,currentWorkout,executionFeedback=null,diarySignal=latestDiaryRecoverySignal()){
   const date=todayDateString();
+  const protectedWorkout=currentWorkout && (currentWorkout.type==="Race" || currentWorkout.locked===true || workoutWasCompleted(date,currentWorkout));
+  if(!protectedWorkout && (!availability.available || Number(availability.maxMinutes)<=0)){
+    const workout=weekReplanRestWorkout(date,"Vandaag is niet beschikbaar. Geen training inhalen.");
+    return {kind:"rest",workout,title:"Rustdag",text:"Vandaag is geblokkeerd. Er wordt ook geen kracht- of mobiliteitstraining toegevoegd.",steps:workout.displaySteps};
+  }
+  const advice=createTodayRecommendationCandidate(readiness,race,phase,availability,currentWorkout,executionFeedback,diarySignal);
+  if(protectedWorkout || !advice.workout || advice.workout.type==="Rest" || fitsTime(advice.workout,availability)) return advice;
+  const shortened=weekReplanShortenToAvailability(advice.workout,date,availability);
+  const recovery=shortened || weekReplanRecoveryWorkout(advice.workout,date,"Dagadvies begrensd door beschikbare tijd");
+  const workout=fitsTime(recovery,availability)?recovery:weekReplanRestWorkout(date,"Geen passende training binnen je beschikbare tijd");
+  return {...advice,kind:"replace",workout,title:workout.name,steps:workout.displaySteps||[],
+    text:`${advice.text} Het voorstel is beperkt tot je beschikbare tijd; gemiste belasting wordt niet ingehaald.`};
+}
+
+function createTodayRecommendationCandidate(readiness,race,phase,availability,currentWorkout,executionFeedback=null,diarySignal=latestDiaryRecoverySignal()){
+  const date=todayDateString();
 
   if(currentWorkout?.type==="Race" || currentWorkout?.locked===true){
     return{
@@ -12108,55 +12124,28 @@ function createTodayRecommendation(readiness,race,phase,availability,currentWork
 
   if(currentWorkout && (!availability.available || !fitsTime(currentWorkout,availability)) &&
     typeof weekReplanShortenToAvailability==="function"){
-    const shortened=availability.available?weekReplanShortenToAvailability(currentWorkout,date):null;
+    const shortened=availability.available?weekReplanShortenToAvailability(currentWorkout,date,availability):null;
     const recovery=availability.available&&!shortened?weekReplanRecoveryWorkout(currentWorkout,date,"Minder tijd beschikbaar"):null;
     const workout=shortened || (recovery&&fitsTime(recovery,availability)?recovery:weekReplanRestWorkout(date,"Geen passende training binnen je beschikbare tijd"));
     return {kind:"replace",workout,title:workout.name,
       text:"Je beschikbare tijd is leidend. Dit alternatief past binnen vandaag; gemiste belasting wordt niet ingehaald.",steps:workout.displaySteps||[]};
   }
 
-  if(!availability.available){
-    const minutes=15;
-    const workout={
-      date,
-      type:"Mobility",
-      distanceKm:0,
-      durationMinutes:minutes,
-      name:"Mobiliteit en herstel 15 min",
-      uploadName:"Jaco - Mobiliteit en herstel 15 min",
-      rpe:"2/10",
-      status:"planned",
-      priority:"could",
-      planType:"mobility",
-      displaySteps:[
-        "3 min rustige heupmobiliteit",
-        "3 min enkelmobiliteit",
-        "3 min hamstring en bilspieren",
-        "3 min rug en borstrotaties",
-        "3 min rustig foamrollen of ademhaling"
-      ],
-      intervalsDescription:`Mobiliteit en herstel 15 minuten.
-
-- Heupmobiliteit
-- Enkelmobiliteit
-- Hamstrings en bilspieren
-- Rug- en borstrotaties
-- Rustige ademhaling`
-    };
-
-    return{
-      kind:"rest",
-      workout,
-      title:"Rustdag + mobiliteit 15 min",
-      text:"Vandaag staat als niet beschikbaar ingesteld. De coach plant daarom geen looptraining, maar je kunt wel een korte mobiliteitssessie toevoegen.",
-      steps:workout.displaySteps
-    };
-  }
-
-
-
   const loadMonitor=buildLoadMonitor();
   const seasonBlock=seasonBlockForDate(date);
+
+  // Keep the planned discipline: fatigue from another sport is not a run prescription.
+  if(currentWorkout && ["Ride","Swim","Strength","Core","Mobility"].includes(currentWorkout.type)){
+    const needsRecovery=seasonBlock?.phase==="recovery" || readiness.level==="low" ||
+      loadMonitor.level==="elevated" || executionFeedback?.level==="elevated" || diarySignal.level==="elevated";
+    const effort=finiteNumberOrNull(String(currentWorkout.rpe||"").split("/")[0]);
+    const alreadyEasy=!isHardWorkout(currentWorkout) && !isLongWorkout(currentWorkout) && effort!==null && effort<=4;
+    const workout=needsRecovery&&!alreadyEasy?weekReplanRecoveryWorkout(currentWorkout,date,"Herstel heeft voorrang binnen de geplande sport"):currentWorkout;
+    return {kind:workout===currentWorkout?"keep":"replace",workout,title:workout.name,
+      text:workout===currentWorkout?"De geplande sport blijft behouden. Ontbrekende hersteldata zijn onbekend; voeg geen extra belasting toe.":"De actuele herstel- of belastingssignalen vragen om een lichtere sessie. Fietsen en zwemmen worden geen vervangende looptraining.",
+      steps:workout.displaySteps||[]};
+  }
+
 
   if(seasonBlock?.phase==="recovery"){
     const currentIsEasy=
