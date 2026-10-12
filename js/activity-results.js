@@ -581,6 +581,10 @@ function renderActivityResultDetail(activity){
           ].map(([value,emoji,label])=>`<label><input type="radio" name="energy" value="${value}"${review.energy===value?" checked":""} required><span><span aria-hidden="true">${emoji}</span><small>${label}</small></span></label>`).join("")}</div>
         </fieldset>
       </div>
+      <label>Lukte de geplande training?<select name="completion">
+        <option value="">Bepalen uit meetgegevens</option>
+        ${[["complete","Volledig gelukt"],["partial","Gedeeltelijk gelukt"],["replaced","Andere training gedaan"]].map(([value,label])=>`<option value="${value}"${review.completion===value?" selected":""}>${label}</option>`).join("")}
+      </select></label>
       <details class="activity-review-extra"${review.savedAt && [review.legs,review.enjoyment,review.complaintSeverity].some(value=>value!=null)?" open":""}>
         <summary>Extra details (optioneel)</summary>
         <div class="activity-review-grid">
@@ -600,6 +604,7 @@ function renderActivityResultDetail(activity){
       <small>${safe(insight.coach)}</small>
       ${review.savedAt?'<a href="#weekReplannerCard">Bekijk je aangepaste weekplan ↓</a>':""}
     </div>
+    ${typeof renderResultMatchCorrection==="function"?renderResultMatchCorrection(activity):""}
     <details id="activityResultMore" class="activity-result-more">
       <summary>Kaart, splits en extra metingen</summary>
       <div class="activity-result-metrics">
@@ -620,6 +625,7 @@ function renderActivityResultDetail(activity){
         <div id="activityResultIntervalRows" class="activity-result-interval-rows"></div>
       </details>
     </details>`;
+  detail.querySelector("#saveResultMatch")?.addEventListener("click",()=>correctResultMatch(activity.id));
   detail.querySelector("#activityResultMore").addEventListener("toggle",event=>{
     if(event.target.open) loadActivityRoute(activity);
   });
@@ -775,7 +781,7 @@ function saveActivityReview(event){
   }
   activityReviews[activity.id]={activityId:activity.id,date:activity.date,
     startDateLocal:activity.startDateLocal,name:activity.name,type:activity.type,
-    ...scores,note:form.elements.note.value.trim().slice(0,500),savedAt:new Date().toISOString()};
+    ...scores,completion:["complete","partial","replaced"].includes(form.elements.completion?.value)?form.elements.completion.value:null,note:form.elements.note.value.trim().slice(0,500),savedAt:new Date().toISOString()};
   saveObject(ACTIVITY_REVIEWS_KEY,activityReviews);
   if(typeof refreshActivityAssignmentFromReview==="function"){
     refreshActivityAssignmentFromReview(activity.id);

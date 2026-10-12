@@ -307,13 +307,16 @@ test('route preview uses a bounded map with attribution and no map without GPS',
 
 test('planned comparison only uses a reliably matched activity',()=>{
   const {context,activities}=resultsContext();
-  context.allWorkouts=()=>({'2026-09-26':{type:'Run',name:'Geplande duurloop',distanceKm:8,durationMinutes:40}});
-  context.trainingExecutionForDate=()=>({actual:{id:'i1'},matched:true});
+  context.assignmentForActivity=id=>id==='i1'?{
+    workoutDate:'2026-09-25',status:'complete',
+    workoutSnapshot:{type:'Run',name:'Geplande duurloop',distanceKm:8,durationMinutes:40}
+  }:null;
   const matched=context.activityResultPlanComparison(activities.i1);
   assert.equal(matched.name,'Geplande duurloop');
+  assert.equal(matched.plannedDate,'2026-09-25');
   assert.match(matched.distance,/Volgens plan/);
   assert.equal(context.activityResultPlanComparison(activities.i2),null);
-  context.trainingExecutionForDate=()=>({actual:{id:'i1'},matched:false});
+  context.assignmentForActivity=()=>({status:'extra'});
   assert.equal(context.activityResultPlanComparison(activities.i1),null);
 });
 

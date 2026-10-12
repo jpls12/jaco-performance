@@ -68,6 +68,8 @@ function normalizeSyncedActivity(activity){
     name:String(activity.name||"Training"),
     type:String(activity.type||""),
     startDateLocal:String(activity.startDateLocal||""),
+    source:String(activity.source||"intervals"),
+    externalId:activity.externalId==null?null:String(activity.externalId),
     distanceKm:finiteNumberOrNull(activity.distanceKm),
     durationMinutes:finiteNumberOrNull(activity.durationMinutes),
     elapsedMinutes:finiteNumberOrNull(activity.elapsedMinutes),
@@ -86,6 +88,59 @@ function normalizeSyncedActivity(activity){
     intervalCount:finiteNumberOrNull(activity.intervalCount),
     hasGps:typeof activity.hasGps==="boolean"?activity.hasGps:null
   };
+}
+
+// Conservative cross-source identity: never merge on calendar date or title alone.
+function sameRecordedActivity(a,b){
+  if(a.id===b.id) return true;
+  if(syncedSportFamily(a.type)!==syncedSportFamily(b.type)) return false;
+  if(a.externalId && a.externalId===b.externalId) return true;
+  if(!a.source || !b.source || a.source===b.source) return false;
+  if(!/T\d{2}:\d{2}:\d{2}/.test(a.startDateLocal||"") ||
+    !/T\d{2}:\d{2}:\d{2}/.test(b.startDateLocal||"")) return false;
+  const gap=Math.abs(Date.parse(a.startDateLocal)-Date.parse(b.startDateLocal));
+  if(!Number.isFinite(gap) || gap>10000) return false;
+  const close=(x,y)=>Number.isFinite(x)&&Number.isFinite(y)&&x>0&&y>0&&Math.abs(x-y)/Math.max(x,y)<=.02;
+  return close(a.durationMinutes,b.durationMinutes) && close(a.distanceKm,b.distanceKm);
+}
+
+function mergeActivityImports(incoming){
+  // A bounded provider response is not proof of deletion. Preserve historical facts.
+  const next={};
+  const existing=Object.values(syncedActivities).sort((a,b)=>
+    Number(activityPlanAssignments[b.id]?.source==="manual")-Number(activityPlanAssignments[a.id]?.source==="manual")||a.id.localeCompare(b.id));
+  let linksChanged=false,reviewsChanged=false;
+  for(const activity of [...existing,...[...incoming].sort((a,b)=>a.id.localeCompare(b.id))]){
+    const canonical=Object.values(next).find(item=>item.id===activity.id ||
+      item.aliases?.includes(activity.id) || sameRecordedActivity(item,activity));
+    if(!canonical){next[activity.id]=activity;continue;}
+    const raw=({...activity});
+    delete raw.sourceRecords;delete raw.aliases;
+    const original={...canonical};delete original.sourceRecords;delete original.aliases;
+    const variants={...(canonical.sourceRecords||{[canonical.id]:original}),[activity.id]:raw};
+    if(activity.id!==canonical.id){
+      if(activityPlanAssignments[activity.id]){
+        if(!activityPlanAssignments[canonical.id]) activityPlanAssignments[canonical.id]={...activityPlanAssignments[activity.id],activityId:canonical.id};
+        delete activityPlanAssignments[activity.id];linksChanged=true;
+      }
+      if(typeof activityReviews!=="undefined"&&activityReviews[activity.id]){
+        if(!activityReviews[canonical.id]) activityReviews[canonical.id]={...activityReviews[activity.id],activityId:canonical.id};
+        delete activityReviews[activity.id];reviewsChanged=true;
+      }
+    }
+    const merged={...canonical};
+    for(const [key,value] of Object.entries(activity)){
+      if(value!==null && value!==undefined && value!=="" &&
+        (canonical.id===activity.id || merged[key]==null)) merged[key]=value;
+    }
+    merged.id=canonical.id;
+    merged.aliases=[...new Set([...(canonical.aliases||[]),activity.id])].filter(id=>id!==canonical.id).sort();
+    merged.sourceRecords=variants;
+    next[canonical.id]=merged;
+  }
+  if(linksChanged) saveActivityPlanAssignments();
+  if(reviewsChanged) saveObject("jp_activity_reviews_v1",activityReviews);
+  return next;
 }
 
 function syncedActivitiesForDate(date){
@@ -146,7 +201,7 @@ function activityEffortClass(activity){
     if(perHour>=90) return "hard";
     if(perHour<=50) return "easy";
   }
-  return "moderate";
+  return "unknown";
 }
 
 function workoutEffortClass(workout){
@@ -209,6 +264,7 @@ function assignmentWorkoutSnapshot(date,workout){
     distanceKm:finiteNumberOrNull(workout?.distanceKm),
     durationMinutes:finiteNumberOrNull(workout?.durationMinutes),
     rpe:String(workout?.rpe||""),
+    replanOriginDate:workout?.replanOriginDate||null,
     displaySteps:Array.isArray(workout?.displaySteps)
       ?workout.displaySteps.slice(0,12)
       :[]
@@ -383,6 +439,8 @@ function executionVolumeRatio(workout,activity){
 }
 
 function classifyExecutionStatus(activity,workout){
+  const reported=activityReviewForSync(activity.id)?.completion;
+  if(["partial","replaced"].includes(reported)) return reported;
   const ratio=executionVolumeRatio(workout,activity);
   const plannedEffort=workoutEffortClass(workout);
   const actualEffort=activityEffortClass(activity);
@@ -447,6 +505,7 @@ function shouldAutoAssignActivity(activity,candidates){
   const best=candidates[0]||null;
   const second=candidates[1]||null;
   if(!best) return false;
+  if(workoutEffortClass(best.workout)==="hard" && activityEffortClass(activity)==="unknown") return false;
   const gap=second?best.score-second.score:null;
   const absDays=Math.abs(best.dayDelta??99);
   if(best.ratio===null || best.score<145) return false;
@@ -475,6 +534,7 @@ function makeActivityAssignment(activity,candidate,{source="auto",status=null,re
     workoutSnapshot:workout?assignmentWorkoutSnapshot(workoutDate,workout):null,
     status:executionStatus,
     source,
+    confidence:source==="manual"?"bevestigd":!candidate?"geen koppeling":candidate.score>=180?"hoog":"redelijk",
     score:finiteNumberOrNull(candidate?.score),
     scoreGap:finiteNumberOrNull(candidate?.scoreGap),
     ratio:workout?executionVolumeRatio(workout,activity):null,
@@ -486,8 +546,12 @@ function makeActivityAssignment(activity,candidate,{source="auto",status=null,re
 
 function cleanActivityPlanAssignments(){
   const next={};
+  const used=new Set();
   let changed=false;
-  for(const [activityId,assignment] of Object.entries(activityPlanAssignments)){
+  // Imported backups may contain duplicate links. Preserve explicit choices first.
+  const entries=Object.entries(activityPlanAssignments).sort((a,b)=>
+    Number(b[1]?.source==="manual")-Number(a[1]?.source==="manual") || a[0].localeCompare(b[0]));
+  for(const [activityId,assignment] of entries){
     const activity=syncedActivities[activityId];
     if(!activity || !isPlainBackupObject(assignment)){
       changed=true;
@@ -497,10 +561,26 @@ function cleanActivityPlanAssignments(){
       changed=true;
       continue;
     }
+    const key=`${assignment.workoutDate}|${assignment.workoutIdentity}`;
+    if(assignment.status!=="extra" && used.has(key)){
+      changed=true;
+      continue;
+    }
+    if(assignment.status!=="extra") used.add(key);
+    const workout=assignmentCurrentWorkout(assignment)||assignment.workoutSnapshot;
+    const status=workout && assignment.status!=="extra"
+      ?classifyExecutionStatus(activity,workout):assignment.status;
+    const ratio=workout && assignment.status!=="extra"
+      ?executionVolumeRatio(workout,activity):assignment.ratio;
+    const updated=assignment.activityDate!==activity.date ||
+      assignment.status!==status || assignment.ratio!==ratio;
+    if(updated) changed=true;
     next[activityId]={
       ...assignment,
       activityId,
-      activityDate:activity.date
+      activityDate:activity.date,
+      status,ratio,
+      ...(updated?{updatedAt:new Date().toISOString()}: {})
     };
   }
   if(changed){
@@ -511,7 +591,7 @@ function cleanActivityPlanAssignments(){
 }
 
 function rebuildActivityPlanAssignments(){
-  cleanActivityPlanAssignments();
+  const cleaned=cleanActivityPlanAssignments();
   const next={...activityPlanAssignments};
   const usedWorkoutKeys=new Set();
   Object.values(next).forEach(assignment=>{
@@ -568,7 +648,7 @@ function rebuildActivityPlanAssignments(){
     saveActivityPlanAssignments();
     return true;
   }
-  return false;
+  return cleaned;
 }
 
 function refreshActivityAssignmentFromReview(activityId){
@@ -697,8 +777,8 @@ function assessActivityMatch(date,workout){
     date<=activitySyncMeta.newest
   );
   if(age!==null && age>=1 && covered){
-    return{status:"skipped",
-      reason:"Geen uitgevoerde activiteit aan deze training gekoppeld.",
+    return{status:"unmatched",
+      reason:"Nog geen activiteit ontvangen; vertraagde synchronisatie blijft mogelijk. Niet als overgeslagen gemarkeerd.",
       activity:null,ratio:null,score:null,scoreGap:null,candidates:[]};
   }
   return{status:"unmatched",
@@ -871,6 +951,22 @@ function buildAdaptiveExecutionFeedback(){
     .map(activity=>finiteNumberOrNull(activity.trainingLoad))
     .filter(value=>value!==null)
     .reduce((sum,value)=>sum+value,0);
+  // RPE-minutes are kept separate from provider load: they are different units.
+  const perceivedLoad=recent.reduce((sum,activity)=>{
+    if((calendarDayDifference(todayDateString(),activity.date)??99)>2) return sum;
+    const rpe=finiteNumberOrNull(activityReviewForSync(activity.id)?.sessionRpe) ??
+      finiteNumberOrNull(activity.perceivedExertion);
+    const minutes=finiteNumberOrNull(activity.durationMinutes);
+    return rpe!==null && rpe>=1 && rpe<=10 && minutes!==null && minutes>0
+      ?sum+rpe*minutes:sum;
+  },0);
+  if(perceivedLoad>=1800 && rank[level]<rank.elevated){
+    level="elevated";
+    text=`Gecombineerde belasting van alle sporten: ${Math.round(perceivedLoad)} RPE-minuten in drie kalenderdagen. Extra herstelruimte aanbevolen.`;
+  }else if(perceivedLoad>=1200 && rank[level]<rank.attention){
+    level="attention";
+    text=`Gecombineerde belasting van alle sporten: ${Math.round(perceivedLoad)} RPE-minuten in drie kalenderdagen. Geen extra intensiteit toevoegen.`;
+  }
   if(recentLoad>=260 && rank[level]<rank.elevated){
     level="elevated";
     text=`De bekende trainingsbelasting van de laatste 72 uur is ${Math.round(recentLoad)}. De volgende zware prikkel krijgt extra herstelruimte.`;
@@ -920,7 +1016,7 @@ function buildAdaptiveExecutionFeedback(){
           chosen.assignment.workoutSnapshot
       )
     :null;
-  return{level,text,execution,recentActivities:recent,signals,recentLoad};
+  return{level,text,execution,recentActivities:recent,signals,recentLoad,perceivedLoad};
 }
 
 function setIntervalsCompletionMarker(date,workout,activity,executionStatus="complete"){
@@ -1107,8 +1203,8 @@ function renderActivityMatchReview(){
   meta.textContent=
     `${item.activity.date} · ${formatSyncedActivitySummary(item.activity)} · ${item.reason}`;
   select.innerHTML=[
-    ...item.candidates.map((candidate,index)=>
-      `<option value="candidate:${index}">${safe(candidate.date)} · ${safe(candidate.workout.name)} · ${executionStatusLabel(candidate.executionStatus)}</option>`
+    ...item.candidates.map(candidate=>
+      `<option value="${safe(candidate.key)}">${safe(candidate.date)} · ${safe(candidate.workout.name)} · ${executionStatusLabel(candidate.executionStatus)}</option>`
     ),
     '<option value="extra">Dit was een extra training</option>'
   ].join("");
@@ -1137,9 +1233,8 @@ function saveActivityMatchChoice(){
       }
     );
   }else{
-    const index=Number(select.value.split(":")[1]);
-    const candidate=queueItem.candidates[index];
-    if(!candidate) return;
+    const candidate=queueItem.candidates.find(item=>item.key===select.value);
+    if(!candidate){renderActivityMatchReview();return;}
     const existing=Object.values(activityPlanAssignments).find(assignment=>
       assignment &&
       assignment.status!=="extra" &&
@@ -1463,7 +1558,16 @@ function renderActivitySyncStatus(){
   if(typeof renderActivityResults==="function") renderActivityResults();
 }
 
-async function syncCompletedActivities({silent=false,render=true}={}){
+let activitySyncInFlight=null;
+function syncCompletedActivities(options={}){
+  // Concurrent refreshes must not overwrite a newer cache with an older response.
+  if(activitySyncInFlight) return activitySyncInFlight;
+  activitySyncInFlight=performCompletedActivitySync(options)
+    .finally(()=>{activitySyncInFlight=null;});
+  return activitySyncInFlight;
+}
+
+async function performCompletedActivitySync({silent=false,render=true}={}){
   const status=document.getElementById("activitySyncStatus");
   if(typeof navigator!=="undefined" && navigator.onLine===false){
     if(status && !silent){
@@ -1489,24 +1593,15 @@ async function syncCompletedActivities({silent=false,render=true}={}){
     }
     const oldest=String(data.oldest||"");
     const newest=String(data.newest||"");
-    const next={};
-    Object.values(syncedActivities).forEach(activity=>{
-      if(
-        !activity?.date ||
-        (oldest && activity.date>=oldest && (!newest || activity.date<=newest))
-      ) return;
-      next[activity.id]=activity;
-    });
-    (Array.isArray(data.activities)?data.activities:[])
-      .map(normalizeSyncedActivity)
-      .filter(Boolean)
-      .forEach(activity=>{
-        const age=calendarDayDifference(todayDateString(),activity.date);
-        if(age!==null && age>=0 && age<=120){
-          next[activity.id]=activity;
-        }
-      });
-    syncedActivities=next;
+    if(!Array.isArray(data.activities) || calendarDayNumber(oldest)===null ||
+      calendarDayNumber(newest)===null || oldest>newest){
+      throw new Error("Onvolledig synchronisatieantwoord; bestaande trainingen zijn behouden.");
+    }
+    const normalized=data.activities.map(normalizeSyncedActivity);
+    if(normalized.some(activity=>!activity)){
+      throw new Error("Ongeldige activiteit ontvangen; bestaande trainingen zijn behouden.");
+    }
+    syncedActivities=mergeActivityImports(normalized);
     activitySyncMeta={
       fetchedAt:data.fetchedAt || new Date().toISOString(),
       oldest:data.oldest || null,

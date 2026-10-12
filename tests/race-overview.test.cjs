@@ -84,6 +84,7 @@ test('upcoming race shows a live estimate separately from the personal target',(
   const race={id:'amsterdam',name:'Amsterdam',date:'2026-10-18',distanceKm:21.0975,
     targetTime:'1:22:00',priority:'A'};
   const ctx=vm.createContext({
+    todayDateString:()=>"2026-10-12",
     races:{amsterdam:race},
     document:{getElementById:id=>id==='raceList'?list:null},
     futureRacesSorted:()=>[race],daysUntil:()=>19,
