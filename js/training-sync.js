@@ -247,22 +247,30 @@ function plannedTargetPaceSecondsForSync(workout){
     String(workout?.intervalsDescription||"")
   ].join("\n");
 
-  const match=text.match(
-    /(?:@|pace\s*)?\s*(\d):(\d{2})\s*[–-]\s*(\d):(\d{2})\s*\/?\s*km/i
-  ) || text.match(/(?:@|pace\s*)\s*(\d):(\d{2})\s*\/?\s*km/i);
-
-  if(!match) return null;
-
-  if(match.length>=5 && match[3]!==undefined){
+  const values=[];
+  for(const match of text.matchAll(
+    /(\d):(\d{2})\s*[–-]\s*(\d):(\d{2})\s*\/?\s*km/gi
+  )){
     const low=Number(match[1])*60+Number(match[2]);
     const high=Number(match[3])*60+Number(match[4]);
-    return Number.isFinite(low)&&Number.isFinite(high)
-      ?(low+high)/2
-      :null;
+    if(Number.isFinite(low)&&Number.isFinite(high)){
+      values.push((low+high)/2);
+    }
+  }
+  for(const match of text.matchAll(/(?:@|pace\s*)\s*(\d):(\d{2})\s*\/?\s*km/gi)){
+    const value=Number(match[1])*60+Number(match[2]);
+    if(Number.isFinite(value)) values.push(value);
   }
 
-  const value=Number(match[1])*60+Number(match[2]);
-  return Number.isFinite(value)?value:null;
+  if(!values.length) return null;
+  values.sort((a,b)=>a-b);
+
+  if(isHardWorkout(workout)) return values[0];
+
+  const middle=Math.floor(values.length/2);
+  return values.length%2
+    ?values[middle]
+    :(values[middle-1]+values[middle])/2;
 }
 
 function plannedTargetPowerForSync(workout){
@@ -270,15 +278,24 @@ function plannedTargetPowerForSync(workout){
     const value=finiteNumberOrNull(workout?.[key]);
     if(value!==null && value>0) return value;
   }
+
   const text=[
     ...(Array.isArray(workout?.displaySteps)?workout.displaySteps:[]),
     String(workout?.intervalsDescription||"")
   ].join("\n");
-  const values=[...text.matchAll(/(\d{2,4})\s*(?:W|watt)\b/g)]
+
+  const values=[...text.matchAll(/(\d{2,4})\s*(?:W|watt)\b/gi)]
     .map(match=>Number(match[1]))
-    .filter(value=>Number.isFinite(value)&&value>=50&&value<=1000);
+    .filter(value=>Number.isFinite(value)&&value>=50&&value<=1000)
+    .sort((a,b)=>a-b);
+
   if(!values.length) return null;
-  return values.reduce((sum,value)=>sum+value,0)/values.length;
+  if(isHardWorkout(workout)) return values[values.length-1];
+
+  const middle=Math.floor(values.length/2);
+  return values.length%2
+    ?values[middle]
+    :(values[middle-1]+values[middle])/2;
 }
 
 function activityMatchScore(activity,workout,plannedDate=activity?.date){
