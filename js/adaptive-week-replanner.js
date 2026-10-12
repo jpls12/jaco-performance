@@ -286,6 +286,36 @@ function weekReplanReplaceLowerPriority(schedule,fromDate,targetDate,reason){
   return replaced;
 }
 
+function weekReplanLatestActualStressDate(bounds){
+  if(
+    typeof syncedActivities==="undefined" ||
+    typeof activityEffortClass!=="function"
+  ) return null;
+
+  return Object.values(syncedActivities)
+    .filter(activity=>{
+      if(!activity?.date || activity.date>bounds.today) return false;
+      const age=dateGapDays(activity.date,bounds.today);
+      if(age>2) return false;
+
+      const assignment=typeof assignmentForActivity==="function"
+        ?assignmentForActivity(activity.id)
+        :null;
+      const planned=assignment?.workoutSnapshot||null;
+
+      return(
+        activityEffortClass(activity)==="hard" ||
+        (planned && weekReplanIsStressWorkout(planned)) ||
+        (
+          syncedSportFamily(activity.type)==="run" &&
+          Number(activity.distanceKm||0)>=16
+        )
+      );
+    })
+    .sort((a,b)=>String(b.startDateLocal||b.date)
+      .localeCompare(String(a.startDateLocal||a.date)))[0]?.date || null;
+}
+
 function weekReplanRecentMissed(bounds){
   const workouts=allWorkouts();
   return Object.entries(workouts)
@@ -938,9 +968,12 @@ function buildAdaptiveWeekReplan(){
     .sort((a,b)=>a[0].localeCompare(b[0]));
 
   const todayWorkout=workouts[bounds.today];
-  let previousDate=weekReplanIsStressWorkout(todayWorkout)
-    ?bounds.today
-    :null;
+  let previousDate=weekReplanLatestActualStressDate(bounds);
+
+  if(!previousDate && weekReplanIsStressWorkout(todayWorkout)){
+    previousDate=bounds.today;
+  }
+
   const yesterday=addDays(bounds.today,-1);
   if(!previousDate && weekReplanIsStressWorkout(workouts[yesterday]) &&
     weekReplanIsDone(yesterday,workouts[yesterday])){
