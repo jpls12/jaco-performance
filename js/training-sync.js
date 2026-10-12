@@ -825,62 +825,185 @@ function bestProtectedRaceActivity(date,workout){
     })[0]?.activity || null;
 }
 
+function unresolvedActivityMatchQueue(){
+  const usedWorkoutKeys=new Set(
+    Object.values(activityPlanAssignments)
+      .filter(assignment=>
+        assignment &&
+        assignment.status!=="extra" &&
+        assignment.workoutDate &&
+        assignment.workoutIdentity
+      )
+      .map(assignment=>`${assignment.workoutDate}|${assignment.workoutIdentity}`)
+  );
+  return Object.values(syncedActivities)
+    .filter(activity=>!assignmentForActivity(activity.id))
+    .map(activity=>{
+      const candidates=activityPlanCandidates(activity,{excludeWorkoutKeys:usedWorkoutKeys})
+        .slice(0,4);
+      const best=candidates[0]||null;
+      const second=candidates[1]||null;
+      if(!best || best.score<110) return null;
+      return{
+        activity,
+        candidates,
+        reason:second && best.score-second.score<14
+          ?"Meerdere geplande trainingen passen bijna even goed."
+          :best.ratio===null
+            ?"Afstand of duur ontbreekt; kies zelf welke training dit was."
+            :best.executionStatus==="partial"
+              ?"De activiteit lijkt korter dan de geplande training."
+              :best.executionStatus==="replaced"
+                ?"De activiteit wijkt inhoudelijk af van de geplande training."
+                :`Mogelijke training van ${best.date}; bevestig de koppeling.`
+      };
+    })
+    .filter(Boolean)
+    .sort((a,b)=>String(b.activity.startDateLocal||b.activity.date)
+      .localeCompare(String(a.activity.startDateLocal||a.activity.date)));
+}
+
+function renderActivityMatchReview(){
+  const panel=document.getElementById("activityMatchReview");
+  const select=document.getElementById("activityMatchChoice");
+  const title=document.getElementById("activityMatchReviewTitle");
+  const meta=document.getElementById("activityMatchReviewMeta");
+  const count=document.getElementById("activityMatchReviewCount");
+  if(!panel || !select || !title || !meta || !count) return;
+  const queue=unresolvedActivityMatchQueue();
+  const item=queue[0]||null;
+  panel.hidden=!item;
+  count.textContent=item?`${queue.length} te controleren`:"0 te controleren";
+  if(!item){
+    select.innerHTML="";
+    delete panel.dataset.activityId;
+    return;
+  }
+  title.textContent=`Welke training was “${item.activity.name}”?`;
+  meta.textContent=
+    `${item.activity.date} · ${formatSyncedActivitySummary(item.activity)} · ${item.reason}`;
+  select.innerHTML=[
+    ...item.candidates.map((candidate,index)=>
+      `<option value="candidate:${index}">${safe(candidate.date)} · ${safe(candidate.workout.name)} · ${executionStatusLabel(candidate.executionStatus)}</option>`
+    ),
+    '<option value="extra">Dit was een extra training</option>'
+  ].join("");
+  panel.dataset.activityId=item.activity.id;
+}
+
+function saveActivityMatchChoice(){
+  const panel=document.getElementById("activityMatchReview");
+  const select=document.getElementById("activityMatchChoice");
+  const status=document.getElementById("activitySyncStatus");
+  const activityId=panel?.dataset.activityId;
+  const activity=syncedActivities[activityId];
+  if(!activity || !select) return;
+  const queueItem=unresolvedActivityMatchQueue()
+    .find(item=>item.activity.id===activityId);
+  if(!queueItem){
+    renderActivityMatchReview();
+    return;
+  }
+  if(select.value==="extra"){
+    activityPlanAssignments[activity.id]=makeActivityAssignment(
+      activity,null,{
+        source:"manual",
+        status:"extra",
+        reason:"Door gebruiker gemarkeerd als extra training."
+      }
+    );
+  }else{
+    const index=Number(select.value.split(":")[1]);
+    const candidate=queueItem.candidates[index];
+    if(!candidate) return;
+    const existing=Object.values(activityPlanAssignments).find(assignment=>
+      assignment &&
+      assignment.status!=="extra" &&
+      assignment.workoutDate===candidate.date &&
+      assignment.workoutIdentity===workoutCompletionIdentity(candidate.workout)
+    );
+    if(existing && existing.activityId!==activity.id){
+      if(existing.source==="manual"){
+        if(status){
+          status.className="status error";
+          status.textContent=
+            "Deze geplande training is al handmatig aan een andere activiteit gekoppeld.";
+        }
+        return;
+      }
+      delete activityPlanAssignments[existing.activityId];
+    }
+    const second=queueItem.candidates
+      .filter(item=>item!==candidate)
+      .sort((a,b)=>b.score-a.score)[0]||null;
+    activityPlanAssignments[activity.id]=makeActivityAssignment(
+      activity,
+      {...candidate,scoreGap:second?candidate.score-second.score:null},
+      {
+        source:"manual",
+        reason:candidate.dayDelta
+          ?`Handmatig gekoppeld: uitgevoerd op ${activity.date}, gepland op ${candidate.date}.`
+          :"Handmatig aan de geplande training gekoppeld."
+      }
+    );
+  }
+  saveActivityPlanAssignments();
+  reconcileSyncedCompletions({
+    oldest:activitySyncMeta.oldest,
+    newest:activitySyncMeta.newest
+  });
+  if(typeof reconcileManualCompletionReviews==="function"){
+    reconcileManualCompletionReviews();
+  }
+  resetGeneratedPlannerPreviews();
+  renderActivitySyncStatus();
+  renderMonth();
+  renderSelected();
+  renderSaved();
+  refreshDerivedCoachViews();
+  if(status){
+    status.className="status ok";
+    status.textContent=
+      "Koppeling opgeslagen. De resterende planning is opnieuw berekend.";
+  }
+}
+
 function buildActivitySyncDiagnostics(days=21){
   const workouts=allWorkouts();
   const rows=[];
-  const consumedActivityIds=new Set();
-
+  const consumedActivityIds=new Set(Object.keys(activityPlanAssignments));
   Object.entries(workouts)
     .map(([date,workout])=>({
-      date,
-      workout,
-      age:calendarDayDifference(todayDateString(),date)
+      date,workout,age:calendarDayDifference(todayDateString(),date)
     }))
     .filter(item=>
       item.workout &&
       item.workout.type!=="Rest" &&
       item.age!==null &&
-      item.age>=1 &&
+      item.age>=-ACTIVITY_MATCH_WINDOW_DAYS &&
       item.age<=days
     )
     .sort((a,b)=>b.date.localeCompare(a.date))
     .forEach(item=>{
       if(item.workout.type==="Race"){
-        const raceActivity=bestProtectedRaceActivity(
-          item.date,
-          item.workout
-        );
-
-        if(raceActivity){
-          consumedActivityIds.add(raceActivity.id);
-        }
-
+        const raceActivity=bestProtectedRaceActivity(item.date,item.workout);
+        if(raceActivity) consumedActivityIds.add(raceActivity.id);
         rows.push({
-          date:item.date,
-          workout:item.workout,
-          status:"protected",
+          date:item.date,workout:item.workout,status:"protected",
           reason:raceActivity
             ?"Wedstrijdactiviteit herkend; voltooiing blijft bewust handmatig beschermd."
             :"Wedstrijd beschermd; geen passende activiteit gevonden.",
           activity:raceActivity,
-          ratio:raceActivity
-            ?executionVolumeRatio(item.workout,raceActivity)
-            :null
+          ratio:raceActivity?executionVolumeRatio(item.workout,raceActivity):null
         });
         return;
       }
-
       const assessment=assessActivityMatch(item.date,item.workout);
-      if(assessment.activity){
-        consumedActivityIds.add(assessment.activity.id);
-      }
-
       let status=assessment.status;
       let reason=assessment.reason;
       const marker=doneWorkouts[item.date];
-
       if(
-        status!=="auto" &&
+        !["complete","partial","replaced"].includes(status) &&
         marker &&
         marker.source!=="intervals" &&
         completionMarkerMatches(marker,item.workout)
@@ -890,59 +1013,55 @@ function buildActivitySyncDiagnostics(days=21){
           ?"Handmatig voltooid; automatische koppeling was bewust te onzeker."
           :"Handmatig voltooid; geen betrouwbare Intervals.icu-match gevonden.";
       }
-
+      if(assessment.activity) consumedActivityIds.add(assessment.activity.id);
       rows.push({
-        date:item.date,
-        workout:item.workout,
-        status,
-        reason,
-        activity:assessment.activity,
-        ratio:assessment.ratio,
+        date:item.date,workout:item.workout,status,reason,
+        activity:assessment.activity,ratio:assessment.ratio,
         scoreGap:assessment.scoreGap
       });
     });
-
+  const queue=unresolvedActivityMatchQueue();
+  const pendingReviewIds=new Set(queue.map(item=>item.activity.id));
   const extras=Object.values(syncedActivities)
     .filter(activity=>{
       const age=calendarDayDifference(todayDateString(),activity.date);
+      const assignment=assignmentForActivity(activity.id);
       return(
         age!==null &&
-        age>=1 &&
+        age>=0 &&
         age<=days &&
-        !consumedActivityIds.has(activity.id)
+        !pendingReviewIds.has(activity.id) &&
+        (
+          assignment?.status==="extra" ||
+          !consumedActivityIds.has(activity.id)
+        )
       );
     })
-    .sort((a,b)=>
-      String(b.startDateLocal||b.date)
-        .localeCompare(String(a.startDateLocal||a.date))
-    );
-
+    .sort((a,b)=>String(b.startDateLocal||b.date)
+      .localeCompare(String(a.startDateLocal||a.date)));
   const counts={
-    auto:rows.filter(row=>row.status==="auto").length,
-    review:rows.filter(row=>row.status==="review").length,
+    complete:rows.filter(row=>row.status==="complete").length,
+    partial:rows.filter(row=>row.status==="partial").length,
+    replaced:rows.filter(row=>row.status==="replaced").length,
+    skipped:rows.filter(row=>row.status==="skipped").length,
+    review:queue.length,
     unmatched:rows.filter(row=>row.status==="unmatched").length,
     manual:rows.filter(row=>row.status==="manual").length,
     protected:rows.filter(row=>row.status==="protected").length,
     extras:extras.length
   };
-
-  return{days,rows,extras,counts};
+  return{days,rows,extras,counts,pendingReviewIds};
 }
 
 function diagnosticStatusMeta(status){
-  if(status==="auto"){
-    return{cls:"good",icon:"✓",label:"Automatisch gekoppeld"};
-  }
-  if(status==="review"){
-    return{cls:"warn",icon:"!",label:"Controleren"};
-  }
-  if(status==="manual"){
-    return{cls:"good",icon:"✓",label:"Handmatig voltooid"};
-  }
-  if(status==="protected"){
-    return{cls:"good",icon:"🏁",label:"Race beschermd"};
-  }
-  return{cls:"warn",icon:"?",label:"Niet gekoppeld"};
+  if(status==="complete") return{cls:"good",icon:"✓",label:"Volledig uitgevoerd"};
+  if(status==="partial") return{cls:"warn",icon:"½",label:"Gedeeltelijk uitgevoerd"};
+  if(status==="replaced") return{cls:"warn",icon:"↔",label:"Vervangen"};
+  if(status==="skipped") return{cls:"warn",icon:"–",label:"Overgeslagen"};
+  if(status==="review") return{cls:"warn",icon:"!",label:"Controleren"};
+  if(status==="manual") return{cls:"good",icon:"✓",label:"Handmatig voltooid"};
+  if(status==="protected") return{cls:"good",icon:"🏁",label:"Race beschermd"};
+  return{cls:"warn",icon:"?",label:"Nog niet gekoppeld"};
 }
 
 function renderActivitySyncDiagnostics(){
@@ -950,35 +1069,30 @@ function renderActivitySyncDiagnostics(){
   const list=document.getElementById("activitySyncDiagnostics");
   const api=document.getElementById("activitySyncApiCoverage");
   if(!summary || !list || !api) return;
-
   const diagnostics=buildActivitySyncDiagnostics(21);
   const {counts}=diagnostics;
-
   summary.textContent=
-    `${counts.auto} auto · ${counts.review} controleren · ${counts.unmatched} open`+
-    (counts.manual?` · ${counts.manual} handmatig`:"");
-
+    `${counts.complete} volledig · ${counts.partial} deels · ${counts.replaced} vervangen · `+
+    `${counts.skipped} overgeslagen · ${counts.review} controleren · ${counts.extras} extra`;
   const raw=finiteNumberOrNull(activitySyncMeta?.rawCount);
   const normalized=finiteNumberOrNull(activitySyncMeta?.normalizedCount);
   const dropped=finiteNumberOrNull(activitySyncMeta?.droppedCount);
   const coverage=activitySyncMeta?.metricsCoverage||{};
   const typeCounts=activitySyncMeta?.typeCounts||{};
-
   const typeText=Object.entries(typeCounts)
     .sort((a,b)=>b[1]-a[1])
     .map(([type,count])=>`${type} ${count}`)
     .join(" · ");
-
   const coverageParts=[
     ["afstand",coverage.distanceKm],
     ["duur",coverage.durationMinutes],
+    ["tempo",coverage.paceSecondsPerKm],
     ["HR",coverage.averageHeartRate],
     ["load",coverage.trainingLoad],
     ["vermogen",coverage.weightedAverageWatts]
   ]
     .filter(([,value])=>finiteNumberOrNull(value)!==null)
     .map(([label,value])=>`${label} ${value}/${normalized??"—"}`);
-
   const apiRows=[];
   if(raw!==null){
     let text=`API: ${raw} ontvangen · ${normalized??"—"} bruikbaar`;
@@ -988,15 +1102,12 @@ function renderActivitySyncDiagnostics(){
     apiRows.push("API-validatie verschijnt na de volgende sync.");
   }
   if(typeText) apiRows.push(`Sporttypen: ${typeText}`);
-  if(coverageParts.length){
-    apiRows.push(`Meetdekking: ${coverageParts.join(" · ")}`);
-  }
-
-  api.innerHTML=apiRows
-    .map(text=>`<div>${safe(text)}</div>`)
-    .join("");
-
-  const rowHtml=diagnostics.rows.slice(0,10).map(row=>{
+  if(coverageParts.length) apiRows.push(`Meetdekking: ${coverageParts.join(" · ")}`);
+  apiRows.push(
+    "Matching gebruikt sport, datumvenster, afstand/duur, intensiteit en beschikbare trainingsopbouw."
+  );
+  api.innerHTML=apiRows.map(text=>`<div>${safe(text)}</div>`).join("");
+  const rowHtml=diagnostics.rows.slice(0,12).map(row=>{
     const meta=diagnosticStatusMeta(row.status);
     const actual=row.activity
       ?formatSyncedActivitySummary(row.activity)
@@ -1004,59 +1115,55 @@ function renderActivitySyncDiagnostics(){
     const ratio=row.ratio===null
       ?""
       :` · ${Math.round(row.ratio*100)}% van gepland`;
-
+    const dateShift=row.activity && row.activity.date!==row.date
+      ?` · uitgevoerd ${row.activity.date}`
+      :"";
     return `
       <div class="reason-item">
         <div class="reason-icon ${meta.cls}">${meta.icon}</div>
         <div>
           <strong>${safe(row.date)} · ${safe(meta.label)}</strong>
           <div>${safe(row.workout?.name||"Training")}</div>
-          <small>${safe(actual)}${safe(ratio)} · ${safe(row.reason)}</small>
+          <small>${safe(actual)}${safe(ratio)}${safe(dateShift)} · ${safe(row.reason)}</small>
         </div>
       </div>
     `;
   });
-
   const extraHtml=diagnostics.extras.slice(0,5).map(activity=>`
     <div class="reason-item">
       <div class="reason-icon warn">+</div>
       <div>
-        <strong>${safe(activity.date)} · Extra activiteit</strong>
+        <strong>${safe(activity.date)} · Extra gedaan</strong>
         <div>${safe(formatSyncedActivitySummary(activity))}</div>
-        <small>Niet gebruikt voor een geplande training; dit kan een warming-up, extra sessie of ongeplande training zijn.</small>
+        <small>Deze activiteit telt mee in je belasting, maar is niet aan een geplande training gekoppeld.</small>
       </div>
     </div>
   `);
-
   list.innerHTML=[...rowHtml,...extraHtml].join("") ||
     '<div class="reason-item"><div class="reason-icon warn">…</div><div>Nog geen recente syncdata om te kalibreren.</div></div>';
+  renderActivityMatchReview();
 }
 
 function buildActivitySyncDiagnosticText(){
   const diagnostics=buildActivitySyncDiagnostics(21);
   const lines=[
-    "Jaco Performance 9.2.1 · Training Sync diagnose",
+    "Jaco Performance 11.4 · Adaptive Execution diagnose",
     `Laatste sync: ${activitySyncMeta?.fetchedAt||"nog niet"}`,
     `Bereik: ${activitySyncMeta?.oldest||"—"} t/m ${activitySyncMeta?.newest||"—"}`,
     `API ontvangen/bruikbaar/overgeslagen: ${activitySyncMeta?.rawCount??"—"}/${activitySyncMeta?.normalizedCount??"—"}/${activitySyncMeta?.droppedCount??"—"}`,
-    `Kalibratie: ${diagnostics.counts.auto} automatisch, ${diagnostics.counts.review} controleren, ${diagnostics.counts.unmatched} niet gekoppeld, ${diagnostics.counts.manual} handmatig, ${diagnostics.counts.protected} races beschermd, ${diagnostics.counts.extras} extra activiteiten`,
+    `Uitvoering: ${diagnostics.counts.complete} volledig, ${diagnostics.counts.partial} gedeeltelijk, ${diagnostics.counts.replaced} vervangen, ${diagnostics.counts.skipped} overgeslagen, ${diagnostics.counts.review} controleren, ${diagnostics.counts.extras} extra`,
     ""
   ];
-
-  diagnostics.rows.slice(0,12).forEach(row=>{
+  diagnostics.rows.slice(0,14).forEach(row=>{
     lines.push(
       `${row.date} | ${row.status} | ${row.workout?.name||"Training"} | `+
       `${row.activity?formatSyncedActivitySummary(row.activity):"geen activiteit"} | `+
       `${row.ratio===null?"ratio —":`ratio ${Math.round(row.ratio*100)}%`} | ${row.reason}`
     );
   });
-
   diagnostics.extras.slice(0,8).forEach(activity=>{
-    lines.push(
-      `${activity.date} | extra | ${formatSyncedActivitySummary(activity)}`
-    );
+    lines.push(`${activity.date} | extra | ${formatSyncedActivitySummary(activity)}`);
   });
-
   return lines.join("\n");
 }
 
@@ -1084,7 +1191,6 @@ function renderActivitySyncStatus(){
   const quality=document.getElementById("activitySyncQuality");
   const summary=document.getElementById("todayExecutionSummary");
   if(!quality || !summary) return;
-
   const count=Object.keys(syncedActivities).length;
   if(activitySyncMeta?.fetchedAt){
     const stamp=new Date(activitySyncMeta.fetchedAt);
@@ -1096,19 +1202,20 @@ function renderActivitySyncStatus(){
       ?`${count} lokaal opgeslagen`
       :"Nog niet gesynchroniseerd";
   }
-
   const today=todayDateString();
   const workout=currentTodayWorkout();
   const execution=trainingExecutionForDate(today,workout);
   const feedback=buildAdaptiveExecutionFeedback();
   const rows=[];
-
   if(workout && !["Rest","Race"].includes(workout.type)){
     if(execution.matched){
-      rows.push(`Vandaag uitgevoerd: ${formatSyncedActivitySummary(execution.actual)}`);
+      rows.push(
+        `${executionStatusLabel(execution.executionStatus)}: ${formatSyncedActivitySummary(execution.actual)}`+
+        (execution.actual?.date!==today?` · uitgevoerd ${execution.actual.date}`:"")
+      );
     }else if(execution.status==="review" && execution.actual){
       rows.push(
-        `Vandaag kandidaat gevonden, maar controle nodig: ${formatSyncedActivitySummary(execution.actual)} · ${execution.reason}`
+        `Kandidaat gevonden, maar controle nodig: ${formatSyncedActivitySummary(execution.actual)} · ${execution.reason}`
       );
     }else{
       rows.push(`Vandaag gepland: ${workout.name} · nog geen betrouwbare koppeling gevonden`);
@@ -1117,66 +1224,55 @@ function renderActivitySyncStatus(){
     const raceActivities=syncedActivitiesForDate(today);
     rows.push(
       raceActivities.length
-        ?`Wedstrijddag: ${raceActivities.length} activiteit(en) uit Intervals.icu gevonden; race-voltooiing blijft handmatig beschermd.`
+        ?`Wedstrijddag: ${raceActivities.length} activiteit(en) gevonden; race-voltooiing blijft beschermd.`
         :`Wedstrijddag: ${workout.name}`
     );
   }else{
-    rows.push("Vandaag staat geen koppelbare training in de kalender.");
+    rows.push("Vandaag staat geen koppelbare hoofdtraining in de kalender.");
   }
-
   rows.push(`Adaptieve feedback: ${feedback.text}`);
-
   if(activitySyncMeta?.oldest && activitySyncMeta?.newest){
     rows.push(`Syncbereik: ${activitySyncMeta.oldest} t/m ${activitySyncMeta.newest}.`);
   }
-
-  summary.innerHTML=rows
-    .map(text=>`<div>${safe(text)}</div>`)
-    .join("");
-
+  summary.innerHTML=rows.map(text=>`<div>${safe(text)}</div>`).join("");
   renderActivitySyncDiagnostics();
   if(typeof renderActivityResults==="function") renderActivityResults();
 }
 
 async function syncCompletedActivities({silent=false,render=true}={}){
   const status=document.getElementById("activitySyncStatus");
-
   if(typeof navigator!=="undefined" && navigator.onLine===false){
     if(status && !silent){
       status.className="status";
-      status.textContent="Offline · eerder gesynchroniseerde trainingen blijven beschikbaar.";
+      status.textContent=
+        "Offline · eerder gesynchroniseerde trainingen blijven beschikbaar.";
     }
     renderActivitySyncStatus();
     return{ok:false,error:new Error("Offline")};
   }
-
   if(status && !silent){
     status.className="status";
-    status.textContent="Uitgevoerde trainingen worden opgehaald…";
+    status.textContent=
+      "Uitgevoerde trainingen worden opgehaald en opnieuw gekoppeld…";
   }
-
   try{
     const response=await fetchWithAppPin("/api/intervals-activities");
     const data=await response.json();
-
     if(!response.ok){
-      throw new Error(data.error || "Uitgevoerde trainingen konden niet worden geladen.");
+      throw new Error(
+        data.error || "Uitgevoerde trainingen konden niet worden geladen."
+      );
     }
-
     const oldest=String(data.oldest||"");
     const newest=String(data.newest||"");
     const next={};
-
     Object.values(syncedActivities).forEach(activity=>{
       if(
         !activity?.date ||
         (oldest && activity.date>=oldest && (!newest || activity.date<=newest))
-      ){
-        return;
-      }
+      ) return;
       next[activity.id]=activity;
     });
-
     (Array.isArray(data.activities)?data.activities:[])
       .map(normalizeSyncedActivity)
       .filter(Boolean)
@@ -1186,7 +1282,6 @@ async function syncCompletedActivities({silent=false,render=true}={}){
           next[activity.id]=activity;
         }
       });
-
     syncedActivities=next;
     activitySyncMeta={
       fetchedAt:data.fetchedAt || new Date().toISOString(),
@@ -1197,11 +1292,11 @@ async function syncCompletedActivities({silent=false,render=true}={}){
       normalizedCount:finiteNumberOrNull(data.normalizedCount),
       droppedCount:finiteNumberOrNull(data.droppedCount),
       typeCounts:isPlainBackupObject(data.typeCounts)?data.typeCounts:{},
-      metricsCoverage:isPlainBackupObject(data.metricsCoverage)?data.metricsCoverage:{}
+      metricsCoverage:isPlainBackupObject(data.metricsCoverage)
+        ?data.metricsCoverage:{}
     };
-
     saveActivitySyncCache();
-
+    const assignmentsChanged=rebuildActivityPlanAssignments();
     const completionChanged=reconcileSyncedCompletions({
       oldest:activitySyncMeta.oldest,
       newest:activitySyncMeta.newest
@@ -1209,46 +1304,37 @@ async function syncCompletedActivities({silent=false,render=true}={}){
     if(typeof reconcileManualCompletionReviews==="function"){
       reconcileManualCompletionReviews();
     }
-
     if(typeof syncTrainingQualityLatest==="function"){
-      await syncTrainingQualityLatest({
-        silent:true,
-        render:false
-      });
+      await syncTrainingQualityLatest({silent:true,render:false});
     }
-
     renderActivitySyncStatus();
-
     if(render){
-      if(completionChanged){
+      if(completionChanged || assignmentsChanged){
         renderMonth();
         renderSelected();
         renderSaved();
       }
+      resetGeneratedPlannerPreviews();
       refreshDerivedCoachViews();
     }
-
     if(status && !silent){
       const diagnostics=buildActivitySyncDiagnostics(21);
       status.className=diagnostics.counts.review?"status":"status ok";
       status.textContent=
         `${activitySyncMeta.count} activiteit(en) geladen · `+
-        `${diagnostics.counts.auto} automatisch gekoppeld · `+
+        `${diagnostics.counts.complete} volledig · `+
+        `${diagnostics.counts.partial} deels · `+
+        `${diagnostics.counts.replaced} vervangen · `+
+        `${diagnostics.counts.skipped} overgeslagen · `+
         `${diagnostics.counts.review} controleren · `+
         `${diagnostics.counts.extras} extra.`;
     }
-
-    return{
-      ok:true,
-      data,
-      completionChanged
-    };
+    return{ok:true,data,assignmentsChanged,completionChanged};
   }catch(error){
     if(status && !silent){
       status.className="status error";
       status.textContent=`Training Sync mislukt: ${error.message}`;
     }
-
     renderActivitySyncStatus();
     return{ok:false,error};
   }
