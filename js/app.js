@@ -8183,11 +8183,13 @@ function saveWeeklyAvailability(event){
   const status=document.getElementById("weeklyAvailabilityStatus");
   const start=mondayOf(document.getElementById("weeklyAvailabilityDate").value);
   const current=mondayOf(todayDateString());
+
   if(start<current || start>addDays(current,56)){
     status.className="status error";
     status.textContent="Kies een week vanaf deze week, maximaal acht weken vooruit.";
     return;
   }
+
   const days={};
   for(const key of DAY_KEYS){
     const input=document.getElementById(`weekly-minutes-${key}`);
@@ -8199,12 +8201,16 @@ function saveWeeklyAvailability(event){
     }
     days[key]=minutes;
   }
+
   const existing=getProfile().weeklyAvailability||{};
-  const weeklyAvailability=Object.fromEntries(Object.entries(existing)
-    .filter(([week])=>week>=current && week<=addDays(current,56)));
+  const weeklyAvailability=Object.fromEntries(
+    Object.entries(existing)
+      .filter(([week])=>week>=current && week<=addDays(current,56))
+  );
   weeklyAvailability[start]=days;
   profile={...getProfile(),weeklyAvailability};
   saveObject(PROFILE_KEY,profile);
+
   resetGeneratedPlannerPreviews();
   renderWeeklyAvailabilityEditor();
   renderWeeklyAvailabilityPrompt();
@@ -8214,55 +8220,88 @@ function saveWeeklyAvailability(event){
   let added=0;
   let timeConflicts=0;
   const generated=[];
-  if((start===nextMonday() || (start===current && todayDateString()===current)) &&
-    typeof autoWeekReplanReady!=="undefined" && autoWeekReplanReady &&
-    typeof autoWeekReplanEnabled==="function" && autoWeekReplanEnabled() &&
+
+  // Alleen wanneer de week nog leeg is, mag de bestaande weekgenerator een basisplan
+  // maken. Zodra er al trainingen staan, is de centrale adaptieve weekcoach de enige
+  // component die de resterende kalender herschikt.
+  if(
+    (start===nextMonday() || (start===current && todayDateString()===current)) &&
+    typeof autoWeekReplanReady!=="undefined" &&
+    autoWeekReplanReady &&
+    typeof autoWeekReplanEnabled==="function" &&
+    autoWeekReplanEnabled() &&
     !DAY_KEYS.some((_,index)=>{
       const workout=allWorkouts()[addDays(start,index)];
       return workout && workout.type!=="Rest" && workout.type!=="Race";
-    })){
+    })
+  ){
     const context=weekPlanningContext();
     context.start=start;
     context.end=addDays(start,6);
     context.availability=availableDaysForPlanner(start);
     context.weekRaces=racesInRange(start,context.end);
     context.seasonBlock=seasonBlockForWeek(start);
+
     const recentLoad=buildLoadMonitor();
     if(recentLoad.level==="elevated") context.seasonLoadFactor=.75;
     else if(recentLoad.level==="attention") context.seasonLoadFactor=.9;
-    const option=assignAiWeekToAvailability(context,createUnscheduledAiWeek(context,0),0);
+
+    const option=assignAiWeekToAvailability(
+      context,
+      createUnscheduledAiWeek(context,0),
+      0
+    );
+
     for(const workout of option.workouts){
       const day=availabilityForDate(workout.date);
-      if(workout.date<=todayDateString() || allWorkouts()[workout.date] || !day.available) continue;
-      if(estimatedWorkoutMinutes(workout)>day.maxMinutes){timeConflicts++;continue;}
+      if(
+        workout.date<=todayDateString() ||
+        allWorkouts()[workout.date] ||
+        !day.available
+      ) continue;
+
+      if(estimatedWorkoutMinutes(workout)>day.maxMinutes){
+        timeConflicts++;
+        continue;
+      }
+
       customWorkouts[workout.date]=JSON.parse(JSON.stringify(workout));
-      generated.push({date:workout.date,workout:JSON.parse(JSON.stringify(customWorkouts[workout.date]))});
+      generated.push({
+        date:workout.date,
+        workout:JSON.parse(JSON.stringify(customWorkouts[workout.date]))
+      });
       added++;
     }
+
     if(added){
-      saveObject(WEEKLY_PLAN_UNDO_KEY,{createdAt:new Date().toISOString(),changes:generated});
+      saveObject(WEEKLY_PLAN_UNDO_KEY,{
+        createdAt:new Date().toISOString(),
+        changes:generated
+      });
       saveObject(STORAGE_KEY,customWorkouts);
     }
   }
-  const rearranged=!added && typeof replanSavedAvailabilityWeek==="function"
-    ?replanSavedAvailabilityWeek(start):{applied:false};
+
   if(added){
-    // Keep this first render from immediately replacing the generated sessions.
+    // De eerste basisweek blijft zichtbaar zoals gegenereerd; daarna stuurt alleen
+    // de centrale adaptieve weekcoach wijzigingen op uitvoering/herstel/beschikbaarheid.
     autoWeekReplanApplying=true;
-    try{refreshAfterCalendarMutation();}finally{autoWeekReplanApplying=false;}
+    try{
+      refreshAfterCalendarMutation();
+    }finally{
+      autoWeekReplanApplying=false;
+    }
+  }else{
+    refreshDerivedCoachViews();
   }
-  else if(!rearranged.applied) refreshDerivedCoachViews();
+
   renderWeeklyPlanSummary();
   status.className="status ok";
-  status.textContent=rearranged.applied
-    ?"Week opgeslagen. De coach heeft je bestaande trainingen verplaatst naar beschikbare dagen. Bekijk het schema hieronder; je kunt de automatische aanpassing terugzetten."
-    :added
-    ?`Week opgeslagen. ${added} trainingen richting je doel ingepland op basis van bekende herstel- en trainingsdata en je wedstrijden.${timeConflicts?` ${timeConflicts} sessie(s) pasten niet binnen je tijd en zijn niet ingepland.`:""}`
-    :rearranged.conflicts && autoWeekReplanEnabled()
-      ?"Week opgeslagen. Er is geen veilige verdeling voor alle trainingen. Bekijk hieronder per training hoeveel tijd ontbreekt en kies wat je wilt aanpassen."
+  status.textContent=added
+    ?`Week opgeslagen. ${added} trainingen richting je doel ingepland.${timeConflicts?` ${timeConflicts} sessie(s) pasten niet binnen je tijd en zijn niet ingepland.`:""} De centrale weekcoach bewaakt vanaf nu de resterende planning.`
     :autoWeekReplanEnabled()
-      ?"Week opgeslagen. De coach heeft de bestaande trainingen met je beschikbaarheid vergeleken. Bekijk het schema hieronder voor eventuele conflicten."
-      :"Week opgeslagen. Automatisch aanpassen staat uit; bekijk het weekadvies en pas het voorstel zelf toe.";
+      ?"Week opgeslagen. De centrale weekcoach heeft uitvoering, herstel, wedstrijden en je nieuwe beschikbaarheid opnieuw gecombineerd."
+      :"Week opgeslagen. Automatisch aanpassen staat uit; het centrale weekadvies is wel opnieuw berekend.";
 }
 
 function availabilityPreferenceOptions(selected){
