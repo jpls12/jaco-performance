@@ -287,6 +287,7 @@ function renderActivityResults(){
 }
 
 function openNextActivityReview(){
+  switchView("dashboard");
   const date=todayDateString();
   const workout=allWorkouts()[date];
   if(todayWorkoutReviewState(date,workout)==="pending"){
@@ -311,6 +312,7 @@ function openActivityReviewForDate(date,workout){
   const activity=match.matched && match.actual &&
     recentActivityResults().find(item=>item.id===match.actual.id);
   if(!activity) return false;
+  switchView("dashboard");
   const manual=document.getElementById("manualCompletionReview");
   if(manual) manual.hidden=true;
   resultSportFilter="all";
@@ -320,6 +322,7 @@ function openActivityReviewForDate(date,workout){
 }
 
 function openCompletedWorkoutReview(date,workout){
+  switchView("dashboard");
   if(openActivityReviewForDate(date,workout)) return;
   const panel=document.getElementById("manualCompletionReview");
   if(!panel) return;

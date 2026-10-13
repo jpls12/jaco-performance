@@ -22,6 +22,7 @@ test('completed-day action opens only a reliably matched activity',()=>{
   context.trainingExecutionForDate=()=>({matched:true,actual:activities.i1});
   assert.equal(context.openActivityReviewForDate('2026-09-26',{type:'Run'}),true);
   assert.equal(opened,'i1');
+  assert.equal(context.activeView,'dashboard');
   context.trainingExecutionForDate=()=>({matched:false,actual:activities.i2});
   assert.equal(context.openActivityReviewForDate('2026-09-26',{type:'Run'}),false);
   assert.equal(opened,'i1');
@@ -156,6 +157,7 @@ function resultsContext(){
   const status={className:'',textContent:''};
   const context=vm.createContext({
     loadObject:()=>({}),syncedActivities:activities,coachDiary:diary,
+    switchView:id=>{context.activeView=id;},
     DIARY_KEY:'diary',saveObject:(key,value)=>{store[key]=JSON.parse(JSON.stringify(value));},
     diaryWorkoutForDate:()=>({distanceKm:10,durationMinutes:46}),
     finiteNumberOrNull:value=>value==null?null:Number(value),

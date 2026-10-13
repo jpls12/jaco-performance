@@ -1,587 +1,127 @@
-/* 11.0 · A distinct, focused visual layer over the existing coach UI. */
+/* Jaco Performance · shared interface tokens, independent of training logic. */
 :root{
-  --bg:#090e1b;
-  --panel:#151e30;
-  --panel2:#1c2940;
-  --line:#34445d;
-  --text:#f7f8fb;
-  --muted:#b8c3d7;
-  --green:#c6ef79;
-  --blue:#b9b0ff;
-  --surface-raised:#202e48;
-  --surface-soft:#1b2840;
-  --shadow-card:0 20px 48px rgba(2,5,17,.25);
+  color-scheme:dark;
+  --bg:#101816;--panel:#18231f;--panel2:#202e28;--line:#3e5147;
+  --text:#f2f6f3;--muted:#b2c1b8;--green:#b9e987;--blue:#b9e987;
+  --red:#ffb0a6;--orange:#efc18d;--yellow:#e3d39a;
+  --surface-raised:var(--panel2);--surface-soft:#1c2923;
+  --radius:16px;--shadow-card:none;
+  --space-1:8px;--space-2:16px;--space-3:24px;--space-4:32px;
 }
-body{
-  background:
-    radial-gradient(ellipse 580px 390px at 12% -170px,rgba(102,84,190,.26),transparent 76%),
-    radial-gradient(ellipse 460px 300px at 98% 120px,rgba(45,88,133,.16),transparent 80%),
-    var(--bg);
-  color:var(--text);
-  font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  letter-spacing:0;
-}
-main{max-width:1080px;padding-top:24px}
-h1,h2,h3{color:var(--text);letter-spacing:-.04em}
-.help,.subtitle{color:var(--muted)}
-.label,.eyebrow{color:var(--blue);font-weight:800;letter-spacing:.135em}
-button{background:var(--green);color:#17240c}
-button.secondary{background:#25324a;color:#f5f7fb;border:1px solid #495a75}
-button:focus-visible,a:focus-visible,summary:focus-visible{outline-color:#d9ff9f}
-.card{background:var(--panel);border-color:#2e3b54;border-radius:24px;box-shadow:var(--shadow-card)}
-.app-header{border-bottom:0;margin:0 0 20px;padding:0 2px 8px}
-.brand-mark{
-  border:0;background:linear-gradient(145deg,#bfb2ff,#7975dd);
-  color:#15142a;border-radius:17px;box-shadow:0 12px 28px rgba(70,55,169,.28)
-}
-.brand-mark-dot{background:var(--green);box-shadow:0 0 0 2px #292449}
-.brand-copy .eyebrow{color:#bcb5db;letter-spacing:.16em}
-.brand-copy h1{font-size:1.35rem;font-weight:840;letter-spacing:-.045em}
-.brand-copy .subtitle{font-size:.8rem}
-
-/* The primary navigation is intentionally quieter than the training content. */
-.tabs{background:#111a2b;border-color:#2d3b54;border-radius:18px;padding:5px;margin-bottom:22px}
-.tabs .tab{color:#b2bfd3;border-radius:13px}
-.tabs .tab.active{background:#34345f;border-color:#6560a9;color:#fff;box-shadow:none}
-.tabs .tab:hover{background:#283451;color:#fff}
-.view-intro h2,.today-intro h2{font-weight:840;letter-spacing:-.055em}
-.today-intro{margin-top:17px;margin-bottom:18px}
-.today-intro h2{font-size:clamp(2.2rem,6vw,3.5rem);line-height:1.04}
-.today-intro .help{color:#c7cfe0}
-.today-shortcuts a,.today-shortcuts button,.view-jumps a{
-  background:#1b263b;border:1px solid #3a4a64;color:#d9e1f0;
-  font-weight:680;box-shadow:none
-}
-.today-shortcuts a:hover,.today-shortcuts button:hover,.view-jumps a:hover{background:#2c3655;border-color:#786fd0}
-
-/* A high-contrast training hero: one primary action and lightweight supporting data. */
-.daily-training-card{
-  position:relative;overflow:hidden;padding:clamp(20px,3.5vw,34px);
-  background:linear-gradient(125deg,#38337c 0%,#2a315f 46%,#1a3252 100%);
-  border:1px solid #6d70bb;border-radius:28px;
-  box-shadow:0 22px 58px rgba(23,24,82,.34)
-}
-.daily-training-card::before{
-  content:"";position:absolute;width:290px;height:290px;right:-115px;top:-130px;
-  border:1px solid rgba(255,255,255,.16);border-radius:50%;pointer-events:none
-}
-.daily-training-card::after{
-  content:"";position:absolute;width:210px;height:210px;right:-76px;top:-90px;
-  border:1px solid rgba(255,255,255,.12);border-radius:50%;pointer-events:none
-}
-.daily-training-card>*{position:relative;z-index:1}
-.daily-training-head .label{color:#d5d0ff}
-.daily-training-head h2{font-size:1rem;font-weight:650;color:#edf0ff}
-.daily-training-status{border-radius:999px;padding:8px 12px;font-size:.69rem;letter-spacing:.06em;text-transform:uppercase}
-.daily-training-status.planned,.daily-training-status.loading{background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.3)}
-.daily-training-hero{background:transparent;border:0;box-shadow:none;padding:24px 0 18px;align-items:flex-start}
-.daily-training-icon{
-  width:58px;height:58px;flex-basis:58px;border:1px solid rgba(255,255,255,.2);
-  background:rgba(255,255,255,.12);color:#e8e8ff;border-radius:17px;box-shadow:none
-}
-.daily-training-icon[data-type="Race"],.daily-training-icon[data-type="Strength"],
-.daily-training-icon[data-type="Core"],.daily-training-icon[data-type="Rest"],
-.daily-training-icon[data-type="Mobility"]{background:rgba(255,255,255,.12);color:#f4f3ff;border-color:rgba(255,255,255,.2)}
-.daily-training-copy h2{font-size:clamp(1.75rem,4vw,2.55rem);line-height:1.08;margin:5px 0 11px;font-weight:820;letter-spacing:-.055em}
-.daily-training-copy .help{color:#e1e5fa;max-width:56ch}
-.daily-training-type{color:#d7d2ff}
-.daily-training-stats{gap:0;border-top:1px solid rgba(255,255,255,.2);border-bottom:1px solid rgba(255,255,255,.2);margin:2px 0 18px}
-.daily-training-stats>div{background:transparent;border:0;border-radius:0;box-shadow:none;padding:13px 10px 13px 0}
-.daily-training-stats span{color:#d6ddf4}
-.daily-training-stats strong{color:#fff;font-size:1rem}
-.daily-training-actions{margin-top:17px}
-.daily-training-actions button:first-child:not(:disabled){box-shadow:0 8px 22px rgba(13,24,11,.2)}
-.daily-training-card .daily-training-actions button.secondary{background:rgba(10,17,48,.28);border-color:rgba(255,255,255,.28);color:#fff}
-.daily-training-details{background:rgba(13,19,56,.28);border-color:rgba(255,255,255,.24)}
-
-/* The week is a calm list with one visible rhythm and one meaningful status. */
-.today-week-overview{background:#151e30;border-color:#36425e;padding:clamp(20px,3vw,29px)}
-.today-week-overview-head h2{font-size:1.55rem;font-weight:800}
-.today-week-overview-head .help{font-size:.83rem}
-.today-week-overview-head button.secondary{font-size:.82rem;padding:9px 12px;min-height:38px}
-.today-week-progress{display:block;width:100%;height:7px;margin:2px 0 17px;border:0;border-radius:99px;overflow:hidden;background:#2b3651;accent-color:var(--green)}
-.today-week-progress[hidden]{display:none}
-.today-week-progress::-webkit-progress-bar{background:#2b3651;border-radius:99px}
-.today-week-progress::-webkit-progress-value{background:var(--green);border-radius:99px}
-.today-week-progress::-moz-progress-bar{background:var(--green);border-radius:99px}
-.today-week-overview-days{gap:0}
-.today-week-overview-day{
-  border:0;border-bottom:1px solid #2d3952;border-radius:0;background:transparent;
-  min-height:64px;padding:9px 3px;gap:14px
-}
-.today-week-overview-day:last-child{border-bottom:0}
-.today-week-overview-day.is-today{background:#242c4a;border:0;border-radius:14px;padding-left:10px;padding-right:10px}
-.today-week-overview-day:hover{background:#25314c;border-radius:14px}
-.today-week-overview-date{background:#25324b;border-radius:11px;width:45px;min-height:44px;align-content:center}
-.today-week-overview-day.is-today .today-week-overview-date{background:#bcb5ff;color:#171a38}
-.today-week-overview-day.is-today .today-week-overview-date small{color:#27264b}
-.today-week-overview-date strong{font-size:1.02rem}
-.today-week-overview-session strong{font-weight:750}
-.today-week-overview-state{padding:5px 8px;border-radius:999px;background:#273751;color:#dbe5f4}
-.today-week-overview-day.is-done .today-week-overview-state{background:#263e38;color:#c9f6c4}
-.today-week-overview-day.is-conflict .today-week-overview-state{background:#503b2e;color:#ffdb9d}
-.today-week-overview-toggle,.today-week-overview-link{color:#c9f27b}
-.today-week-overview-link{text-decoration:none}
-.today-week-time-track{display:block;max-width:190px;height:5px;margin-top:6px;border-radius:99px;background:#384762;overflow:hidden}
-.today-week-time-track>span{display:block;height:100%;border-radius:inherit;background:#c6ef79}
-.today-week-time-track.conflict>span{background:#ffb47a}
-
-/* Supporting information recedes without hiding the coach's reasoning. */
-.support-today-card{background:#172b2d;border-color:#365b51}
-.today-card-icon{background:#254837;color:#c9f27b}
-.today-context-details,.today-monitor-details,.daily-training-details{border-radius:15px}
-.week-replanner-card,.fully-adaptive-coach-card{border-radius:18px}
-input,select,textarea{background:#121d30;border-color:#455673;border-radius:13px}
-
-/* Calendar and planning share the same visual language as the home screen. */
-.calendar-intro{margin-bottom:16px}
-.calendar-month-card,.calendar-detail-card{background:#151e30;border-color:#36425e}
-.calendar-month-card{padding:clamp(17px,2.8vw,28px)}
-.calendar-head{margin-bottom:5px}
-.calendar-head .month-title{font-size:1.45rem;font-weight:820;letter-spacing:-.045em;text-transform:capitalize}
-.calendar-head button.secondary{width:43px;height:43px;min-height:43px;padding:0;border-radius:13px;font-size:1.25rem}
-.calendar-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 18px}
-.calendar-toolbar .help{margin:0;font-size:.82rem}
-.calendar-toolbar button.secondary{width:auto;min-height:36px;padding:7px 11px;font-size:.78rem;white-space:nowrap}
-.weekdays{margin-bottom:5px}
-.weekdays div{font-size:.7rem;color:#b6c2d5;letter-spacing:.08em;text-transform:uppercase}
-.calendar-grid{gap:6px}
-.calendar-grid .day{
-  min-width:0;min-height:82px;padding:9px 7px;border:1px solid #303e58;border-radius:13px;
-  background:#1b263b;color:#f6f8fb;box-shadow:none;transition:background .16s ease,border-color .16s ease
-}
-.calendar-grid .day:hover{background:#293653;border-color:#746fac}
-.calendar-grid .day.today{border-color:#bcb5ff;box-shadow:inset 0 0 0 1px #bcb5ff}
-.calendar-grid .day.selected{background:#3a376d;border-color:#a9a1ee;box-shadow:inset 0 0 0 1px #a9a1ee}
-.calendar-grid .day.is-done{background:#21392f}
-.calendar-grid .day.is-race{background:#473039}
-.calendar-grid .day.selected.is-done,.calendar-grid .day.selected.is-race{background:#3a376d}
-.calendar-grid .day-number{font-size:.91rem;font-weight:820}
-.calendar-grid .day-name{color:#d4deed;font-size:.65rem;line-height:1.25;margin-top:15px}
-.calendar-grid .dot{width:8px;height:8px;right:8px;top:10px}
-.calendar-grid .dot.planned{background:#bcb5ff}
-.calendar-grid .dot.done{background:#c6ef79}
-.calendar-grid .dot.race{background:#ff9eaa}
-.calendar-grid .dot.custom{background:#ffd48f}
-.calendar-month-card .legend{margin-top:19px;gap:7px}
-.calendar-month-card .legend span{padding:5px 9px;border-radius:999px;background:#202d43;color:#c6d0df;font-size:.73rem}
-.calendar-detail-card .workout-title{font-size:clamp(1.55rem,3vw,2rem);line-height:1.13;letter-spacing:-.045em}
-.calendar-detail-card .meta{gap:7px}
-.calendar-detail-card .pill,.calendar-detail-card .sport-badge{background:#25334d;border-color:#475a78;color:#edf3fb}
-.calendar-detail-card ul.steps li{border-color:#32435d}
-.calendar-detail-card .step{color:var(--blue)}
-
-#planning .view-intro{max-width:820px}
-#planning .view-jumps a{background:#202b43;border-color:#435271;color:#e1e8f5}
-#planning .view-jumps a:hover{background:#34345f;border-color:#7c78c0}
-#planningAvailability{background:#151e30;border-color:#36425e}
-#planningAvailability>h2{font-size:1.55rem;font-weight:800}
-.weekly-availability-form{background:#19243a;border:1px solid #3b4c6a;border-radius:20px;padding:clamp(14px,2.4vw,24px)}
-.weekly-availability-head h3{font-size:1.2rem;letter-spacing:-.035em}
-.weekly-availability-head label{color:#d9e1ed}
-.weekly-availability-days{gap:2px}
-.weekly-availability-day{
-  grid-template-columns:105px minmax(0,1fr) 58px;min-height:60px;
-  border:0;border-bottom:1px solid #33415c;border-radius:0;background:transparent;padding:8px 5px
-}
-.weekly-availability-day:last-child{border-bottom:0}
-.weekly-availability-day>span{font-size:.88rem;color:#f3f5fa}
-.weekly-availability-day input[type="range"]{accent-color:var(--green);min-height:34px;background:transparent;border:0;padding:0}
-.weekly-availability-day output{color:#d7f4a7;font-weight:800;font-size:.85rem}
-.weekly-availability-form button[type="submit"]{margin-top:8px}
-.weekly-plan-summary{background:#19243a;border-color:#3b4c6a;border-radius:20px;padding:clamp(14px,2.4vw,22px)}
-.weekly-plan-summary h3{font-size:1.15rem;letter-spacing:-.035em}
-.weekly-time-chart{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:7px;align-items:end;margin:16px 0 18px;padding:15px 14px 12px;background:#202b42;border:1px solid #40516e;border-radius:16px}
-.weekly-time-day{min-width:0;text-align:center}
-.weekly-time-track{display:flex;align-items:flex-end;width:100%;max-width:42px;height:62px;margin:0 auto 6px;background:#34415b;border-radius:8px 8px 4px 4px;overflow:hidden}
-.weekly-time-track>span{display:block;width:100%;background:linear-gradient(180deg,#d9faa3,#98c85a);border-radius:7px 7px 3px 3px;min-height:0}
-.weekly-time-day.conflict .weekly-time-track>span{background:linear-gradient(180deg,#ffc491,#d88765)}
-.weekly-time-day small{color:#c8d4e6;font-size:.7rem;font-weight:800}
-.weekly-time-day.conflict small{color:#ffd1a9}
-.weekly-plan-rows{gap:4px}
-.weekly-plan-row{background:#222f46;border-radius:12px;padding:10px 12px}
-.weekly-plan-row.conflict{border-color:#bc805e;background:#42352f}
-.weekly-conflict-guide{margin:0 0 14px;padding:14px;border:1px solid #bc805e;border-radius:14px;background:#42352f;color:#f8e7d9}
-.weekly-conflict-guide>strong{display:block;margin-bottom:4px}
-.weekly-conflict-guide p{margin:0 0 10px;font-size:.84rem;line-height:1.45;color:#e5c5ac}
-.weekly-conflict-guide ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.weekly-conflict-guide li{display:grid;gap:8px;padding:10px;background:#322d32;border-radius:10px;font-size:.82rem;line-height:1.45}
-.weekly-conflict-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.weekly-conflict-actions a,.weekly-conflict-actions button{font-size:.79rem}
-.weekly-conflict-actions a{color:#d7f4a7;text-decoration:underline;text-underline-offset:3px}
-.weekly-conflict-actions button{min-height:34px;padding:5px 10px}
-.weekly-defaults>summary{color:#d1e3f1}
-
-/* Progress: the actual numbers lead, and unknown values remain visibly unknown. */
-.dashboard-metrics-card,.dashboard-history-card{background:#151e30;border-color:#36425e}
-.dashboard-metrics-card>div:first-child h2{font-size:1.55rem;font-weight:800}
-.dashboard-grid{gap:10px;margin:22px 0}
-.dashboard-grid .metric-card{
-  min-width:0;padding:17px;border:1px solid #3b4a65;border-radius:17px;
-  background:#202b42;box-shadow:none
-}
-.dashboard-grid .metric-card:nth-child(-n+3){background:linear-gradient(145deg,#303264,#242b4a);border-color:#5f5e9c}
-.dashboard-grid .metric-card span{color:#c9d0e1;font-size:.76rem;font-weight:680}
-.dashboard-grid .metric-card strong{font-size:clamp(1.65rem,3vw,2.1rem);font-weight:820;line-height:1.1;letter-spacing:-.055em;margin:10px 0 5px;overflow-wrap:anywhere}
-.dashboard-grid .metric-card small{color:#bbc6d8;font-size:.74rem}
-.dashboard-metrics-card .coach-box{margin-top:22px;background:#243a33;border-color:#4a7461;border-radius:19px;padding:18px}
-.dashboard-metrics-card .coach-box .label{color:#c9f27b}
-.dashboard-metrics-card .coach-box h3{font-size:1.28rem}
-.dashboard-history-card>.label{margin-bottom:12px}
-.wellness-list{gap:0}
-.wellness-row{align-items:center;background:transparent;border:0;border-bottom:1px solid #303f59;border-radius:0;padding:13px 2px}
-.wellness-row:last-child{border-bottom:0}
-.wellness-row strong{font-variant-numeric:tabular-nums}
-.wellness-row small{display:block;color:#b9c5d5;font-size:.79rem;margin-top:2px}
-.wellness-row>div:last-child{text-align:right;flex:none;padding:5px 10px;border-radius:11px;background:#26334e}
-.dashboard-planners>summary{border-color:#4b5779;background:#232d48;color:#f1f3ff}
-.section-jumps{margin:0 0 17px}
-.section-jumps a{background:#202b43;border-color:#4b5c7d;color:#e7ecf8}
-.section-heading{display:flex;align-items:baseline;gap:12px;margin:29px 3px 10px;padding-top:17px;border-top:1px solid #3d4a64;scroll-margin-top:22px}
-.section-heading .label{margin:0;white-space:nowrap}
-.section-heading h3{margin:0;font-size:1.45rem;font-weight:820}
-#dashboardMetrics{scroll-margin-top:22px}
-#dashboard .today-monitor-details{margin:0 0 15px}
-#dashboard .today-monitor-details>summary{background:#222e48;border-color:#4b5b7a}
-
-/* Results: one clear selected activity, measured facts, then a two-step review. */
-#activityResultsCard{scroll-margin-top:24px}
-.activity-results-card{background:#151e30;border-color:#36425e;padding:clamp(18px,3vw,28px);border-radius:24px}
-.activity-results-card .ai-generator-head h2{font-size:1.55rem;font-weight:800}
-.activity-results-card .ai-generator-head .help{max-width:62ch}
-.activity-week-report{background:linear-gradient(145deg,#292f5d,#202e4c);border-color:#5c6196;border-radius:20px;padding:clamp(15px,2.4vw,22px);margin:19px 0}
-.activity-week-head h3{font-size:1.2rem;letter-spacing:-.035em}
-.activity-week-metrics{gap:8px}
-.activity-week-metrics>div{background:rgba(12,17,47,.32);border:1px solid rgba(218,220,255,.12);border-radius:12px;padding:10px}
-.activity-week-metrics strong{font-size:1.15rem;font-variant-numeric:tabular-nums}
-.activity-week-metrics span,.activity-week-metrics small{color:#d1d6eb}
-.activity-week-track{background:rgba(7,12,40,.38);border-radius:7px}
-.activity-week-track>span{background:#c6ef79;border-radius:7px 7px 0 0}
-.activity-week-day strong,.activity-week-day small,.activity-week-caption,.activity-week-goal{color:#d4d9ee}
-.activity-results-list{gap:7px;max-height:440px;padding-right:3px}
-.activity-result-filters{gap:7px;padding:4px 0 11px}
-.activity-result-filters button{border-color:#4a5875;background:#202c43;color:#e3e9f3;padding:7px 12px;font-weight:680}
-.activity-result-filters button.active{background:#c6ef79;border-color:#c6ef79;color:#19250d}
-.activity-result-count{color:#bfcadc;margin:0 0 7px}
-.activity-result-row{border-color:#35455e;border-radius:15px;background:#202b42;padding:12px 13px;gap:12px}
-.activity-result-row:hover{background:#2a3652;border-color:#7774b6}
-.activity-result-row.selected{border-color:#ada4f3;background:#34345d;box-shadow:inset 0 0 0 1px #ada4f3}
-.activity-result-row .activity-result-icon{background:#343866;color:#d9d4ff;border-radius:12px}
-.activity-result-main strong{font-weight:760}
-.activity-result-row small{color:#c6d1e0;opacity:1;font-size:.73rem}
-.activity-result-side strong{font-size:.95rem;font-variant-numeric:tabular-nums}
-.activity-result-detail{margin-top:20px;padding-top:20px;border-top-color:#465575}
-.activity-result-heading h4{font-size:1.5rem;line-height:1.15;letter-spacing:-.045em;margin:3px 0 13px}
-.activity-result-metrics{gap:8px}
-.activity-result-metrics>div{background:#26334c;border:1px solid #405171;border-radius:13px;padding:12px}
-.activity-result-metrics span{color:#bfccdd;opacity:1}
-.activity-result-metrics strong{font-size:1.12rem;font-variant-numeric:tabular-nums}
-.activity-review-quick{background:#202b43;border-color:#465675;border-radius:18px;padding:16px}
-.activity-feeling-options label>span{background:#26344e;border-color:#495a78}
-.activity-feeling-options input:checked+span{background:#3d4569;border-color:#c6ef79;box-shadow:inset 0 0 0 1px #c6ef79}
-.activity-result-insight{background:#243a33;border-color:#4a7461;border-radius:17px;padding:16px}
-.activity-result-insight.caution{background:#423235;border-color:#955d57}
-.activity-result-more{background:#202b43;border-color:#465675;border-radius:15px}
-.activity-result-comparison,.activity-result-intervals{background:#25334a;border-color:#465675}
-.manual-completion-review{background:#202b43;border-color:#5f648e;border-radius:18px}
-
-/* Races: one highlighted next event, with the season roadmap as a second layer. */
-.race-overview-card,.season-planner-card{background:#151e30;border-color:#36425e;border-radius:24px;padding:clamp(18px,3vw,28px)}
-.race-overview-head h2,.season-planner-card .ai-generator-head h2{font-size:1.55rem;font-weight:800}
-.race-overview-card .saved-list{gap:9px;margin-top:18px}
-.race-overview-card .race-card{
-  background:#202b42;border:1px solid #41516d;border-radius:18px;padding:16px 18px
-}
-.race-overview-card .race-card.a{border-left:4px solid #ff9eaa}
-.race-overview-card .race-card.b{border-left:4px solid #ffd48f}
-.race-overview-card .race-card.c,.race-overview-card .race-card.provisional{border-left:4px solid #bcb5ff}
-.race-overview-card .race-card.featured{
-  background:linear-gradient(125deg,#433457,#30325c 56%,#233b53);
-  border:1px solid #9176ad;padding:clamp(18px,3vw,25px);
-  box-shadow:0 16px 34px rgba(22,16,53,.25)
-}
-.race-featured-label{display:inline-block;color:#f4d8ea;font-size:.68rem;font-weight:820;letter-spacing:.12em;text-transform:uppercase;margin-bottom:7px}
-.race-top strong{display:block;font-size:1.03rem;line-height:1.2;letter-spacing:-.025em}
-.race-card.featured .race-top strong{font-size:clamp(1.45rem,3vw,1.9rem);letter-spacing:-.05em}
-.race-top small{display:block;color:#cbd4e3;font-size:.79rem;line-height:1.45;margin-top:5px}
-.race-time{color:#ffe1e5;font-size:1.25rem;font-variant-numeric:tabular-nums}
-.race-time small{display:block;color:#cfbdc9;font-size:.66rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
-.race-estimate{margin:14px 0 4px;padding:15px 16px;border:1px solid #5d718a;border-radius:15px;background:#19273d}
-.race-card.featured .race-estimate{background:rgba(16,28,48,.72);border-color:#94a6ad}
-.race-estimate-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
-.race-estimate-head span{font-size:.73rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#c6ef79}
-.race-estimate-head strong{font-size:clamp(1.35rem,3vw,1.75rem);font-variant-numeric:tabular-nums;color:#f6f9ff}
-.race-estimate-meta{display:flex;gap:12px;color:#d0dcf0;font-size:.8rem;font-weight:700}
-.race-estimate-spectrum{position:relative;height:8px;margin:14px 2px 8px;border-radius:99px;background:linear-gradient(90deg,#9ae0c4,#c6ef79 48%,#f3cf94)}
-.race-estimate-spectrum>span{position:absolute;left:50%;top:50%;width:15px;height:15px;transform:translate(-50%,-50%);background:#f9fbff;border:3px solid #2a3650;border-radius:50%;box-shadow:0 0 0 2px #c6ef79}
-.race-estimate-spectrum>i{position:absolute;inset:-2px 0;border-left:2px solid #d9eff0;border-right:2px solid #f3d2a0;border-radius:99px}
-.race-estimate-goal{margin:10px 0 3px;padding:8px 10px;background:#293953;border-left:3px solid #c6ef79;border-radius:0 9px 9px 0;color:#e2edf4;font-size:.76rem;line-height:1.4}
-.race-estimate small{display:block;margin-top:6px;color:#bbc9dd;font-size:.75rem;line-height:1.4}
-.race-estimate.empty small{margin-top:7px}
-.race-card .countdown{color:#e8edfa;font-size:.83rem;font-weight:740}
-.race-card.featured .countdown{display:inline-flex;color:#19220d;background:#c6ef79;border-radius:999px;padding:5px 10px;margin:14px 0}
-.race-overview-card .race-card .mini-actions{margin-top:14px}
-.race-overview-card .race-card .mini-actions button{font-size:.8rem;min-height:38px;padding:7px 11px}
-.race-action-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0 20px}
-.race-action-nav button{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;min-width:0;min-height:105px;padding:15px 16px;border:1px solid #586788;border-radius:17px;background:#202d46;color:#f4f6ff}
-.race-action-nav button:hover{background:#313862;border-color:#a8a0d5}
-.race-action-nav button>span{display:grid;place-items:center;width:29px;height:29px;margin-bottom:3px;border-radius:9px;background:#3c426d;color:#d7faa1;font-size:1.13rem}
-.race-action-nav button strong{font-size:.91rem;line-height:1.2}
-.race-action-nav button small{color:#bfcbdd;font-size:.74rem;font-weight:500;line-height:1.25}
-.race-history>summary{color:#d7e0ed}
-.race-form-disclosure,.race-form-extra{background:#1d2940;border-color:#3b4a67;border-radius:17px}
-.race-form-disclosure>summary,.race-form-extra>summary{color:#e7ecf7}
-.race-form-disclosure>.card{background:transparent}
-.season-planner-card{background:linear-gradient(155deg,#24284f,#172439 58%,#151e30);border-color:#66669c}
-.season-planner-card .season-metrics{gap:10px;margin-top:22px}
-.season-planner-card .today-metric{background:rgba(11,17,43,.34);border:1px solid rgba(224,224,255,.14);border-radius:16px;padding:15px}
-.season-planner-card .today-metric span,.season-planner-card .today-metric small{color:#d0d6e8}
-.season-planner-card .today-metric strong{font-size:1.2rem;line-height:1.2}
-.season-context{display:inline-flex;flex-wrap:wrap;gap:5px;padding:8px 12px;border-radius:11px;background:rgba(12,18,48,.34);color:#dce1f1}
-.season-context strong{color:#d7f7a4}
-.season-planner-card .coach-box{background:#253a34;border-color:#4c7462;border-radius:18px;padding:17px;margin:17px 0}
-.season-planner-card .coach-box .label{color:#c9f27b}
-.season-planner-card .coach-box h3{font-size:1.18rem}
-.season-details>summary{color:#d9e5f7}
-.season-roadmap{gap:7px}
-.season-block-row{background:#202c44;border-color:#3d4e6e;border-radius:16px;padding:13px}
-.season-block-row.current{background:#30345f;border-color:#a7a1df;box-shadow:inset 0 0 0 1px #a7a1df}
-.season-block-phase{background:#303b58;border-color:#596a90;border-radius:11px;color:#edf1fb}
-.season-block-phase.race{background:#583c4c;border-color:#cb8799;color:#ffe9eb}
-.season-block-phase.recovery{background:#294838;border-color:#74a984;color:#d7f4de}
-.race-tool{background:#1c2940;border-color:#3c4d69;border-radius:17px}
-.race-tool[open]{border-color:#7773ad}
-.race-tool>summary::after{color:#c4bbff}
-.race-tool>.card{background:#151e30;border-top-color:#3c4d69}
-
-/* Training creation keeps the quick path visible and the detailed form scannable. */
-.editor-smart-card,.editor-form-card,.editor-preview-card,.saved-workouts-card{background:#151e30;border-color:#36425e;border-radius:24px;padding:clamp(18px,3vw,28px)}
-.editor-smart-card{background:linear-gradient(135deg,#2f315f,#202b48 62%,#1a2a3c);border-color:#6869a1}
-.editor-smart-card h2{font-size:1.6rem;font-weight:810}
-.editor-smart-card .help{color:#d2d9e9}
-.editor-smart-card label{color:#eef0fa}
-.editor-smart-card #smartInput{min-height:104px;background:rgba(10,17,43,.4);border-color:#7275aa;font-size:1rem;line-height:1.5}
-.editor-smart-card #smartInput::placeholder{color:#b9c2da}
-.editor-smart-card>.grid2{margin-top:14px}
-.editor-smart-card #generateSmartWorkout{background:rgba(10,17,43,.28);border-color:#a2a0d1;color:#f4f5ff}
-.editor-examples{margin-top:18px;border-top:1px solid rgba(224,226,255,.22);padding-top:12px}
-.editor-examples>summary{cursor:pointer;color:#e8e6ff;font-size:.85rem;font-weight:750}
-.editor-examples>summary:focus-visible{outline:2px solid #c6ef79;outline-offset:4px}
-.editor-examples ul{margin:12px 0 0;padding-left:19px;color:#d2d9eb;font-size:.85rem;line-height:1.65}
-.editor-examples li+li{margin-top:5px}
-.editor-form-card .form-mode{background:#222f49;border-color:#455575;border-radius:17px;padding:15px}
-.editor-form-card .form-mode strong{font-size:1.2rem;letter-spacing:-.035em}
-.editor-form-card>p.help{margin:12px 0 20px}
-.editor-form-card #workoutForm{gap:17px}
-.editor-form-card .section{border:1px solid #3c4d69;border-radius:17px;padding:16px;background:#1d2940}
-.editor-form-card .section h3{font-size:1rem;margin-bottom:13px;color:#e9e5ff}
-.editor-form-card label{color:#dce4ef;font-size:.85rem}
-.editor-form-card input,.editor-form-card select,.editor-form-card textarea{min-height:44px}
-.editor-form-card #saveButton{min-height:50px;font-size:1rem}
-.editor-preview-card{background:#1b263b}
-.editor-preview-card pre{max-height:320px;overflow:auto;line-height:1.55}
-.exact-run-panel{background:#202b48;border-color:#7777ac;border-radius:17px}
-
-.saved-workouts-card .notice{background:#24334b;border-left:3px solid #bcb5ff;border-radius:0 12px 12px 0;padding:11px 14px;color:#dae3f0;font-size:.85rem}
-.saved-workouts-card .saved-list{gap:10px;margin-top:18px}
-.saved-workouts-card .saved-row{background:#202b42;border:1px solid #3b4b68;border-radius:18px;padding:16px}
-.saved-row-top{display:flex;align-items:flex-start;gap:12px}
-.saved-row-icon{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:12px;background:#343866;font-size:1.22rem}
-.saved-row-copy{min-width:0;flex:1}
-.saved-row-copy strong{font-size:1.02rem;line-height:1.25;letter-spacing:-.025em}
-.saved-row-copy small{display:block;margin-top:5px;color:#c2cddd;font-size:.78rem;line-height:1.45}
-.saved-row-status{flex:none;padding:5px 8px;border-radius:999px;background:#2d4939;color:#d2f1bc;font-size:.68rem;font-weight:750}
-.saved-workouts-card .mini-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:15px}
-.saved-workouts-card .mini-actions button{width:auto;min-height:37px;padding:7px 11px;font-size:.8rem}
-.saved-workouts-card .mini-actions .danger{margin-left:auto;background:#3e2937;border-color:#684454;color:#ffd7df}
-
-/* One visual language across the secondary screens. */
-.view-intro{
-  position:relative;isolation:isolate;overflow:hidden;max-width:none;
-  margin:12px 0 22px;padding:clamp(23px,4vw,38px);
-  border:1px solid #575b90;border-radius:26px;
-  background:linear-gradient(115deg,#30315d 0%,#242c50 53%,#18344a 100%);
-  box-shadow:0 18px 38px rgba(7,9,32,.23)
-}
-.view-intro::after{
-  content:"";position:absolute;z-index:-1;right:-65px;top:-125px;
-  width:295px;height:295px;border:1px solid rgba(225,220,255,.2);
-  border-radius:50%;box-shadow:0 0 0 55px rgba(220,213,255,.035)
-}
-.view-intro .eyebrow{color:#d4ceff;font-size:.7rem;letter-spacing:.16em}
-.view-intro h2{font-size:clamp(2.1rem,5vw,3.15rem);line-height:1.03;margin:0 0 11px}
-.view-intro .help{max-width:65ch;color:#e0e6f3;font-size:.93rem;line-height:1.5}
-.view-intro .view-jumps{margin-top:21px}
-.view-intro .view-jumps a{background:rgba(15,24,53,.48);border-color:#7277a7;color:#f0f1ff}
-.view-intro .view-jumps a:hover{background:#454477;border-color:#b9b0ff}
-#planning .view-intro{max-width:none}
-
-.view>.card:not(.daily-training-card){border-color:#3b4b68}
-.view>.card>h2,.view>.card .ai-generator-head h2{font-weight:820;letter-spacing:-.045em;line-height:1.15}
-.view>.card>.label{margin-bottom:7px}
-.view>.card>.help{max-width:75ch}
-.view .card details>summary{cursor:pointer}
-.view .card details>summary:focus-visible{outline:2px solid var(--green);outline-offset:4px}
-.view input:not([type="range"]):not([type="checkbox"]),.view select,.view textarea{
-  border-color:#485c79;background:#101e32;color:#f8faff;min-height:44px
-}
-.view input:not([type="range"]):not([type="checkbox"]):focus,.view select:focus,.view textarea:focus{
-  border-color:#bcb5ff;box-shadow:0 0 0 3px rgba(188,181,255,.16)
-}
-.view input::placeholder,.view textarea::placeholder{color:#9fadbf}
-
-#planningAvailability,#planningSupport,#planningExample,#profile>.card,#library>.card{
-  padding:clamp(20px,3vw,30px);border-radius:23px
-}
-#planningAvailability,#planningSupport,#planningExample{border-left:4px solid #7777b8}
-#planningSupport{border-left-color:#9ad7b2}
-#planningExample{border-left-color:#c6ef79}
-#planningTools{scroll-margin-top:22px;margin:18px 0 25px}
-.planning-tools>summary{
-  display:flex;justify-content:space-between;align-items:center;gap:14px;
-  padding:18px 20px;background:linear-gradient(120deg,#333763,#25314e);
-  border:1px solid #7373aa;border-radius:17px;color:#f6f6ff;cursor:pointer;list-style:none
-}
-.planning-tools>summary::-webkit-details-marker{display:none}
-.planning-tools>summary strong,.planning-tools>summary small{display:block}
-.planning-tools>summary strong{font-size:1rem}
-.planning-tools>summary small{margin-top:3px;color:#d0d7ec;font-size:.78rem;font-weight:450}
-.planning-tools>summary>span:last-child{font-size:1.3rem;transition:transform .18s}
-.planning-tools[open]>summary>span:last-child{transform:rotate(180deg)}
-.planning-tools[open]>summary{margin-bottom:14px}
-.planning-tools>.card{margin:11px 0;background:#19253c;border-color:#445474}
-.planning-tools .dashboard-planners{margin:13px 0}
-#planningAvailability>.label,#planningSupport>.label,#planningExample>.label{font-size:.7rem}
-#planningAvailability>h2,#planningSupport>h2,#planningExample>h2{font-size:clamp(1.35rem,3vw,1.75rem)}
-.weekly-availability-form button[type="submit"]{min-height:48px}
-.weekly-plan-summary{margin-top:19px}
-.weekly-plan-row{border:1px solid #3d4d69}
-.weekly-defaults{margin-top:18px;border:1px solid #42516b;border-radius:15px;padding:14px;background:#1d2940}
-.weekly-defaults>summary{font-weight:780}
-
-.profile-basics-card{background:linear-gradient(145deg,#242b4f,#17253d 62%,#151e30);border-color:#67689c!important}
-.profile-jumps{margin:0 0 18px}
-#profileBasics,#profileFuel,#profileBackup{scroll-margin-top:22px}
-.profile-backup{margin:15px 0;border:1px solid #4e5d7b;border-radius:18px;background:#1c2940;overflow:hidden}
-.profile-backup>summary{display:flex;justify-content:space-between;align-items:center;gap:12px;list-style:none;cursor:pointer;padding:17px 20px;color:#f2f4fc}
-.profile-backup>summary::-webkit-details-marker{display:none}
-.profile-backup>summary strong,.profile-backup>summary small{display:block}
-.profile-backup>summary strong{font-size:1.03rem}
-.profile-backup>summary small{font-size:.78rem;color:#c1cddd;margin-top:3px}
-.profile-backup>summary>span:last-child{font-size:1.3rem;transition:transform .18s}
-.profile-backup[open]>summary>span:last-child{transform:rotate(180deg)}
-.profile-backup>.card{border:0;border-top:1px solid #4e5d7b;border-radius:0;margin:0;box-shadow:none}
-.profile-basics-card #profileForm{gap:10px;margin-top:19px}
-.profile-basics-card #profileForm>.grid2{
-  padding:15px;border:1px solid #475574;border-radius:16px;background:rgba(13,24,46,.54)
-}
-.profile-basics-card #profileForm>button{min-height:49px;margin-top:7px}
-#profile .fuel-hydration-profile-card,#profile .data-sync-card{background:#19253b}
-#profile .fuel-profile-summary>div,#profile .backup-metrics>div{background:#23314a;border-color:#435474;border-radius:15px}
-#profile .data-integrity-box{background:#1f3045;border-color:#465b71;border-radius:16px}
-
-.library-start-card{background:linear-gradient(145deg,#253052,#1a2a42 62%,#172c37);border-color:#65769a!important}
-.library-start-card .player-launch{margin-top:16px}
-.library-start-card .visual-guide>div,#library .exercise-card{background:#213049;border-color:#455a78;border-radius:16px}
-#library .recipe-list>div,#library .copy-box{background:#1c2a42;border-color:#405371}
-
-@media(min-width:651px){
-  .tabs{gap:4px;border:1px solid #35445e}
-  .tabs .tab{font-size:.81rem;padding:12px 5px;white-space:normal}
-  .app-header{padding:4px 5px 12px}
-}
+html{scroll-padding:24px 0 110px}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;line-height:1.5;letter-spacing:0}
+main{max-width:1080px;padding:24px 24px calc(120px + env(safe-area-inset-bottom));padding-top:max(24px,env(safe-area-inset-top))}
+[hidden]{display:none!important}
+.view{min-width:0}
+h1,h2,h3,h4{color:var(--text);line-height:1.2;letter-spacing:-.025em;overflow-wrap:anywhere}
+h1{font-size:1.3rem}h2{font-size:1.4rem}h3{font-size:1.1rem}h4{font-size:1rem}
+.help,.subtitle,small{color:var(--muted)}
+.help{line-height:1.55;font-size:.9rem}
+.label,.eyebrow{font-size:.7rem;letter-spacing:.09em;font-weight:700;color:var(--muted)}
+strong,.metric-card,.pill,.meta,input{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;border-radius:10px;max-width:100%;min-width:0}
+button{min-height:44px;padding:11px 16px;background:var(--green);color:#182217;font-weight:650;white-space:normal;line-height:1.3;cursor:pointer;box-shadow:none;transition:background .15s}
+button.secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line);box-shadow:none}
+button.danger{background:transparent;border:1px solid var(--red);color:var(--red)}
+button:disabled{opacity:.55;cursor:not-allowed}
+button:hover:not(:disabled){filter:brightness(1.09)}
+a{color:var(--green);text-underline-offset:3px}
+button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--green);outline-offset:3px}
+input,select,textarea{background:var(--bg);color:var(--text);border:1px solid var(--line);min-height:44px;font-size:1rem;padding:10px 12px}
+input[type=checkbox],input[type=radio]{min-height:24px;min-width:24px;accent-color:var(--green)}
+input[type=range]{padding:0;accent-color:var(--green)}
+label{color:var(--muted);line-height:1.45}
+.card{padding:24px;margin-bottom:16px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:none}
+.card .card{box-shadow:none}
+.app-header{display:flex;align-items:center;gap:12px;border:0;padding:0;margin-bottom:28px}
+.brand-mark{width:44px;height:44px;border-radius:12px;background:var(--green);color:#1a2a1c;box-shadow:none;border:0}
+.brand-mark-dot{display:none}.brand-copy h1{font-size:1.15rem;margin:2px 0}.brand-copy .subtitle{font-size:.8rem;margin:0}.brand-copy .eyebrow{font-size:.62rem;margin:0}
+.today-intro,.view-intro{margin:0 0 24px}.today-intro h2,.view-intro h2{font-size:clamp(1.8rem,5vw,2.6rem);font-weight:730;letter-spacing:-.04em;margin:5px 0 8px}
+.today-intro{display:flex;align-items:end;justify-content:space-between;gap:16px}
+.today-shortcuts,.view-jumps{display:flex;flex-wrap:wrap;gap:8px}
+.today-shortcuts a,.today-shortcuts button,.view-jumps a{display:inline-flex;align-items:center;min-height:44px;padding:10px 14px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);font-size:.85rem;text-decoration:none}
+.daily-training-card{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--green);padding:28px;box-shadow:none}
+.daily-training-card::before,.daily-training-card::after{display:none}
+.daily-training-head h2{font-size:.9rem;font-weight:500;color:var(--muted)}
+.daily-training-hero{background:none;border:0;padding:20px 0;gap:16px}
+.daily-training-icon{width:48px;height:48px;flex-basis:48px;background:var(--panel2)!important;color:var(--green)!important;border:1px solid var(--line)!important;border-radius:12px;box-shadow:none}
+.daily-training-icon svg{width:26px;height:26px}
+.daily-training-copy h2{font-size:clamp(1.6rem,4vw,2.3rem);margin:4px 0 10px;line-height:1.15}
+.daily-training-type{color:var(--green);font-size:.75rem}
+.daily-training-status{background:var(--panel2)!important;border:1px solid var(--line)!important;color:var(--text)!important;padding:6px 10px;font-size:.75rem}
+.daily-training-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;border-block:1px solid var(--line);padding:16px 0;margin:0 0 16px}
+.daily-training-stats>div{background:none;border:0;padding:0;box-shadow:none;min-width:0}
+.daily-training-stats span{color:var(--muted);font-size:.72rem}.daily-training-stats strong{font-size:1.05rem;overflow-wrap:anywhere}
+.daily-training-details{background:none;border:1px solid var(--line);border-radius:10px}
+.daily-training-actions{display:flex;flex-wrap:wrap;gap:8px}.daily-training-actions>button{flex:1 1 150px}
+.training-purpose{border-top:1px solid var(--line);padding-top:16px;margin-top:20px}
+.training-purpose .status{margin:4px 0;color:var(--muted);font-size:.9rem}
+.status:empty{display:none}.status.error{color:var(--red)}.status.ok{color:var(--green)}
+.coach-brief{display:flex;gap:20px;align-items:center;padding:20px 0 24px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.coach-brief>div{flex:1;min-width:0}.coach-brief p{margin:4px 0}.coach-brief strong{font-size:1rem}.coach-brief button{width:auto;flex-shrink:0}
+.section-disclosure{margin:16px 0;border:1px solid var(--line);border-radius:var(--radius);background:var(--panel);overflow:clip}
+.section-disclosure>summary{padding:18px 20px;min-height:64px;cursor:pointer;color:var(--text)}
+.section-disclosure>summary span{display:block;font-size:.8rem;color:var(--muted);margin:4px 0 0 18px}
+.section-disclosure>.card{border:0;border-top:1px solid var(--line);border-radius:0;margin:0}
+summary{min-height:44px;line-height:1.5;cursor:pointer;overflow-wrap:anywhere}
+.section-heading{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.planning-week-days{display:grid;gap:0}
+.planning-day{display:flex;align-items:center;gap:16px;background:transparent;border:0;border-bottom:1px solid var(--line);color:var(--text);padding:16px 8px;text-align:left;border-radius:0}
+.planning-day:last-child{border-bottom:0}.planning-day.is-today{border-left:3px solid var(--green);background:var(--panel2)}
+.planning-day-date{display:flex;flex-direction:column;align-items:center;min-width:34px;font-size:.75rem;color:var(--muted)}.planning-day-date strong{font-size:1.3rem;color:var(--text)}
+.planning-day-copy{flex:1;min-width:0;display:grid;gap:4px}.planning-day-copy strong{font-size:.95rem}.planning-day-copy small{font-size:.75rem}
+.planning-day-state{font-size:.72rem;color:var(--muted)}.is-done .planning-day-state{color:var(--green)}
+.today-week-overview-day{border:1px solid var(--line);background:var(--panel2);color:var(--text);box-shadow:none;border-radius:10px}
+.today-week-overview-day.is-today{border-left:3px solid var(--green);background:var(--panel2)}
+.today-week-overview-date{background:none;color:var(--text)}.today-week-overview-state{color:var(--muted)}
+.today-week-overview-days{gap:8px}.today-week-time-track{background:var(--line)}.today-week-time-track>span{background:var(--green)}
+.metric-card,.today-metric,.race-card,.saved-item,.activity-result-item,.race-estimate,.race-overview-next,.race-countdown,.weekly-availability-day{background:var(--panel2);border-color:var(--line);box-shadow:none;border-radius:12px}
+.metric-card strong{font-size:1.6rem}.metric-card span,.metric-card small{color:var(--muted)}
+.fully-adaptive-coach-card,.week-replanner-card,.daily-decision-card,.load-monitor-card,.coach-intelligence-card,.performance-model-card,.race-readiness-card,.race-strategy-card{background:var(--panel2);border:1px solid var(--line);box-shadow:none;border-radius:12px}
+.race-action-nav button{background:var(--panel);border:1px solid var(--line);color:var(--text);box-shadow:none;border-radius:12px}
+.race-action-nav button>span{color:var(--green)}
+.pill,.sport-badge{background:var(--panel2);color:var(--text);border:1px solid var(--line);font-size:.75rem}
+.steps li,.daily-training-steps li{border-color:var(--line);background:var(--panel2);color:var(--text);padding:12px;line-height:1.5;border-radius:10px}
+.step,.step-number{background:var(--line);color:var(--text)}
+.calendar-grid{min-width:0}.day{min-width:0}.calendar-head button{min-width:44px}.calendar-detail-card{scroll-margin-top:16px}
+svg,canvas,img{max-width:100%}.activity-route-map{width:100%;min-width:0}
+.connection-notice{background:var(--panel2);border-left:3px solid var(--yellow);padding:14px;margin-bottom:16px;color:var(--text)}
+.section-back{width:auto;margin-bottom:16px}
+.skip-link{position:fixed;left:16px;top:-100px;z-index:5000;padding:12px;background:var(--green);color:var(--bg)}.skip-link:focus{top:16px}
+/* One fixed, five-item navigation on mobile, tablet and desktop. */
+.mobile-bottom-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;position:fixed;z-index:1000;bottom:0;left:50%;right:auto;transform:translateX(-50%);width:100%;max-width:1080px;background:#15201b;border:1px solid var(--line);border-bottom:0;border-radius:16px 16px 0 0;padding:8px 12px calc(8px + env(safe-area-inset-bottom));box-shadow:none}
+.mobile-bottom-nav .mobile-nav-button{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:5px;min-height:56px;padding:8px 2px;border:0;border-radius:10px;background:transparent;color:var(--muted);font-size:.74rem;line-height:1.25;box-shadow:none;position:relative}
+.mobile-bottom-nav .mobile-nav-button.active{background:#293c30;color:var(--green);box-shadow:none}.mobile-bottom-nav .mobile-nav-button.active .mobile-nav-icon{color:var(--green)}
+.mobile-nav-icon{display:grid;place-items:center}.mobile-nav-icon svg{width:22px;height:22px}
+.app-menu-backdrop{position:fixed;inset:0;z-index:1400;background:#070d0bd9;align-items:flex-end;justify-content:center}
+.app-menu-backdrop.open{display:flex!important}.app-menu-backdrop[hidden]{display:none!important}
+.app-menu-sheet{background:var(--panel);width:100%;max-width:680px;max-height:85dvh;overflow:auto;border:1px solid var(--line);border-radius:20px 20px 0 0;padding:20px 20px calc(24px + env(safe-area-inset-bottom))}
+.app-menu-head{display:flex;justify-content:space-between;gap:12px}.app-menu-close{width:auto}.app-menu-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.app-menu-item{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:16px;min-height:100px}.app-menu-item span{display:none}.app-menu-item small{margin-top:6px;font-size:.8rem;font-weight:400}
+body.app-menu-open{overflow:hidden}
+.guided-training-shell,.player-shell,dialog{background:var(--panel);color:var(--text);max-height:95dvh;overflow:auto}
+.guided-training-topbar,.player-top{background:var(--panel)}
+@media(min-width:800px){.today-week-overview-days{grid-template-columns:repeat(3,minmax(0,1fr))}.daily-training-copy{max-width:760px}.app-menu-sheet{margin-bottom:20px;border-radius:20px}}
 @media(max-width:650px){
-  .view-intro{margin:11px 0 18px;padding:22px 20px;border-radius:22px}
-  .view-intro h2{font-size:2.25rem}
-  .section-heading{margin-top:23px;gap:7px;flex-direction:column}
-  .section-heading h3{font-size:1.3rem}
-  .planning-tools>summary{padding:15px}
-  .view-intro .help{font-size:.86rem;margin-bottom:0}
-  .view-intro::after{width:230px;height:230px;right:-83px;top:-105px}
-  #planningAvailability,#planningSupport,#planningExample,#profile>.card,#library>.card{padding:18px}
-  .profile-basics-card #profileForm>.grid2{padding:13px;gap:10px}
-  .mobile-bottom-nav .mobile-nav-button{transition:background .18s,color .18s}
-  .app-menu-backdrop{background:rgba(3,7,20,.78)}
-  .app-menu-sheet{background:#172238;border:1px solid #617194;border-radius:28px 28px 0 0;padding:12px 16px calc(21px + env(safe-area-inset-bottom))}
-  .app-menu-handle{background:#8897b3}
-  .app-menu-head{padding:7px 3px 13px;border-bottom:1px solid #3d4c69}
-  .app-menu-head h2{font-size:1.7rem;letter-spacing:-.045em}
-  .app-menu-grid{gap:10px;margin-top:15px}
-  .app-menu-item{background:#233149;border-color:#4b5e7c;border-radius:17px;min-height:101px}
-  .app-menu-item>span{display:grid;place-items:center;width:33px;height:33px;margin-bottom:8px;color:#c6ef79}
-  .app-menu-item small{color:#c3cee0}
+ main{padding:16px 16px calc(112px + env(safe-area-inset-bottom));padding-top:max(16px,env(safe-area-inset-top))}
+ .app-header{margin-bottom:24px}.card{padding:20px 16px;border-radius:14px}
+ .today-intro{display:block;margin-bottom:20px}.today-shortcuts{margin-top:12px}.today-shortcuts a,.today-shortcuts button{font-size:.8rem}
+ .daily-training-card{padding:20px}.daily-training-hero{gap:12px}.daily-training-icon{width:38px;height:38px;flex-basis:38px}.daily-training-copy h2{font-size:1.65rem}
+ .daily-training-stats{gap:10px}.daily-training-stats strong{font-size:.95rem}
+ .daily-training-actions>button{flex-basis:100%}.daily-training-actions>button.secondary{flex-basis:40%;font-size:.8rem}
+ .coach-brief{display:block;padding:4px 0 20px}.coach-brief button{margin-top:12px}
+ .planning-day{gap:10px}.planning-day-state{max-width:68px;text-align:right}.planning-day-copy strong{font-size:.9rem}
+ .mobile-bottom-nav{border-radius:0;padding-inline:max(8px,env(safe-area-inset-left));padding-right:max(8px,env(safe-area-inset-right))}
+ .grid2,.grid3,.fully-adaptive-main-grid,.race-day-live-grid{grid-template-columns:minmax(0,1fr)}
+ .dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.metric-card{min-width:0;padding:14px}.metric-card strong{font-size:1.4rem}
+ .view-jumps{overflow:visible;flex-wrap:wrap}.view-jumps a,.view-jumps button{white-space:normal}
+ .activity-result-heading,.race-overview-head,.ai-generator-head,.weekly-availability-head{flex-wrap:wrap;gap:12px}
+ .weekly-availability-day,.weekly-availability-day>*{min-width:0}.weekly-availability-day input{max-width:100%}
+ .guided-training-shell,.player-shell{padding-bottom:calc(24px + env(safe-area-inset-bottom));max-height:100dvh}
 }
-@media(max-width:430px){
-  .profile-basics-card #profileForm>.grid2{grid-template-columns:1fr}
-  .view-intro h2{font-size:2.05rem}
-}
-
-@media(max-width:650px){
-  main{padding-top:13px;padding-bottom:calc(115px + env(safe-area-inset-bottom))}
-  .app-header{margin-bottom:10px;padding-bottom:5px}
-  .brand-mark{width:42px;height:42px;flex-basis:42px;border-radius:13px}
-  .brand-copy h1{font-size:1.14rem}
-  .today-intro{margin-top:13px}
-  .today-intro h2{font-size:2.45rem}
-  .today-shortcuts{gap:7px}
-  .today-shortcuts a,.today-shortcuts button{font-size:.75rem;min-height:36px;padding:6px 10px}
-  .daily-training-card{padding:21px;margin-top:15px}
-  .daily-training-hero{padding:21px 0 13px;gap:13px}
-  .daily-training-icon{width:48px;height:48px;flex-basis:48px}
-  .daily-training-icon svg{width:27px;height:27px}
-  .daily-training-copy h2{font-size:1.85rem}
-  .daily-training-stats strong{font-size:.86rem}
-  .today-week-overview-head{flex-direction:row;align-items:flex-start}
-  .today-week-overview-head button{align-self:auto}
-  .today-week-overview-day{grid-template-columns:45px minmax(0,1fr) auto;gap:10px}
-  .today-week-overview-state{font-size:.68rem}
-  .mobile-bottom-nav{
-    left:10px;right:10px;bottom:calc(8px + env(safe-area-inset-bottom));
-    padding:7px;border:1px solid #56617f;border-radius:22px;
-    background:rgba(20,27,47,.97);box-shadow:0 18px 36px rgba(0,0,0,.4)
-  }
-  .mobile-bottom-nav .mobile-nav-button{min-height:51px;border-radius:15px;color:#aebbd2}
-  .mobile-bottom-nav .mobile-nav-button.active{background:#3a3a70;color:#fff}
-  .mobile-bottom-nav .mobile-nav-button.active .mobile-nav-icon{color:var(--green)}
-  .calendar-grid{gap:4px}
-  .calendar-grid .day{min-height:73px;padding:7px 4px;border-radius:10px}
-  .calendar-grid .day-name{margin-top:12px;font-size:.6rem}
-  .calendar-grid .dot{right:5px;top:7px;width:6px;height:6px}
-  .calendar-month-card .legend{gap:5px}
-  .calendar-month-card .legend span{padding:4px 7px;font-size:.66rem}
-  .weekly-availability-day{grid-template-columns:82px minmax(0,1fr) 50px;gap:8px}
-  .dashboard-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-  .dashboard-grid .metric-card{padding:13px}
-  .dashboard-grid .metric-card strong{font-size:1.68rem}
-  .activity-result-row{gap:8px;padding:10px}
-  .activity-result-row .activity-result-icon{width:32px;height:32px;font-size:1rem}
-  .activity-result-side small{max-width:100px;line-height:1.2}
-  .race-card.featured .race-top{flex-direction:column;gap:8px}
-  .race-action-nav{gap:7px}
-  .race-action-nav button{min-height:100px;padding:11px 9px;border-radius:13px}
-  .race-action-nav button strong{font-size:.78rem}
-  .race-action-nav button small{font-size:.67rem}
-  .race-overview-card .race-card{padding:14px}
-  .season-block-row{grid-template-columns:96px minmax(0,1fr)}
-  .editor-smart-card>.grid2{grid-template-columns:1fr}
-  .editor-form-card .grid2{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .saved-row-status{align-self:flex-start}
-  .saved-workouts-card .mini-actions .danger{margin-left:0}
-}
-@media(max-width:430px){
-  .editor-form-card .grid2{grid-template-columns:1fr}
-  .saved-row-top{flex-wrap:wrap}
-  .saved-row-status{margin-left:54px}
-}
-@media(max-width:390px){
-  .today-week-overview-head{flex-direction:column;gap:8px}
-  .today-week-overview-day{grid-template-columns:42px minmax(0,1fr) auto}
-  .today-week-overview-state{padding:4px 6px;font-size:.64rem}
-}
-@media(prefers-reduced-motion:reduce){button{transition:none}}
-@media(prefers-reduced-motion:reduce){.mobile-bottom-nav .mobile-nav-button{transition:none}}
-@media(max-width:650px){
-  .mobile-bottom-nav{box-shadow:0 16px 46px rgba(0,0,0,.48),inset 0 1px rgba(255,255,255,.08)}
-  .mobile-bottom-nav .mobile-nav-button{min-height:54px}
-  .mobile-bottom-nav .mobile-nav-button.active{background:#44417c;box-shadow:inset 0 0 0 1px #7774bb}
-}
+@media(max-width:360px){main{padding-inline:12px}.daily-training-card{padding:16px}.mobile-bottom-nav .mobile-nav-button{font-size:.65rem}.planning-day-state{max-width:54px}.app-menu-grid{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.workout-structure{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0 8px}.structure-phase{flex:1 1 90px;border-top:4px solid var(--green);background:var(--panel2);padding:10px;border-radius:6px;display:grid;gap:4px}.structure-phase small{font-size:.7rem}.structure-phase strong{font-size:.78rem}.structure-caption{font-size:.75rem}.data-integrity-box{margin:16px;background:var(--panel2);border-color:var(--line)}
+/* Shared surfaces also cover the existing advanced tools. */
+.support-today-card,.recommendation-card,.coach-box,.performance-engine-card,.ai-generator-card,.ai-week-card,.performance-trend-card,.smart-week-coach-card,.coach-chat-card,.race-simulator-card,.coach-diary-card,.race-calendar-optimizer-card,.season-planner-card,.full-season-schedule-card,.data-sync-card,.install-app-banner{background:var(--panel);border-color:var(--line);box-shadow:none}
+.sync-brief{font-size:.8rem;margin:0 0 16px}.sync-brief a{display:inline-flex;align-items:center;min-height:44px;color:var(--muted)}
