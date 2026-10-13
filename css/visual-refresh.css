@@ -127,3 +127,21 @@ body.app-menu-open{overflow:hidden}
 .sync-brief{font-size:.8rem;margin:0 0 16px}.sync-brief a{display:inline-flex;align-items:center;min-height:44px;color:var(--muted)}
 
 .support-today-card.is-empty,.activity-week-report{background:var(--panel2);border-color:var(--line)}
+/* Keep event hierarchy and shortcut layout explicit on every screen size. */
+.race-overview-card .saved-list{display:grid;gap:12px;margin-top:18px}
+.race-overview-card .race-card{padding:20px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.race-overview-card .race-card.featured{border-left:3px solid var(--green)}
+.race-featured-label{display:block;margin-bottom:8px;color:var(--muted);font-size:.72rem}
+.race-top strong{display:block;font-size:1.2rem;line-height:1.3}.race-card.featured .race-top strong{font-size:1.6rem}
+.race-top small,.race-time small,.race-estimate small{display:block;font-size:.8rem;line-height:1.5;margin-top:6px;color:var(--muted)}
+.race-time{font-size:1.3rem;font-variant-numeric:tabular-nums}
+.race-estimate{margin:16px 0;padding:16px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.race-estimate-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:baseline}
+.race-estimate-head span{color:var(--muted);font-size:.8rem}.race-estimate-head strong{font-size:1.6rem}
+.race-estimate-meta{display:flex;flex-wrap:wrap;gap:12px;font-size:.8rem;margin-top:6px}
+.race-estimate-goal{border-left:2px solid var(--green);padding-left:12px;margin-top:12px}
+.race-action-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
+.race-action-nav button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:8px;padding:16px;min-height:100px}
+.race-action-nav button small{font-weight:400;font-size:.8rem}
+.race-card .mini-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.race-card .mini-actions button{width:auto;min-height:44px}
+@media(max-width:430px){.race-action-nav{grid-template-columns:1fr}.race-action-nav button{min-height:72px}.race-card.featured .race-top strong{font-size:1.3rem}}
