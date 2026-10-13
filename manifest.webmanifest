@@ -1,12 +1,12 @@
 {
   "name": "Jaco Performance",
   "short_name": "Jaco",
-  "description": "Persoonlijke running coach en trainingsplanner.",
+  "description": "Hardloop- en triathloncoach met persoonlijke trainingsplanning.",
   "start_url": "/?source=app",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#090e1b",
-  "theme_color": "#090e1b",
+  "background_color": "#101816",
+  "theme_color": "#101816",
   "orientation": "portrait-primary",
   "icons": [
     {

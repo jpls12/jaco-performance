@@ -23,13 +23,14 @@ function navigateAppView(id){
     setDefaultForm(selectedDate);
   }
   switchView(id);
-  window.scrollTo({top:0,behavior:"auto"});
+
 }
 
 function syncMobileNavigation(id){
-  const primaryViews=["today","calendar","races","planning"];
+  const primaryViews=["today","calendar","dashboard","races","planning","editor","saved"];
+  const primaryId=["planning","editor","saved"].includes(id)?"calendar":id;
   document.querySelectorAll(".mobile-nav-button[data-mobile-view]").forEach(button=>{
-    const active=button.dataset.mobileView===id;
+    const active=button.dataset.mobileView===primaryId;
     button.classList.toggle("active",active);
     if(active) button.setAttribute("aria-current","page");
     else button.removeAttribute("aria-current");
@@ -156,7 +157,10 @@ function setupPwaExperience(){
   });
 
   document.querySelectorAll(".app-menu-item[data-menu-view]").forEach(button=>{
-    button.onclick=()=>navigateAppView(button.dataset.menuView);
+    button.onclick=()=>{
+      navigateAppView(button.dataset.menuView);
+      if(button.dataset.routeTarget) openInterfacePanel(button.dataset.routeTarget);
+    };
   });
   document.querySelectorAll("[data-race-tool]").forEach(button=>{
     button.onclick=()=>openRaceTool(button.dataset.raceTool);

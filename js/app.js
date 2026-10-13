@@ -3570,13 +3570,24 @@ function calendarDayDifference(laterDate,earlierDate){
 function clone(value){
   return JSON.parse(JSON.stringify(value));
 }
+const viewScrollPositions=new Map();
+let previousAppView="today";
 function switchView(id){
+  const destination=document.getElementById(id);
+  if(!destination?.classList.contains("view")) return;
+  const current=document.querySelector(".view.active");
+  if(current && current.id!==id){
+    viewScrollPositions.set(current.id,window.scrollY||0);
+    previousAppView=current.id;
+  }
   document.querySelectorAll(".view").forEach(v=>v.classList.remove("active"));
   document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.view===id));
   const target=document.getElementById(id);
   if(!target) return;
 
   target.classList.add("active");
+  if(typeof window.updateInterfaceRoute==="function") window.updateInterfaceRoute(id);
+  window.scrollTo({top:viewScrollPositions.get(id)||0,behavior:"instant"});
 
   if(typeof window.syncMobileNavigation==="function"){
     window.syncMobileNavigation(id);
@@ -3593,7 +3604,7 @@ function switchView(id){
     renderSeasonPlanner();
     renderFullSeasonTargetOptions();
   }
-  if(id==="dashboard"){loadWellnessDashboard();renderProfileSummary();}
+  if(id==="dashboard"){renderProfileSummary();}
   if(id==="profile"){
     fillProfileForm();
     renderBackupManager();
@@ -3679,6 +3690,19 @@ function renderMonth(){
   if(summary) summary.textContent=`${plannedCount} trainingen · ${completedCount} voltooid${raceCount?` · ${raceCount} wedstrijd${raceCount===1?"":"en"}`:""}`;
 }
 
+function workoutStructureMarkup(workout){
+  const steps=Array.isArray(workout?.displaySteps)?workout.displaySteps.filter(Boolean):[];
+  if(!steps.length) return "";
+  const phases=steps.map((step,index)=>{
+    const text=String(step).toLowerCase();
+    const kind=/warming|warm.up|inlopen|inzwemmen|inrijden/.test(text)?"Voorbereiden":
+      /cool|uitlopen|uitzwemmen|uitrijden/.test(text)?"Afronden":
+      /herstel|pauze|rust|jog/.test(text)&&!/×|\d\s*x\s*\d/.test(text)?"Herstel":"Werkblok";
+    return `<span class="structure-phase"><small>${index+1}</small><strong>${kind}</strong></span>`;
+  });
+  return `<div class="workout-structure" aria-label="Trainingsfasen in volgorde">${phases.join("")}</div><p class="help structure-caption">Volgorde van de blokken; de breedte stelt geen duur voor. Exacte doelen staan hieronder.</p>`;
+}
+
 function renderSelected(){
   if(typeof renderSupportTraining==="function") renderSupportTraining();
   const workout=allWorkouts()[selectedDate];
@@ -3711,11 +3735,12 @@ function renderSelected(){
         <span class="sport-dot"></span>${trainingTypeInfo(workout.type).icon} ${trainingTypeInfo(workout.type).label}
       </span>
       <span class="pill">${trainingVolumeLabel(workout)}</span>
-      <span class="pill">RPE ${safe(workout.rpe)}</span>
+      <span class="pill">RPE ${safe(workout.rpe||"—")}</span>
       <span class="pill">${safe(workoutCompletionDisplayLabel(selectedDate,workout))}</span>
       ${uploaded?`<span class="pill">In Intervals ✓</span>`:""}
     </div>
 
+    ${workoutStructureMarkup(workout)}
     <ul class="steps">
       ${(workout.displaySteps||[]).map((step,index)=>`
         <li><span class="step">${index+1}</span><span>${safe(step)}</span></li>
@@ -3739,7 +3764,7 @@ function renderSelected(){
           Bewerk wedstrijd
         </button>
       `:isCustom?`
-        <button class="secondary" type="button" onclick="editWorkout('${selectedDate}')">Bewerken</button>
+        <button class="secondary" type="button" onclick="editWorkout('${selectedDate}')">Bewerken / verplaatsen</button>
         <button class="secondary" type="button" onclick="openDuplicate('${selectedDate}')">Dupliceren</button>
         <button class="danger wide" type="button" onclick="deleteWorkout('${selectedDate}')">Verwijderen</button>
       `:isServer?`
@@ -5413,6 +5438,7 @@ function openSaved(date){
   switchView("calendar");
   renderMonth();
   renderSelected();
+  requestAnimationFrame(()=>document.querySelector(".calendar-detail-card")?.scrollIntoView({block:"start"}));
 }
 
 
@@ -7962,6 +7988,8 @@ async function loadWellnessDashboard(){
       success.textContent="Offline modus · geen actuele Intervals.icu-data.";
     }
     document.getElementById("dashboardUpdated").textContent="Offline";
+    document.getElementById("coachHeadline").textContent="Geen actuele herstelcontrole";
+    document.getElementById("coachAdvice").textContent="Je bent offline. Eerder geladen waarden zijn niet opnieuw gecontroleerd. Vernieuw wanneer je verbinding terug is.";
     refreshDerivedCoachViews();
     return{ok:false,error:new Error("Offline")};
   }
@@ -7990,6 +8018,8 @@ async function loadWellnessDashboard(){
 
     document.getElementById("dashboardUpdated").textContent=
       "Data niet beschikbaar.";
+    document.getElementById("coachHeadline").textContent="Hersteldata niet vernieuwd";
+    document.getElementById("coachAdvice").textContent="Eerder geladen waarden zijn niet opnieuw gecontroleerd. Controleer de melding hieronder en tik op Vernieuw om opnieuw te proberen.";
 
     // De rest van de app blijft bruikbaar met eerder geladen of onbekende data.
     refreshDerivedCoachViews();
@@ -12361,6 +12391,7 @@ function openTodayWeekDate(date){
   switchView("calendar");
   renderMonth();
   renderSelected();
+  requestAnimationFrame(()=>document.querySelector(".calendar-detail-card")?.scrollIntoView({block:"start"}));
 }
 
 function renderTodayWeekOverview(){
@@ -12464,6 +12495,8 @@ function renderCurrentTodayWorkout(workout){
   const startButton=document.getElementById("startTodayTraining");
   const completeButton=document.getElementById("completeTodayTraining");
   const actions=completeButton.parentElement;
+  const calendarButton=document.getElementById("openTodayTrainingCalendar");
+  if(calendarButton){calendarButton.textContent="Bekijk planning";calendarButton.classList.toggle("secondary",Boolean(workout && workout.type!=="Rest"));}
   const statusText=document.getElementById("todayTrainingStatusText");
 
   if(!statusBadge || !title) return;
@@ -12531,6 +12564,8 @@ function renderCurrentTodayWorkout(workout){
     ?workout.displaySteps.filter(Boolean)
     :[];
 
+  const structure=document.getElementById("todayTrainingStructure");
+  if(structure) structure.innerHTML=workoutStructureMarkup(workout);
   steps.innerHTML=workoutSteps.map((step,index)=>`
     <li><span class="step-number">${index+1}</span><span>${safe(step)}</span></li>
   `).join("");
@@ -12552,7 +12587,7 @@ function renderCurrentTodayWorkout(workout){
           :"Start training";
 
   completeButton.disabled=isRest && done;
-  completeButton.hidden=isRest && done;
+  completeButton.hidden=isRest;
   completeButton.classList.toggle("secondary",!done || reviewState==="reviewed" || isRest);
   actions.dataset.mode=done || isRest?"followup":"start";
   completeButton.textContent=

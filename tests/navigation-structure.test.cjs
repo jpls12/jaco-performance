@@ -13,9 +13,9 @@ test('daily actions, progress analysis and week tools live under their own navig
   const today=view('today','dashboard');
   const progress=view('dashboard','calendar');
   const planning=view('planning','library');
-  for(const id of ['activityResultsCard','coachChatInput','generateAiTraining'])
+  for(const id of ['coachChatInput','generateAiTraining'])
     assert.match(today,new RegExp(`id="${id}"`));
-  for(const id of ['loadMonitorBadge','performanceTrendChart',
+  for(const id of ['activityResultsCard','loadMonitorBadge','performanceTrendChart',
     'coachIntelligenceSignals','performanceModelPredictions'])
     assert.match(progress,new RegExp(`id="${id}"`));
   for(const id of ['weeklyAvailabilityDays','smartWeekPlan',
@@ -23,7 +23,8 @@ test('daily actions, progress analysis and week tools live under their own navig
     assert.match(planning,new RegExp(`id="${id}"`));
   assert.doesNotMatch(today,/id="performanceTrendChart"|id="smartWeekPlan"/);
   assert.doesNotMatch(progress,/id="weekPlan"/);
-  assert.match(html,/data-menu-view="dashboard"[\s\S]*?<strong>Voortgang<\/strong>/);
+  assert.match(html,/data-mobile-view="dashboard"[\s\S]*?<span>Voortgang<\/span>/);
+  assert.doesNotMatch(today,/id="activityResultsCard"/);
 });
 
 test('rearranging views keeps every element id unique',()=>{
