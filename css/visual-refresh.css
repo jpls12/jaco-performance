@@ -125,3 +125,5 @@ body.app-menu-open{overflow:hidden}
 /* Shared surfaces also cover the existing advanced tools. */
 .support-today-card,.recommendation-card,.coach-box,.performance-engine-card,.ai-generator-card,.ai-week-card,.performance-trend-card,.smart-week-coach-card,.coach-chat-card,.race-simulator-card,.coach-diary-card,.race-calendar-optimizer-card,.season-planner-card,.full-season-schedule-card,.data-sync-card,.install-app-banner{background:var(--panel);border-color:var(--line);box-shadow:none}
 .sync-brief{font-size:.8rem;margin:0 0 16px}.sync-brief a{display:inline-flex;align-items:center;min-height:44px;color:var(--muted)}
+
+.support-today-card.is-empty,.activity-week-report{background:var(--panel2);border-color:var(--line)}

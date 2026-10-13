@@ -7988,6 +7988,8 @@ async function loadWellnessDashboard(){
       success.textContent="Offline modus · geen actuele Intervals.icu-data.";
     }
     document.getElementById("dashboardUpdated").textContent="Offline";
+    document.getElementById("coachHeadline").textContent="Geen actuele herstelcontrole";
+    document.getElementById("coachAdvice").textContent="Je bent offline. Eerder geladen waarden zijn niet opnieuw gecontroleerd. Vernieuw wanneer je verbinding terug is.";
     refreshDerivedCoachViews();
     return{ok:false,error:new Error("Offline")};
   }
@@ -8016,6 +8018,8 @@ async function loadWellnessDashboard(){
 
     document.getElementById("dashboardUpdated").textContent=
       "Data niet beschikbaar.";
+    document.getElementById("coachHeadline").textContent="Hersteldata niet vernieuwd";
+    document.getElementById("coachAdvice").textContent="Eerder geladen waarden zijn niet opnieuw gecontroleerd. Controleer de melding hieronder en tik op Vernieuw om opnieuw te proberen.";
 
     // De rest van de app blijft bruikbaar met eerder geladen of onbekende data.
     refreshDerivedCoachViews();
