@@ -59,6 +59,7 @@ function validateSupportBackup(key,value){
   }
   for(const [id,entry] of Object.entries(value)){
     const [date,kind]=id.split(":");
+    if(entry?.mobility && typeof validateMobilityLog==="function") validateMobilityLog(entry.mobility);
     const r=entry?.routine;
     if(id!==`${date}:${kind}` || !Object.hasOwn(SUPPORT_ROUTINES,kind) || calendarDayNumber(date)===null ||
       entry?.done!==true || !r || typeof r.name!=="string" ||
@@ -73,32 +74,37 @@ function validateSupportBackup(key,value){
     if(entry.rpe!=null && (!Number.isInteger(entry.rpe)||entry.rpe<1||entry.rpe>10)) throw new Error("Ongeldige RPE.");
     if(entry.pain!=null && ![0,1,2,3].includes(entry.pain)) throw new Error("Ongeldige klachtenscore.");
     if(entry.completion!==undefined && !["partial","complete"].includes(entry.completion)) throw new Error("Ongeldige uitvoering.");
-    if(entry.actualMinutes!==undefined) supportFeedback(entry.actualMinutes,entry.rpe,entry.pain,entry.note,entry.completion);
+    if(entry.mobility){
+      if(!Number.isFinite(entry.actualMinutes)||entry.actualMinutes<0||entry.actualMinutes>180) throw new Error("Ongeldige mobiliteitsduur.");
+    }else if(entry.actualMinutes!==undefined) supportFeedback(entry.actualMinutes,entry.rpe,entry.pain,entry.note,entry.completion);
     if(entry.note!==undefined && typeof entry.note!=="string") throw new Error("Ongeldige sessienotitie.");
   }
 }
 
-function supportSessionsForDate(date,settings,workouts,raceList,availability){
+function supportSessionsForDate(date,settings,workouts,raceList,availability,reservedMinutes=0){
   if(typeof availabilityForDate==="function"){
     const day=availabilityForDate(date);
     availability={...availability,[DAY_KEYS[weekdayIndexFromDate(date)]]:day};
   }
   const index=(new Date(date+"T12:00:00").getDay()+6)%7;
   const sessions=[];
-  let remaining=Number(availability[DAY_KEYS[index]]?.maxMinutes)||0;
+  let remaining=(Number(availability[DAY_KEYS[index]]?.maxMinutes)||0)-reservedMinutes;
   const main=workouts[date];
   if(main && main.type!=="Rest"){
     remaining-=typeof estimatedWorkoutMinutes==="function"?estimatedWorkoutMinutes(main):(Number(main.durationMinutes)||workoutDurationEstimate(main.planType||"easy",Number(main.distanceKm)||0));
   }
   for(const kind of ["strength","mobility"]){
+    // A moved session belongs to its original slot even after it is completed elsewhere.
+    if(kind==="mobility" && (Object.entries(loadObject(SUPPORT_DONE_KEY)).some(([key,e])=>key!==`${date}:mobility`&&e.mobility?.plannedFor===date)||Object.entries(loadObject(SUPPORT_SKIP_KEY)).some(([key,e])=>key!==`${date}:mobility`&&e.plannedFor===date))) continue;
     const saved=loadObject(SUPPORT_DONE_KEY)[`${date}:${kind}`];
     if(saved?.done && saved.routine){
       sessions.push({date,kind,routine:saved.routine,done:true,reason:""});
-      remaining-=Number(saved.routine.minutes)||0;
+      if(!(kind==="mobility" && (typeof mobilityContains==="function"?mobilityContains(main):main?.type==="Mobility"))) remaining-=Number(saved.actualMinutes??saved.routine.minutes)||0;
       continue;
     }
-    if(!settings.enabled || !settings[kind].includes(index)) continue;
-    const routine=supportRoutine(kind,settings,date);
+    const explicit=kind==="mobility" && typeof MOBILITY_PLANS_KEY!=="undefined" && loadObject(MOBILITY_PLANS_KEY)[date];
+    if(!explicit && (!settings.enabled || !settings[kind].includes(index))) continue;
+    const routine=kind==="mobility" && typeof mobilityRoutineForDate==="function"?mobilityRoutineForDate(date,Math.max(0,remaining)):supportRoutine(kind,settings,date);
     let reason="";
     const raceDay=raceList.some(r=>r.date===date)||main?.type==="Race";
     const nearbyRace=[-2,-1,1,2].some(offset=>{
@@ -109,7 +115,7 @@ function supportSessionsForDate(date,settings,workouts,raceList,availability){
     const previous=workouts[addDays(date,-1)];
     const nextHard=next && (typeof isHardWorkout==="function"?isHardWorkout(next):["long","quality","threshold","interval","vo2"].includes(next.planType));
     const previousLong=previous && (typeof isLongWorkout==="function"?isLongWorkout(previous):previous.planType==="long");
-    if((kind==="strength" && ["Strength","Core"].includes(main?.type)) || (kind==="mobility" && main?.type==="Mobility")) reason="Dit onderdeel staat al als hoofdtraining gepland.";
+    if((kind==="strength" && ["Strength","Core"].includes(main?.type)) || (kind==="mobility" && (typeof mobilityContains==="function"?mobilityContains(main):main?.type==="Mobility"))) reason="Dit onderdeel staat al als hoofdtraining gepland.";
     else if(raceDay) reason="Wedstrijddag: geen aanvullende sessie.";
     else if(kind==="strength" && nearbyRace) reason="Rond je wedstrijd: kracht overslaan.";
     else if(kind==="strength" && (nextHard || next?.planType==="long")) reason="Morgen een lange of intensieve training: kracht overslaan.";
@@ -121,6 +127,7 @@ function supportSessionsForDate(date,settings,workouts,raceList,availability){
     else if(kind==="strength" && date===todayDateString() && supportRecoveryBlocked()) reason="Actueel herstel of klachten: vandaag geen extra kracht.";
     else if(loadObject(SUPPORT_SKIP_KEY)[`${date}:${kind}`]) reason="Door jou overgeslagen.";
     else if(!availability[DAY_KEYS[index]]?.available) reason="Deze dag is niet beschikbaar in je weekplanning.";
+    else if(kind==="mobility" && Array.isArray(routine.steps) && !routine.steps.length) reason="Onvoldoende tijd of geen passende oefeningen bij je voorkeuren.";
     else if(remaining<routine.minutes) reason="Onvoldoende tijd naast je hoofdtraining; pas dagen of beschikbare minuten aan.";
     if(!reason) remaining-=routine.minutes;
     sessions.push({date,kind,routine,done:false,reason});
@@ -172,6 +179,7 @@ function supportWeekPlan(anchor){
   for(const kind of ["strength","mobility"]){
     for(const from of dates){
       const blocked=plan[from].find(s=>s.kind===kind && s.reason && !s.done);
+      if(blocked?.reason==="Dit onderdeel staat al als hoofdtraining gepland.") continue;
       if(!blocked || from<todayDateString() || loadObject(SUPPORT_SKIP_KEY)[`${from}:${kind}`]) continue;
       for(const date of dates){
         if(date<todayDateString() || plan[date].some(s=>s.kind===kind) || loadObject(SUPPORT_SKIP_KEY)[`${date}:${kind}`]) continue;
@@ -183,7 +191,16 @@ function supportWeekPlan(anchor){
         const dayKey=DAY_KEYS[day];
         const adjusted={...availability,[dayKey]:{...availability[dayKey],maxMinutes:Math.max(0,Number(availability[dayKey]?.maxMinutes||0)-used)}};
         trial[kind==="strength"?"mobility":"strength"]=[];
-        const candidate=supportSessionsForDate(date,trial,workouts,raceList,adjusted).find(s=>s.kind===kind);
+        const candidate=supportSessionsForDate(date,trial,workouts,raceList,availability,used).find(s=>s.kind===kind);
+        if(candidate && kind==="mobility" && typeof MOBILITY_PLANS_KEY!=="undefined"){
+          const explicit=loadObject(MOBILITY_PLANS_KEY)[from];
+          if(explicit){
+            const max=typeof availabilityForDate==="function"?availabilityForDate(date).maxMinutes:availability[dayKey]?.maxMinutes;
+            const mainMinutes=workouts[date]&&workouts[date].type!=="Rest"?estimatedWorkoutMinutes(workouts[date]):0;
+            candidate.routine=mobilityBuildRoutine(explicit.routineId,Math.min(explicit.minutes,Math.max(0,max-used-mainMinutes)));
+            if(!candidate.routine.steps.length) continue;
+          }
+        }
         if(!candidate || candidate.reason) continue;
         plan[from]=plan[from].filter(s=>s!==blocked);
         candidate.movedFrom=from;
@@ -198,6 +215,7 @@ function supportWeekPlan(anchor){
 function currentSupportSessions(date){return supportWeekPlan(date)[date]||[];}
 
 function supportSessionMarkup(session){
+  if(session.kind==="mobility" && typeof mobilitySessionMarkup==="function") return mobilitySessionMarkup(session);
   const {date,kind,routine,done,reason}=session;
   const escape=supportEscape;
   const exercises=Array.isArray(routine.exercises)?routine.exercises:[];
@@ -223,6 +241,7 @@ function supportSessionMarkup(session){
 }
 
 function toggleSupportCompletion(date,kind){
+  if(kind==="mobility" && typeof mobilityViewLog==="function") return mobilityViewLog(date);
   const session=currentSupportSessions(date).find(s=>s.kind===kind);
   if(!session || session.reason || date>todayDateString()) return;
   openSupportLog(session);
@@ -268,6 +287,7 @@ function renderSupportSettings(){
 
 function renderSupportTraining(){
   renderSupportHistory();
+  if(typeof renderMobilityHistory==="function") renderMobilityHistory();
   const resume=document.getElementById("supportResume");
   if(resume) resume.hidden=!supportPlayer;
   for(const [id,date] of [["supportToday",todayDateString()],["supportCalendar",selectedDate]]){
@@ -290,7 +310,7 @@ function renderSupportTraining(){
     const planned=flat.filter(s=>!s.reason);
     const settings=supportSettings();
     const target=settings.enabled?settings.strength.length+settings.mobility.length:0;
-    week.innerHTML=`<div class="support-summary"><strong>${planned.length} / ${target} sessies passend</strong><span>${planned.reduce((n,s)=>n+s.routine.minutes,0)} min gepland · ${planned.filter(s=>s.done).length} voltooid</span></div>`+Array.from({length:7},(_,i)=>{
+    week.innerHTML=`<div class="support-summary"><strong>${planned.length} / ${target} sessies passend</strong><span>${Math.round(planned.reduce((n,s)=>n+s.routine.minutes,0))} min gepland · ${planned.filter(s=>s.done).length} voltooid</span></div>`+Array.from({length:7},(_,i)=>{
       const date=addDays(monday,i);
       return `<h3>${DAY_NAMES[i]} · ${date}</h3>`+((weekPlan[date]||[]).map(supportSessionMarkup).join("")||'<p class="help">Geen aanvullende sessie.</p>');
     }).join("");
@@ -338,7 +358,7 @@ function supportCompletedEntries(minAge=0,maxAge=27){
 function supportLoadSummary(days=7){
   const entries=supportCompletedEntries(0,days-1);
   const measured=entries.filter(s=>finiteNumberOrNull(s.entry.actualMinutes)!==null);
-  const withRpe=measured.filter(s=>finiteNumberOrNull(s.entry.rpe)!==null);
+  const withRpe=measured.filter(s=>s.kind!=="mobility" && finiteNumberOrNull(s.entry.rpe)!==null);
   return {count:entries.length,measuredCount:measured.length,rpeCount:withRpe.length,
     minutes:measured.reduce((n,s)=>n+Number(s.entry.actualMinutes),0),
     load:withRpe.length?withRpe.reduce((n,s)=>n+s.entry.actualMinutes*s.entry.rpe,0):null,
@@ -353,7 +373,7 @@ function renderSupportHistory(date=null){
     const element=document.getElementById(id);
     if(!element) continue;
     element.innerHTML=`<div class="support-summary"><strong>${summary.count} sessies in 7 dagen</strong><span>${summary.measuredCount?`${Math.round(summary.minutes)} min geregistreerd`:"Duur nog niet geregistreerd"}</span></div>
-      <p class="help">${summary.rpeCount?`${Math.round(summary.load)} sRPE-eenheden (${summary.rpeCount}/${summary.count} sessies met duur én RPE).`:"sRPE onbekend: vul werkelijke duur en RPE in."} sRPE = minuten × ervaren zwaarte. Dit staat los van Intervals.icu CTL/ATL en wordt daar niet bij opgeteld.</p>
+      <p class="help">${summary.rpeCount?`${Math.round(summary.load)} sRPE-eenheden (${summary.rpeCount}/${summary.count} sessies met duur én RPE).`:"sRPE onbekend: vul werkelijke duur en RPE in."} sRPE = minuten × ervaren zwaarte voor kracht; mobiliteit krijgt geen geschatte trainingsbelasting. Dit staat los van Intervals.icu CTL/ATL en wordt daar niet bij opgeteld.</p>
       ${entries.slice(0,12).map(s=>`<button class="support-history-row secondary" type="button" onclick="toggleSupportCompletion('${s.date}','${s.kind}')"><strong>${supportEscape(s.entry.routine.name)}</strong><span>${s.date} · ${supportEscape(s.entry.actualMinutes??"—")} min · RPE ${supportEscape(s.entry.rpe??"—")}${s.entry.completion==="partial"?" · gedeeltelijk":""}</span><small>${supportEscape(s.entry.note||"")}${Number(s.entry.pain)>0?" · Klachten geregistreerd":""}</small></button>`).join("")||'<p class="help">Nog geen kracht- of mobiliteitssessies geregistreerd.</p>'}`;
   }
 }
@@ -393,6 +413,8 @@ function supportSequence(routine){
   return Array.from({length:routine.rounds},(_,i)=>routine.exercises.map(exercise=>({exercise,round:i+1}))).flat();
 }
 function openSupportPlayer(date,kind){
+  if(kind==="mobility" && typeof mobilityStart==="function") return mobilityStart(date);
+  if(typeof mobilityActive!=="undefined" && mobilityActive){supportToast("Rond je mobiliteitssessie eerst af.");return;}
   const session=currentSupportSessions(date).find(s=>s.kind===kind);
   if(!session || session.reason || session.done || date!==todayDateString()) return;
   if(supportPlayer && (supportPlayer.date!==date || supportPlayer.kind!==kind)){

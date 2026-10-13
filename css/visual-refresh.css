@@ -145,3 +145,28 @@ body.app-menu-open{overflow:hidden}
 .race-action-nav button small{font-weight:400;font-size:.8rem}
 .race-card .mini-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.race-card .mini-actions button{width:auto;min-height:44px}
 @media(max-width:430px){.race-action-nav{grid-template-columns:1fr}.race-action-nav button{min-height:72px}.race-card.featured .race-top strong{font-size:1.3rem}}
+
+/* Mobility uses the same cards, colors and navigation as the training app. */
+#mobilityLibrary,#mobilityDialog{overflow-wrap:anywhere}
+.mob-routines{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:24px 0}
+.mob-routine{padding:20px;border:1px solid var(--line);border-radius:18px;background:var(--panel2);min-width:0}
+.mob-routine h3{margin:8px 0;font-size:19px}.mob-routine p{line-height:1.55}.mob-routine strong{font-variant-numeric:tabular-nums}
+.mob-actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}.mob-actions>*{flex:1 1 140px;min-width:0}
+#mobilityLibrary button,#mobilityDialog button,.mob-resume button{min-height:48px;white-space:normal}
+.mob-exercise{border-bottom:1px solid var(--line,#dce5ed);padding:16px 0}.mob-exercise summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;min-height:48px}.mob-exercise summary small{display:block;margin-top:6px;color:var(--muted,#64748b)}
+.mob-exercise-body{padding-top:12px}.mob-exercise-body li,#mobilityDialog li{line-height:1.55;margin:8px 0}.mob-media-missing{border-left:3px solid var(--line);padding:8px 12px;color:var(--muted);background:var(--panel2);font-size:13px}.mob-short-instructions{padding-left:22px}
+.mob-media{padding:16px;border:1px solid var(--line,#dce5ed);border-radius:14px;margin:16px 0}.mob-media iframe{width:100%;aspect-ratio:16/9;border:0;border-radius:10px;background:#152832}.mob-media small{display:block;font-size:12px;line-height:1.5}.mob-video-slot:empty{display:none}
+#mobilityDialog{width:min(620px,calc(100vw - 24px));max-height:calc(100dvh - 32px);box-sizing:border-box;overflow:auto;border:1px solid var(--line);border-radius:24px;padding:24px;color:var(--text);background:var(--panel)}
+#mobilityDialog::backdrop{background:rgba(10,28,39,.65)}
+.mob-timer{text-align:center;border-radius:18px;background:var(--panel2);padding:24px;margin:16px 0}.mob-timer strong{display:block;font-size:56px;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:-2px;color:var(--green)}.mob-timer span{display:block;margin-top:10px;color:var(--muted)}
+.mob-phase{text-align:center;font-weight:650}.mob-check{display:flex!important;align-items:center;gap:12px;min-height:44px}.mob-check input{width:22px!important;height:22px!important;margin:0;flex:0 0 22px}
+#mobilityLibrary fieldset,#mobilityDialog fieldset{border:1px solid #dce5ed;border-radius:12px;margin:16px 0;padding:14px}
+#mobilityDialog progress{width:100%;height:10px;accent-color:#178573}#mobilityDialog select,#mobilityDialog input{font-size:16px;max-width:100%;box-sizing:border-box}
+.mob-resume{position:fixed;bottom:calc(90px + env(safe-area-inset-bottom));left:12px;right:12px;max-width:600px;margin:auto;z-index:90;padding:12px 16px;background:#153e37;color:white;border-radius:16px;box-shadow:0 6px 24px #0003;display:flex;align-items:center;gap:12px}.mob-resume[hidden]{display:none}.mob-resume button{width:auto;margin-left:auto}
+@media(max-width:600px){.mob-routines{grid-template-columns:1fr}.mob-routine{padding:16px}#mobilityDialog{padding:18px;border-radius:18px}.mob-actions>*{flex-basis:130px}.mob-timer strong{font-size:48px}}
+#library .visual-guide{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+#library .visual-guide>div{min-width:0;overflow-wrap:anywhere}
+#library .card>div:has(#recipeTitle){flex-wrap:wrap}
+#library .card>div:has(#recipeTitle)>div{flex:1 1 180px;min-width:0}
+#copyCorosRecipe{flex:0 0 auto}
+@media(max-width:360px){.mobile-nav-button{padding-inline:3px}.mobile-nav-button strong{font-size:10px}#library>.view-intro h2{font-size:1.55rem}}
