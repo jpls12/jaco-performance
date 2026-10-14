@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "11.4.5";
+const APP_VERSION = "11.4.3";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -2787,9 +2787,6 @@ function validateKnownBackupContents(key,value){
     }
     return;
   }
-  if(["jp_mobility_preferences_v1","jp_mobility_plans_v1"].includes(key)){
-    validateMobilityBackup(key,value);return;
-  }
   if(["jp_support_settings_v1","jp_support_done_v1","jp_support_skip_v1","jp_support_upload_v1"].includes(key)){
     validateSupportBackup(key,value);
     return;
@@ -2885,9 +2882,7 @@ function validateBackupPayload(input){
       "jp_support_settings_v1",
       "jp_support_done_v1",
       "jp_support_skip_v1",
-      "jp_support_upload_v1",
-      "jp_mobility_preferences_v1",
-      "jp_mobility_plans_v1"
+      "jp_support_upload_v1"
     ]);
 
     if(objectValuedKeys.has(key)){
@@ -3745,7 +3740,6 @@ function renderSelected(){
       ${uploaded?`<span class="pill">In Intervals ✓</span>`:""}
     </div>
 
-    ${workout.type==="Mobility" && selectedDate===todayDateString()&&!done?`<button onclick="mobilityStart('${selectedDate}',true)">Start begeleide mobiliteit</button>`:""}
     ${workoutStructureMarkup(workout)}
     <ul class="steps">
       ${(workout.displaySteps||[]).map((step,index)=>`
@@ -9609,7 +9603,6 @@ function renderPerformanceTrend(days=activeTrendDays){
 
 
 function workoutWasCompleted(date,workout){
-  if(typeof mobilityMainCompleted==="function" && mobilityMainCompleted(date,workout)) return true;
   return completionMarkerMatches(doneWorkouts[date],workout) ||
     ["done","completed","voltooid"].includes(
       String(workout?.status||"").toLowerCase()
@@ -9628,7 +9621,7 @@ function completedWorkoutEntriesBetween(minDaysAgo,maxDaysAgo){
       return age!==null && age>=minDaysAgo && age<=maxDaysAgo;
     });
   return typeof supportCompletedEntries==="function"
-    ?entries.concat(supportCompletedEntries(minDaysAgo,maxDaysAgo).filter(s=>!entries.some(e=>e.date===s.date&&e.workout.type==="Mobility"&&s.kind==="mobility"))):entries;
+    ?entries.concat(supportCompletedEntries(minDaysAgo,maxDaysAgo)):entries;
 }
 
 function completedWorkoutEntries(days){
@@ -12746,7 +12739,6 @@ function startGuidedTrainingClock(){
 
 function startTodayTrainingExperience(){
   const workout=currentTodayWorkout();
-  if(workout?.type==="Mobility" && typeof mobilityStart==="function") return mobilityStart(todayDateString(),true);
   const status=document.getElementById("todayTrainingStatusText");
   if(!workout) return;
 
