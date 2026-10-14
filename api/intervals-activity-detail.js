@@ -138,11 +138,31 @@ export default async function handler(req,res){
       .filter(Boolean)
       .sort((a,b)=>(a.startTime||0)-(b.startTime||0));
 
+    // Only calibration explicitly requests streams; ordinary detail remains lightweight.
+    let samples=null;
+    let streamError=null;
+    if(String(req.query?.streams||"")==="1"){
+      try{
+        const streamResponse=await fetchWithTimeout(
+          `https://intervals.icu/api/v1/activity/${encodeURIComponent(activityId)}/streams?types=time,heartrate,velocity_smooth,cadence`,
+          {headers:{Authorization:`Basic ${authorization}`,Accept:"application/json"}}
+        );
+        if(!streamResponse.ok) throw new Error(`Tijdreeksen niet beschikbaar (HTTP ${streamResponse.status}).`);
+        const streams=await streamResponse.json();
+        if(!Array.isArray(streams)) throw new Error("Onbekend tijdreeksformaat.");
+        const byType=Object.fromEntries(streams.filter(s=>Array.isArray(s.data)).map(s=>[s.type,s.data]));
+        if(!Array.isArray(byType.time)||byType.time.length>50000) throw new Error("Tijdreeks ontbreekt of is te groot.");
+        samples=byType.time.map((t,i)=>({t:numberOrNull(t),hr:numberOrNull(byType.heartrate?.[i]),speed:numberOrNull(byType.velocity_smooth?.[i]),cadence:numberOrNull(byType.cadence?.[i])}));
+      }catch(error){streamError=error.message;}
+    }
+
     return sendJson(res,200,{
       ok:true,
       fetchedAt:new Date().toISOString(),
       activityId,
       intervalCount:intervals.length,
+      samples,
+      streamError,
       intervals,
       activity:{
         name:String(body.name||""),

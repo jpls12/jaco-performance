@@ -11,11 +11,11 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1146">
-  <link rel="icon" href="/icons/app-icon.svg?v=1146" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1146">
-  <link rel="stylesheet" href="/css/app.css?v=1146">
-  <link rel="stylesheet" href="/css/visual-refresh.css?v=1146">
+  <link rel="manifest" href="/manifest.webmanifest?v=1147">
+  <link rel="icon" href="/icons/app-icon.svg?v=1147" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1147">
+  <link rel="stylesheet" href="/css/app.css?v=1147">
+  <link rel="stylesheet" href="/css/visual-refresh.css?v=1147">
 </head>
 <body>
 <main>
@@ -672,8 +672,51 @@
   <section id="dashboard" class="view">
     <header class="view-intro"><p class="eyebrow">Trends & herstel</p><h2>Voortgang</h2><p class="help">Belasting, herstel, loopniveau en trends op basis van je beschikbare gegevens.</p></header>
     <nav class="view-jumps section-jumps" aria-label="Onderdelen van voortgang">
-      <a href="#activityResultsCard">Activiteiten</a><a href="#dashboardMetrics">Herstel</a><a href="#dashboardTrends">Trends</a><a href="#dashboardLevel">Loopniveau</a>
+      <a href="#activityResultsCard">Activiteiten</a><a href="#dashboardMetrics">Herstel</a><a href="#dashboardTrends">Trends</a><a href="#dashboardLevel">Loopniveau</a><a href="#calibrationCard">Kalibratie &amp; zones</a>
     </nav>
+<article class="card calibration-card" id="calibrationCard">
+<p class="label">Persoonlijke trainingswaarden</p><h2>Kalibratie &amp; zones</h2>
+<p class="help">Controleer je trainingsniveau. Nieuwe waarden worden altijd eerst aan jou voorgelegd. Een lagere trainingspiek verlaagt je maximale hartslag niet.</p>
+<div id="calibrationContent"></div>
+<details><summary>Test kiezen en inplannen</summary>
+<form id="calibrationPlanForm"><label>Type test<select id="calibrationKind"><option value="aerobic">Aerobe duurcontrole (submaximaal)</option><option value="threshold">Drempel: 30 minuten solo (zwaar)</option><option value="performance">5 km-test of recente wedstrijd</option><option value="maximum">Maximale hartslag (uitsluitend eigen keuze)</option></select></label><div id="calibrationProtocol"></div><fieldset><legend>Geschiktheid voor de test</legend>
+<label><input type="checkbox" name="reviewed" required> Ik heb de uitleg en stopcriteria gelezen</label>
+<label><input type="checkbox" name="recovered" required> Ik ben voldoende hersteld</label>
+<label><input type="checkbox" name="symptoms"> Ik heb inspanningsklachten (pijn op de borst, duizeligheid, ongewone benauwdheid of hartkloppingen)</label>
+<label><input type="checkbox" name="ill"> Ik ben ziek of nog niet hersteld van ziekte</label>
+<label><input type="checkbox" name="medical"> Ik heb een relevante medische beperking of een advies om intensieve inspanning te vermijden</label>
+<label><input type="checkbox" name="experienced"> Ik ben gewend aan intensieve training</label>
+<label><input type="checkbox" name="optIn"> Ik kies bewust voor een zware/maximale test als ik die heb geselecteerd</label>
+</fieldset>
+<label>Vervang bestaande training<select id="calibrationDate" required></select></label><p class="help" id="calibrationSlotReason"></p><button id="calibrationPlanButton" type="submit">Training vervangen door kalibratie</button></form></details>
+<div id="calibrationPlans"></div>
+<details><summary>Uitgevoerde test of wedstrijd analyseren</summary>
+<p class="help">Synchroniseer eerst je activiteiten. Geef het testblok in seconden vanaf de start van de activiteit aan, exclusief warming-up en cooling-down. Voor de 30-minutentest is dit bijvoorbeeld 900–2700; voor de duurcontrole 900–4500. Bij aangepast inlopen gebruik je de werkelijke rondetijden.</p>
+<form id="calibrationAnalyze"><label>Activiteit<select id="calibrationActivity" name="activity" required></select></label><label>Gevolgd protocol<select name="kind"><option value="aerobic">Aerobe duurcontrole (submaximaal)</option><option value="threshold">Drempel: 30 minuten solo (zwaar)</option><option value="performance">5 km-test of recente wedstrijd</option><option value="maximum">Maximale hartslag (uitsluitend eigen keuze)</option></select></label>
+<div class="grid2"><label>Start testblok (seconden)<input name="start" type="number" min="0" step="1" required></label><label>Einde testblok (seconden)<input name="end" type="number" min="1" step="1" required></label></div>
+<div class="grid2"><label>Ervaren inspanning (1–10)<input name="rpe" type="number" min="1" max="10" required></label><label>Gemeten afstand bij prestatietest (km)<input name="distanceKm" type="number" min="3" max="42.2" step="0.0001" placeholder="5"></label></div>
+<label><input type="checkbox" name="completed"> Protocol volledig uitgevoerd, inclusief in- en uitlopen</label><label><input type="checkbox" name="talkComfortable"> Bij duurcontrole: praten bleef comfortabel</label><label><input type="checkbox" name="measuredCourse"> Bij prestatie: afstand bevestigd op gemeten parcours</label>
+<fieldset><legend>Meetomstandigheden</legend><label><input type="checkbox" name="conditionsReviewed" required> Ik heb onderstaande omstandigheden beoordeeld</label><label><input type="checkbox" name="heat"> Hitte</label><label><input type="checkbox" name="fatigue"> Vermoeidheid</label><label><input type="checkbox" name="hills"> Wisselend terrein</label><label><input type="checkbox" name="interruptions"> Stops of onderbrekingen</label><label><input type="checkbox" name="gpsProblems"> GPS-/afstandsproblemen</label></fieldset>
+<fieldset><legend>Geschiktheid voor de test</legend>
+<label><input type="checkbox" name="reviewed" required> Ik heb de uitleg en stopcriteria gelezen</label>
+<label><input type="checkbox" name="recovered" required> Ik ben voldoende hersteld</label>
+<label><input type="checkbox" name="symptoms"> Ik heb inspanningsklachten (pijn op de borst, duizeligheid, ongewone benauwdheid of hartkloppingen)</label>
+<label><input type="checkbox" name="ill"> Ik ben ziek of nog niet hersteld van ziekte</label>
+<label><input type="checkbox" name="medical"> Ik heb een relevante medische beperking of een advies om intensieve inspanning te vermijden</label>
+<label><input type="checkbox" name="experienced"> Ik ben gewend aan intensieve training</label>
+<label><input type="checkbox" name="optIn"> Ik kies bewust voor een zware/maximale test als ik die heb geselecteerd</label>
+</fieldset><button type="submit">Test analyseren</button></form></details>
+<details><summary>Eigen laboratorium- of veldtest invoeren</summary><form id="calibrationManual">
+<div class="grid2"><label>Sport<select name="sport"><option value="run">Hardlopen</option><option value="ride">Fietsen</option><option value="swim">Zwemmen</option></select></label><label>Waarde<select name="metric"><option value="aerobicHr">Aerobe trainingsgrens (bpm)</option><option value="thresholdHr">Drempelhartslag (bpm)</option><option value="thresholdPace">Drempeltempo (seconden/km)</option><option value="maxHr">Geteste maximale hartslag (bpm)</option><option value="observedHr">Hoogste waargenomen hartslag (bpm)</option><option value="performance">Prestatie (eindtijd in seconden)</option><option value="ftp">FTP (watt)</option><option value="css">CSS (seconden/100 m)</option></select></label></div>
+<div class="grid2"><label>Getal in de genoemde eenheid<input name="value" type="number" min="1" step="1" required></label><label>Testdatum<input name="date" type="date" required></label></div>
+<label>Bij prestatie: afstand (km)<input name="distanceKm" type="number" min="3" max="42.2" step="0.0001"></label>
+<label>Herkomst<select name="sourceType"><option value="professional">Professioneel bepaald (rapport)</option><option value="field">Eigen veldtest</option></select></label>
+<label>Bron / begeleider<input name="source" maxlength="150" required placeholder="Naam testcentrum of eigen test"></label><label>Gebruikte methode<input name="method" maxlength="250" required placeholder="Bijvoorbeeld lactaattest met gebruikte drempeldefinitie"></label><label><input name="locked" type="checkbox" checked> Waarde vastzetten; toekomstige voorstellen vereisen een expliciete bronkeuze</label><button type="submit">Opslaan ter beoordeling</button></form></details>
+<p id="calibrationStatus" class="status" role="status" aria-live="polite"></p>
+<h3>Resultaten beoordelen</h3><div id="calibrationResults"></div>
+<details><summary>Zonegeschiedenis &amp; terugdraaien</summary><ol id="calibrationHistory"></ol><button id="calibrationUndo" class="secondary" type="button">Laatste zonewijziging terugdraaien</button></details>
+<p id="calibrationExportStatus" class="help"></p><button id="calibrationExport" class="secondary" type="button" hidden>Gewijzigde trainingen bijwerken in Intervals.icu</button>
+</article>
     <article class="card activity-results-card" id="activityResultsCard">
       <div class="ai-generator-head">
         <div>
@@ -2450,7 +2493,7 @@
         <div class="grid2"><label>Gewenste weekomvang (km)<input id="profileWeeklyKm" type="number" min="20" max="160" step="1" value="60"></label><label>Maximale weekomvang (km)<input id="profileMaxKm" type="number" min="20" max="180" step="1" value="70"></label></div>
         <div class="grid2"><label>5 km PR<input id="profileFiveKPr" type="text" value="18:16"></label><label>5 km-doel<input id="profileFiveKGoal" type="text" value="17:59"></label></div>
         <div class="grid2"><label>10 km PR<input id="profileTenKPr" type="text" value="38:03"></label><label>Halve marathon-doel<input id="profileHalfGoal" type="text" value="1:19:59"></label></div>
-        <div class="grid2"><label>Maximale hartslag<input id="profileMaxHr" type="number" min="120" max="230" value="185"></label><label>Zone 2 bovengrens<input id="profileZ2Hr" type="number" min="90" max="190" value="145"></label></div>
+        <p class="help">Hartslagwaarden wijzigen: <button type="button" class="secondary" onclick="calibrationOpen()">Kalibratie &amp; zones</button>. Bestaande profielwaarden zonder bron zijn onbevestigde instellingen.</p><div class="grid2"><label>HRmax · via Kalibratie &amp; zones<input id="profileMaxHr" type="number" min="120" max="230" value="185"></label><label>Aerobe trainingsgrens<input id="profileZ2Hr" type="number" min="90" max="190" value="145"></label></div>
         
         <button type="submit">Profiel opslaan</button><p id="profileStatus" class="status"></p>
       </form>
@@ -2830,26 +2873,28 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/app.js?v=1146" defer></script>
-<script src="/js/training-sync.js?v=1146" defer></script>
-<script src="/js/activity-results.js?v=1146" defer></script>
-<script src="/js/training-quality.js?v=1146" defer></script>
-<script src="/js/performance-model.js?v=1146" defer></script>
-<script src="/js/training-response.js?v=1146" defer></script>
-<script src="/js/session-progression.js?v=1146" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1146" defer></script>
-<script src="/js/race-readiness.js?v=1146" defer></script>
-<script src="/js/fuel-hydration.js?v=1146" defer></script>
-<script src="/js/race-strategy.js?v=1146" defer></script>
-<script src="/js/race-day.js?v=1146" defer></script>
-<script src="/js/race-debrief.js?v=1146" defer></script>
-<script src="/js/daily-decision.js?v=1146" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1146" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1146" defer></script>
-<script src="/js/support-training.js?v=1146" defer></script>
-<script src="/js/coach-state.js?v=1146" defer></script>
-<script src="/js/interface.js?v=1146" defer></script>
-<script src="/js/bootstrap.js?v=1146" defer></script>
+<script src="/js/calibration-engine.js?v=1147" defer></script>
+<script src="/js/app.js?v=1147" defer></script>
+<script src="/js/training-sync.js?v=1147" defer></script>
+<script src="/js/activity-results.js?v=1147" defer></script>
+<script src="/js/training-quality.js?v=1147" defer></script>
+<script src="/js/performance-model.js?v=1147" defer></script>
+<script src="/js/training-response.js?v=1147" defer></script>
+<script src="/js/session-progression.js?v=1147" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1147" defer></script>
+<script src="/js/race-readiness.js?v=1147" defer></script>
+<script src="/js/fuel-hydration.js?v=1147" defer></script>
+<script src="/js/race-strategy.js?v=1147" defer></script>
+<script src="/js/race-day.js?v=1147" defer></script>
+<script src="/js/race-debrief.js?v=1147" defer></script>
+<script src="/js/daily-decision.js?v=1147" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1147" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1147" defer></script>
+<script src="/js/support-training.js?v=1147" defer></script>
+<script src="/js/coach-state.js?v=1147" defer></script>
+<script src="/js/interface.js?v=1147" defer></script>
+<script src="/js/calibration.js?v=1147" defer></script>
+<script src="/js/bootstrap.js?v=1147" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">

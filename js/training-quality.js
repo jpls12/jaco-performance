@@ -257,7 +257,7 @@ function qualityConsistencyScore(paces){
 }
 
 function qualityHeartRateScore(plan,activity,selected){
-  const profile=getProfile();
+  const profile=typeof calibrationSportProfile==="function"?calibrationSportProfile(activity,getProfile()):getProfile();
   const maxHr=finiteNumberOrNull(profile.maxHr);
   const z2Hr=finiteNumberOrNull(profile.z2Hr);
 

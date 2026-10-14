@@ -26,6 +26,7 @@ function resultPace(activity){
 }
 
 function suggestedActivityRpe(activity,profile){
+  if(typeof calibrationSportProfile==="function") profile=calibrationSportProfile(activity,profile);
   const average=finiteNumberOrNull(activity?.averageHeartRate);
   const max=finiteNumberOrNull(profile?.maxHr);
   const z2=finiteNumberOrNull(profile?.z2Hr);

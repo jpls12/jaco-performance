@@ -188,7 +188,8 @@ function activityEffortClass(activity){
     if(intensity<=.72) return "easy";
   }
   const hr=finiteNumberOrNull(activity.averageHeartRate);
-  const maxHr=finiteNumberOrNull(getProfile()?.maxHr);
+  const sportProfile=typeof calibrationSportProfile==="function"?calibrationSportProfile(activity,getProfile()):getProfile();
+  const maxHr=finiteNumberOrNull(sportProfile?.maxHr);
   if(hr!==null && maxHr!==null && maxHr>0){
     const ratio=hr/maxHr;
     if(ratio>=.86) return "hard";
