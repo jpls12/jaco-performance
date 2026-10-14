@@ -145,3 +145,17 @@ body.app-menu-open{overflow:hidden}
 .race-action-nav button small{font-weight:400;font-size:.8rem}
 .race-card .mini-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.race-card .mini-actions button{width:auto;min-height:44px}
 @media(max-width:430px){.race-action-nav{grid-template-columns:1fr}.race-action-nav button{min-height:72px}.race-card.featured .race-top strong{font-size:1.3rem}}
+
+/* Calibration uses existing card/form/navigation conventions. */
+.calibration-card details { margin: 16px 0; padding: 14px; border: 1px solid var(--border, #dce3ed); border-radius: 14px; }
+.calibration-card summary { cursor: pointer; font-weight: 650; padding: 8px 0; }
+.calibration-values { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.calibration-value { display: grid; gap: 5px; padding: 12px 0; border-bottom: 1px solid var(--border, #dce3ed); }
+.calibration-value small, .calibration-result small { color: var(--muted, #536078); overflow-wrap: anywhere; }
+.calibration-card fieldset { border: 1px solid var(--border, #dce3ed); border-radius: 12px; margin: 16px 0; padding: 14px; }
+.calibration-card label:has(input[type="checkbox"]) { display: flex; align-items: flex-start; gap: 10px; font-weight: 400; padding: 8px 0; }
+.calibration-card input[type="checkbox"] { width: 20px; height: 20px; flex-shrink: 0; margin: 0; }
+.calibration-result { border-top: 1px solid var(--border, #dce3ed); padding: 16px 0; }
+.calibration-result button { margin: 8px 8px 0 0; }
+.calibration-card li { margin: 10px 0; }
+@media(max-width: 700px) { .calibration-values { grid-template-columns: 1fr; } .calibration-card details { padding: 10px; } }

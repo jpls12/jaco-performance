@@ -3700,7 +3700,7 @@ function workoutStructureMarkup(workout){
       /herstel|pauze|rust|jog/.test(text)&&!/×|\d\s*x\s*\d/.test(text)?"Herstel":"Werkblok";
     return `<span class="structure-phase"><small>${index+1}</small><strong>${kind}</strong></span>`;
   });
-  return `<div class="workout-structure" aria-label="Trainingsfasen in volgorde">${phases.join("")}</div><p class="help structure-caption">Volgorde van de blokken; de breedte stelt geen duur voor. Exacte doelen staan hieronder.</p>`;
+  return `<div class="workout-structure" aria-label="Trainingsfasen in volgorde">${phases.join("")}</div>${workout.calibration?'<p class="help">Kalibratie: controleer vóór vertrek opnieuw je gezondheid en herstel. Stop bij inspanningsklachten.</p><button type="button" class="secondary" onclick="calibrationOpen()">Testuitleg en analyse</button>':""}<p class="help structure-caption">Volgorde van de blokken; de breedte stelt geen duur voor. Exacte doelen staan hieronder.</p>`;
 }
 
 function renderSelected(){
@@ -5472,6 +5472,7 @@ function riegelPrediction(sourceSeconds,sourceDistance,targetDistance){
 }
 
 function profilePerformanceSources(profileData=getProfile()){
+  if(typeof calibrationPerformanceSources==="function"){const calibrated=calibrationPerformanceSources();if(calibrated)return calibrated;}
   const sources=[];
 
   const five=parseTimeToSeconds(profileData.fiveKPr);
@@ -7758,6 +7759,7 @@ function resetGeneratedPlannerPreviews(){
 }
 
 function refreshDerivedCoachViews(){
+  if(typeof renderCalibration==="function") renderCalibration();
   if(typeof renderRecoveryCheck==="function") renderRecoveryCheck();
   if(typeof renderCoachHistory==="function") renderCoachHistory();
   if(typeof renderTodayPurpose==="function") renderTodayPurpose();
@@ -13422,7 +13424,7 @@ function targetPacesForRace(race,profileData){
       ?learnedTrainingPaceAdjustment("vo2")
       :0;
 
-  return{
+  const result={
     race:racePace,
     easy:"5:00-5:25/km",
     recovery:"5:10-5:35/km",
@@ -13433,6 +13435,7 @@ function targetPacesForRace(race,profileData){
       ?`${formatPace(racePace-8+vo2Adjustment)}-${formatPace(racePace-3+vo2Adjustment)}/km`
       :"3:28-3:30/km"
   };
+  return typeof calibrationPaces==="function"?calibrationPaces(result):result;
 }
 
 function makeTaperQualitySession(date,race,profileData=getProfile()){
@@ -13712,7 +13715,10 @@ function defaultProfile(){
     availability:defaultAvailability()
   };
 }
-function getProfile(){return{...defaultProfile(),...profile};}
+function getProfile(){
+  const p={...defaultProfile(),...profile};
+  return typeof calibrationProfile==="function"?calibrationProfile(p):p;
+}
 
 function fillPlanningForm(){
   const p=getProfile();
@@ -13887,7 +13893,7 @@ function makeWeekWorkout(date,arg2,arg3,arg4,arg5,arg6,arg7){
     const steps=arg5;
     const desc=arg6;
     const rpe=arg7;
-    return{
+    const workout={
       date,
       name,
       uploadName:`Jaco - ${name}`,
@@ -13899,6 +13905,7 @@ function makeWeekWorkout(date,arg2,arg3,arg4,arg5,arg6,arg7){
       displaySteps:steps,
       intervalsDescription:desc
     };
+    return typeof calibrationPrepareWorkout==="function"?calibrationPrepareWorkout(workout):workout;
   }
 
   const name=arg2;
@@ -13907,7 +13914,7 @@ function makeWeekWorkout(date,arg2,arg3,arg4,arg5,arg6,arg7){
   const steps=arg5;
   const desc=arg6;
 
-  return{
+  const workout={
     date,
     name,
     uploadName:`Jaco - ${name}`,
@@ -13918,6 +13925,7 @@ function makeWeekWorkout(date,arg2,arg3,arg4,arg5,arg6,arg7){
     displaySteps:steps,
     intervalsDescription:desc
   };
+  return typeof calibrationPrepareWorkout==="function"?calibrationPrepareWorkout(workout):workout;
 }
 function generatePersonalWeek(){
   const reduced=plannerReduced();
