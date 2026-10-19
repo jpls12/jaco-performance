@@ -17,6 +17,12 @@ w.eval(files.map(f=>fs.readFileSync(f,'utf8')).join('\n')+`\nwindow.rollingTest=
  localStorage.removeItem(ROLLING_COACH_KEY);localStorage.setItem(AUTO_WEEK_REPLAN_KEY,'on');autoWeekReplanReady=true;refreshDerivedCoachViews();},
  snapshot:()=>JSON.stringify(customWorkouts),plan:()=>allWorkouts(),
  todaySeed(){const d=todayDateString();customWorkouts[d]={date:d,name:'Today easy',type:'Run',planType:'easy',durationMinutes:40,distanceKm:7,rpe:'3/10'};saveObject(STORAGE_KEY,customWorkouts);refreshAfterCalendarMutation();},
+ recoveryWeek(){saveObject(RECOVERY_CHECK_KEY,{});coachDiary={};customWorkouts={};doneWorkouts={};uploadedWorkouts={};syncedActivities={};activityPlanAssignments={};
+  const date=addDays(todayDateString(),-1);races={hm:{id:'hm',name:'Halve marathon',date,distanceKm:21.1,priority:'A'}};
+  saveObject(STORAGE_KEY,customWorkouts);saveObject(DONE_KEY,doneWorkouts);saveObject(UPLOAD_KEY,uploadedWorkouts);
+  saveObject(ROLLING_SETTINGS_KEY,{mode:'run',runDays:4});
+  localStorage.setItem(AUTO_WEEK_REPLAN_KEY,'on');saveObject(ROLLING_COACH_KEY,{});
+  refreshDerivedCoachViews();},
  today:()=>todayDateString(),state:()=>loadObject(ROLLING_COACH_KEY),
  lock(){customWorkouts[todayDateString()].locked=true;saveObject(STORAGE_KEY,customWorkouts);},
  paused:()=>!autoWeekReplanEnabled()
@@ -36,6 +42,12 @@ const tick=()=>new Promise(r=>setTimeout(r,50));
  w.undoAutomaticWeekReplan();await tick();assert.equal(w.rollingTest.paused(),true);
  assert.equal(w.rollingTest.plan()[w.rollingTest.today()].name,'Today easy');
  w.rollingCoachDone();await tick();assert.equal(w.document.querySelector('#manualCompletionReview').hidden,false);
+ w.rollingTest.recoveryWeek();await tick();
+ const recovery=Object.values(w.rollingTest.plan()).filter(s=>s.type==='Run');
+ assert.ok(recovery.length>0,'A recovery week must not silently remain empty');
+ assert.ok(recovery.every(s=>s.planType!=='quality'));
+ assert.match(w.document.querySelector('#weeklyPlanSummary').textContent,/Hardlopen/);
+ assert.ok(w.document.querySelector('#rollingCoachPlanningStatus button'));
  assert.equal(errors.length,0,errors.join('\n'));
  console.log('PASS: whole-app initialization, automatic triathlon seed, seven-day commit, flexible forecast, stable refresh, pain action, same-day undo, optional completion review; offline APIs mocked.');
  dom.window.close();

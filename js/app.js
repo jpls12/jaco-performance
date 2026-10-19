@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "11.4.8";
+const APP_VERSION = "11.4.9";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -8125,6 +8125,7 @@ function renderWeeklyPlanSummary(){
   const scheduled=rows.filter(row=>row.workoutName && row.state!=="rust").length;
   box.innerHTML=`<h3>Schema · ${start} t/m ${addDays(start,6)}</h3>
     <p class="help">${scheduled} geplande sessie(s)${conflicts?` · ${conflicts} tijdconflict(en)`:""} · Coach kijkt 7 dagen vooruit.</p>
+    ${typeof rollingCoachPlanningControl==="function"?`<div id="rollingCoachPlanningStatus">${rollingCoachPlanningControl()}</div>`:""}
     <div class="weekly-time-chart" role="group" aria-label="Geplande tijd ten opzichte van beschikbare tijd per dag">
       ${rows.map(row=>`<div class="weekly-time-day${row.state==="tijdconflict"?" conflict":""}" role="img"
         aria-label="${row.dayName}: ${row.minutes} van ${row.availableMinutes} beschikbare minuten gepland">
@@ -8301,6 +8302,14 @@ function saveWeeklyAvailability(event){
   renderWeeklyAvailabilityPrompt();
   renderPlanningPreview();
   renderFullSeasonSchedulePreview();
+
+  // The rolling coach owns both initial fill and later corrections once available.
+  if(typeof requestRollingCoachUpdate==="function"){
+    refreshAfterCalendarMutation();
+    status.className="status";
+    status.textContent=autoWeekReplanEnabled()?"Beschikbaarheid opgeslagen. De centrale coach controleert en vult de planning aan.":"Beschikbaarheid opgeslagen. Schakel automatisch aanvullen in bij het weekoverzicht.";
+    return;
+  }
 
   let added=0;
   let timeConflicts=0;

@@ -287,3 +287,26 @@ test('automatic off/on is a meaningful trigger and repeated queued callers coale
   f.stored.jaco_auto_week_replan_v1='on';f.c.requestRollingCoachUpdate();f.c.requestRollingCoachUpdate();await Promise.resolve();await Promise.resolve();
   assert.ok(Object.keys(f.custom).length>0);assert.equal(f.stored.jp_rolling_coach_v1.reviews.length,1);
 });
+
+test('recovery week with incomplete history still gets feasible short sessions instead of an empty calendar',()=>{
+  const f=rollingFixture({minutes:{'2026-10-12':0,'2026-10-13':75,'2026-10-14':70,'2026-10-15':85,'2026-10-16':85,'2026-10-17':150,'2026-10-18':60}});
+  f.c.races.r={date:'2026-10-11',name:'Half marathon',distanceKm:21,priority:'A'};
+  const seed=f.c.rollingCoachSeedWeek('2026-10-12');
+  assert.ok(Object.values(seed.seeds).some(w=>w.type==='Run'));
+  assert.ok(Object.values(seed.seeds).every(w=>w.durationMinutes>=20&&!f.c.weekReplanIsStressWorkout(w)));
+  assert.ok(Object.values(seed.seeds).reduce((n,w)=>n+w.durationMinutes,0)<=90*.65);
+});
+test('a short import window is not divided by three imaginary weeks',()=>{
+  const f=rollingFixture({activities:{a:{id:'a',date:'2026-10-11',type:'Run',durationMinutes:30}}});
+  vm.runInContext('activitySyncMeta.oldest="2026-10-11"',f.c);
+  const h=f.c.rollingCoachHistory('2026-10-12');
+  assert.equal(h.budgets.run.known,false);assert.equal(h.budgets.run.minutes,32);
+  assert.ok(Object.values(f.c.rollingCoachSeedWeek('2026-10-12').seeds).some(w=>w.type==='Run'));
+});
+test('a paused coach explains the empty plan and explicit activation fills it',()=>{
+  const f=rollingFixture();f.c.safe=String;f.stored.jaco_auto_week_replan_v1='off';
+  assert.match(f.c.rollingCoachPlanningControl(),/Automatisch aanvullen staat uit/);
+  assert.match(f.c.rollingCoachPlanningControl(),/Automatisch aanvullen inschakelen/);
+  f.stored.jaco_auto_week_replan_v1='on';f.c.rollingCoachRun();
+  assert.ok(Object.keys(f.custom).length>0);
+});
