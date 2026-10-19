@@ -30,7 +30,7 @@ function autoWeekReplanSafety(proposal){
         String(change.after?.planType||"").toLowerCase()==="recovery" ||
         change.after?.type==="Mobility"
       );
-    if(change.date<=todayDateString() || change.date>proposal.bounds.end ||
+    if((change.date<todayDateString() || (change.date===todayDateString() && !proposal.includeToday)) || change.date>proposal.bounds.end ||
       !change.after || current?.locked===true || current?.type==="Race" || change.after.type==="Race" ||
       weekReplanProtection(change.date).kind==="race" ||
       (done && !safeEarlyReplacement)){
@@ -86,7 +86,7 @@ function applyAutomaticWeekReplan(proposal){
     afterSnapshot:weekReplanClone(change.after,change.date),
     reason:change.reason
   }));
-  const record={createdAt:new Date().toISOString(),changes};
+  const record={createdAt:new Date().toISOString(),includeToday:Boolean(proposal.includeToday),changes};
   autoWeekReplanApplying=true;
   try{
     // Save the recovery point before changing the calendar.
@@ -112,7 +112,7 @@ function undoAutomaticWeekReplan(){
   if(!record) return;
   const conflict=record.changes.some(change=>{
     const current=allWorkouts()[change.date]||null;
-    return change.date<=todayDateString() || current?.type==="Race" ||
+    return change.date<todayDateString() || (change.date===todayDateString()&&!record.includeToday) || current?.type==="Race" ||
       weekReplanIsDone(change.date,current) || uploadedWorkouts[change.date] ||
       weekReplanWorkoutSignature(current)!==change.afterSignature ||
       JSON.stringify(customWorkouts[change.date])!==JSON.stringify(change.afterSnapshot);
@@ -218,7 +218,11 @@ function weekReplanLocked(date){
 }
 
 function weekReplanShortenToAvailability(workout,date,availability=null){
-  if(!workout || isHardWorkout(workout)) return null;
+  if(!workout) return null;
+  if(isHardWorkout(workout)){
+    return typeof rollingCoachShortenIntervals==="function"
+      ?rollingCoachShortenIntervals(workout,date,availability||weekReplanAvailability(date)):null;
+  }
   const day=availability || weekReplanAvailability(date);
   const maxMinutes=Number(day?.maxMinutes)||0;
   if(workout.type!=="Run"){
@@ -738,15 +742,18 @@ function weekReplanWorkoutSignature(workout){
   ]);
 }
 
-function buildAdaptiveWeekReplan(){
-  const bounds=weekReplanWeekBounds();
+function buildAdaptiveWeekReplan(options={}){
+  if(!options.includeToday && typeof rollingCoachBuild==="function" && autoWeekReplanReady){
+    return rollingCoachBuild().proposal;
+  }
+  const bounds=options.bounds||weekReplanWeekBounds();
   const workouts=allWorkouts();
   const stress=weekReplanStressLevel();
   const focusRace=getRaceFocus();
   const primaryGoal=getPrimaryARace();
   const missed=weekReplanRecentMissed(bounds);
   const futureDates=weekReplanDateList(
-    addDays(bounds.today,1),
+    options.includeToday?bounds.today:addDays(bounds.today,1),
     bounds.end
   );
 
@@ -756,7 +763,7 @@ function buildAdaptiveWeekReplan(){
   futureDates.forEach(date=>{
     const workout=workouts[date]||null;
     original[date]=weekReplanClone(workout,date);
-    schedule[date]=weekReplanClone(workout,date);
+    schedule[date]=weekReplanClone(workout||options.seeds?.[date],date);
   });
 
   const notes=[];
@@ -872,7 +879,7 @@ function buildAdaptiveWeekReplan(){
       const daysAway=signedDateGapDays(date,bounds.today);
       const threshold=stress.level==="elevated"?2:1;
 
-      if(daysAway>0 && daysAway<=threshold){
+      if(daysAway>=0 && daysAway<=threshold){
         const swap=stress.diary?.complaint
           ?null
           :weekReplanFindLaterSwap(date,workout,schedule,bounds);
@@ -991,7 +998,7 @@ function buildAdaptiveWeekReplan(){
   const todayWorkout=workouts[bounds.today];
   let previousDate=weekReplanLatestActualStressDate(bounds);
 
-  if(!previousDate && weekReplanIsStressWorkout(todayWorkout)){
+  if(!options.includeToday && !previousDate && weekReplanIsStressWorkout(todayWorkout)){
     previousDate=bounds.today;
   }
 
@@ -1047,6 +1054,10 @@ function buildAdaptiveWeekReplan(){
       weekReplanRestWorkout(date,"Geen passende training binnen je beschikbare tijd");
   }
 
+  if(typeof rollingCoachConstrain==="function" && options.includeToday){
+    rollingCoachConstrain(schedule,original,bounds,stress,notes);
+  }
+
   const changes=futureDates
     .filter(date=>
       weekReplanWorkoutSignature(original[date])!==
@@ -1065,6 +1076,7 @@ function buildAdaptiveWeekReplan(){
 
   pendingWeekReplan={
     createdAt:new Date().toISOString(),
+    includeToday:Boolean(options.includeToday),
     bounds,
     stress,
     focusRace,
@@ -1312,7 +1324,7 @@ function applyAdaptiveWeekReplan(){
   );
   if(!confirmed) return;
 
-  const record={createdAt:new Date().toISOString(),changes:proposal.changes.map(change=>({
+  const record={createdAt:new Date().toISOString(),includeToday:Boolean(proposal.includeToday),changes:proposal.changes.map(change=>({
     date:change.date,hadCustom:Object.hasOwn(customWorkouts,change.date),
     beforeSnapshot:weekReplanClone(change.before,change.date),previousCustom:weekReplanClone(customWorkouts[change.date]),
     previousDone:weekReplanClone(doneWorkouts[change.date]),previousUpload:weekReplanClone(uploadedWorkouts[change.date]),
@@ -1339,3 +1351,4 @@ function applyAdaptiveWeekReplan(){
   status.textContent=
     `${proposal.changes.length} toekomstige dag${proposal.changes.length===1?"":"en"} aangepast. Wedstrijddagen zijn niet gewijzigd.`;
 }
+

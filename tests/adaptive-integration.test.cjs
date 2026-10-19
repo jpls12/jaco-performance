@@ -190,3 +190,100 @@ test('mobility and strength do not complete each other or deduplicate across dis
   assert.equal(f.c.syncedSportFamily('WeightTraining'),'strength');
   assert.equal(f.c.sameRecordedActivity({id:'a',externalId:'same',type:'Yoga'},{id:'b',externalId:'same',type:'WeightTraining'}),false);
 });
+
+
+// Exercise the rolling coordinator together with the real matcher and week engine.
+function rollingFixture(options={}){
+  const f=fixture(options),c=f.c;
+  Object.assign(c,{
+    getProfile:()=>({days:4,maxHr:185,z2Hr:140}),
+    mondayOf:d=>addDays(d,-((new Date(d+'T12:00:00Z').getUTCDay()+6)%7)),
+    seasonBlockForWeek:()=>({label:'Opbouw',volumeFactor:1}),
+    estimatedWorkoutMinutes:w=>w.durationMinutes||Number(w.distanceKm||0)*5.5,
+    calibrationValue:()=>null,calibrationState:()=>({values:{run:{},ride:{},swim:{}}}),
+    todayAvailabilityInfo:()=>c.availabilityForDate('2026-10-12'),
+    createTodayRecommendation:()=>({kind:'keep'}),
+    recordCoachChange:(kind,r)=>{(f.stored.history||=[]).push({kind,...r});},
+    RECOVERY_CHECK_KEY:'recovery',SUPPORT_DONE_KEY:'supportDone',SUPPORT_SETTINGS_KEY:'supportSettings'
+  });
+  vm.runInContext(fs.readFileSync('js/rolling-coach.js','utf8'),c);
+  return f;
+}
+test('rolling coach creates seven concrete days, keeps forecasts out of calendar and is idempotent',()=>{
+  const f=rollingFixture();assert.equal(f.c.rollingCoachRun(),true);
+  assert.ok(Object.keys(f.custom).length>0);
+  assert.ok(Object.keys(f.custom).every(d=>d>='2026-10-12'&&d<='2026-10-18'));
+  const before=JSON.stringify(f.custom);assert.equal(f.c.rollingCoachRun(),false);
+  assert.equal(JSON.stringify(f.custom),before);
+  assert.equal(f.stored.jp_rolling_coach_v1.forecast.length,3);
+  assert.equal(f.stored.jp_rolling_coach_v1.reviews.length,1);
+});
+test('weekly catch-up records only one evaluation after opening repeatedly',()=>{
+  const f=rollingFixture();f.c.rollingCoachRun();
+  vm.runInContext('syncedActivities.a={id:"a",date:"2026-10-11",type:"Ride",durationMinutes:30}',f.c);
+  f.c.rollingCoachRun();assert.equal(f.stored.jp_rolling_coach_v1.reviews.length,1);
+  assert.equal(f.stored.history.filter(h=>h.kind==='Weekevaluatie').length,1);
+});
+test('rolling coach adapts today to pain and never modifies completed or locked sessions',()=>{
+  const f=rollingFixture({workouts:{'2026-10-12':run('Today'),'2026-10-13':{...run('Locked','quality'),locked:true},'2026-10-14':run('Done')}});
+  f.done['2026-10-14']={identity:'Done|Run'};
+  f.c.latestDiaryRecoverySignal=()=>({level:'elevated',complaint:true,reason:'Pain'});
+  f.c.rollingCoachRun();assert.equal(f.custom['2026-10-12'].type,'Rest');
+  assert.equal(f.c.allWorkouts()['2026-10-13'].name,'Locked');assert.equal(f.c.allWorkouts()['2026-10-14'].name,'Done');
+  assert.ok(f.stored.jp_rolling_coach_v1.conflicts.some(s=>s.includes('vrij')));
+});
+test('rolling undo includes today but refuses to overwrite newly completed work',()=>{
+  const f=rollingFixture({workouts:{'2026-10-12':run('Today')},minutes:{'2026-10-12':0}});
+  f.c.rollingCoachRun();assert.equal(f.custom['2026-10-12'].type,'Rest');
+  f.c.undoAutomaticWeekReplan();assert.equal(f.c.allWorkouts()['2026-10-12'].name,'Today');
+  assert.equal(f.c.autoWeekReplanEnabled(),false);
+});
+test('extra three-hour bike ride changes today running, repeated import does not add load',()=>{
+  const f=rollingFixture({workouts:{'2026-10-12':run('Intervals','quality')},activities:{b:{id:'b',date:'2026-10-11',type:'Ride',durationMinutes:180,perceivedExertion:7}}});
+  f.c.rollingCoachRun();assert.notEqual(f.c.allWorkouts()['2026-10-12'].planType,'quality');
+  const before=JSON.stringify(f.custom);assert.equal(f.c.rollingCoachRun(),false);assert.equal(JSON.stringify(f.custom),before);
+});
+test('triathlon mode seeds all three disciplines within daily time and without inventing measured zones',()=>{
+  const f=rollingFixture();f.stored.jp_rolling_settings_v1={mode:'triathlon',runDays:3,rideDays:2,swimDays:1};
+  f.c.rollingCoachRun();const workouts=Object.values(f.custom);
+  for(const type of ['Run','Ride','Swim'])assert.ok(workouts.some(w=>w.type===type),type);
+  assert.ok(workouts.every(w=>f.c.weekReplanFitsAvailability(w,w.date)));
+  assert.ok(workouts.every(w=>!w.zoneReference));
+  assert.ok(workouts.length<=6);
+});
+test('structured intervals shorten repetitions and exported recipe consistently',()=>{
+  const f=rollingFixture();const w=f.c.rollingCoachSession('Run','2026-10-13',50,'quality');
+  const short=f.c.weekReplanShortenToAvailability(w,w.date,{available:true,maxMinutes:30});
+  assert.equal(short.rollingDose.reps,2);assert.equal(short.durationMinutes,29);
+  assert.match(short.name,/2 × 5/);assert.match(short.intervalsDescription,/Main set 2x/);
+  assert.equal(w.rollingDose.reps,4);
+});
+test('configured recovery gap and taper survive rolling generation and locked conflict is explained',()=>{
+  const f=rollingFixture({workouts:{'2026-10-13':run('Intervals','quality'),'2026-10-15':run('Long','long'),'2026-10-17':{...run('Locked'),locked:true}},minutes:{'2026-10-17':0}});
+  f.stored.jp_rolling_settings_v1={gap:3};
+  f.c.races.r={date:'2026-10-18',name:'Race',priority:'A',distanceKm:21};
+  f.c.rollingCoachRun();
+  assert.ok(Object.values(f.custom).every(w=>!f.c.weekReplanIsStressWorkout(w)));
+  assert.equal(f.c.allWorkouts()['2026-10-17'].name,'Locked');
+  assert.ok(f.stored.jp_rolling_coach_v1.conflicts.length);
+});
+test('growth cap is based on actual history, never on aspirational weekly volume',()=>{
+  const activities={};for(let i=1;i<=21;i+=2)activities[i]={id:String(i),date:addDays('2026-10-12',-i),type:'Run',durationMinutes:30};
+  const f=rollingFixture({activities});f.stored.jp_rolling_settings_v1={growth:5};
+  const budget=f.c.rollingCoachHistory('2026-10-12').budgets.run;
+  assert.equal(budget.known,true);assert.ok(budget.minutes<=116);
+  f.c.rollingCoachRun();assert.ok(Object.values(f.custom).reduce((n,w)=>n+f.c.rollingCoachMinutes(w),0)<=budget.minutes);
+});
+test('changed activity re-evaluates without duplicating weekly review and stale tab never writes',()=>{
+  const f=rollingFixture({activities:{a:{id:'a',date:'2026-10-11',type:'Run',durationMinutes:30}}});
+  f.c.rollingCoachRun();const first=f.stored.jp_rolling_coach_v1.signature;
+  vm.runInContext('syncedActivities.a.durationMinutes=90',f.c);f.c.rollingCoachRun();
+  assert.notEqual(f.stored.jp_rolling_coach_v1.signature,first);
+  const before=JSON.stringify(f.custom);vm.runInContext('rollingCoachStale=true;syncedActivities.a.durationMinutes=180',f.c);
+  assert.equal(f.c.rollingCoachRun(),false);assert.equal(JSON.stringify(f.custom),before);
+});
+test('automatic off/on is a meaningful trigger and repeated queued callers coalesce',async()=>{
+  const f=rollingFixture();f.stored.jaco_auto_week_replan_v1='off';f.c.rollingCoachRun();assert.equal(Object.keys(f.custom).length,0);
+  f.stored.jaco_auto_week_replan_v1='on';f.c.requestRollingCoachUpdate();f.c.requestRollingCoachUpdate();await Promise.resolve();await Promise.resolve();
+  assert.ok(Object.keys(f.custom).length>0);assert.equal(f.stored.jp_rolling_coach_v1.reviews.length,1);
+});

@@ -159,3 +159,8 @@ body.app-menu-open{overflow:hidden}
 .calibration-result button { margin: 8px 8px 0 0; }
 .calibration-card li { margin: 10px 0; }
 @media(max-width: 700px) { .calibration-values { grid-template-columns: 1fr; } .calibration-card details { padding: 10px; } }
+
+
+.rolling-quick-actions { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; }
+.rolling-quick-actions button { min-height:44px; flex:1 1 120px; }
+#rollingCoachSettings { margin-top:16px; }
