@@ -610,7 +610,7 @@ function updateWorkoutTypeFields(){
   updatePreview();
 }
 
-const APP_VERSION = "11.4.3";
+const APP_VERSION = "11.4.8";
 const STORAGE_KEY = "jp_custom_workouts_v1";
 const DONE_KEY = "jp_done_workouts_v1";
 const UPLOAD_KEY = "jp_uploaded_workouts_v1";
@@ -7771,7 +7771,8 @@ function refreshDerivedCoachViews(){
   renderKeySessionProgression();
   renderTodayCoach();
   const weekProposal=renderAdaptiveWeekReplanner();
-  if(typeof applyAutomaticWeekReplan==="function" &&
+  if(typeof requestRollingCoachUpdate==="function") requestRollingCoachUpdate();
+  else if(typeof applyAutomaticWeekReplan==="function" &&
     applyAutomaticWeekReplan(weekProposal)) return;
   renderFullyAdaptiveCoach();
   renderCoachBrain();
@@ -7781,6 +7782,7 @@ function refreshDerivedCoachViews(){
   renderSmartWeekCoach();
   renderRaceSimulator();
   renderWeeklyPlanSummary();
+  if(typeof renderRollingCoach==="function") renderRollingCoach();
 }
 
 function refreshAfterCalendarMutation({resetPlans=true}={}){
@@ -14024,3 +14026,4 @@ async function loadServer(){
   renderRaceCalendarOptimizer();
   renderFullSeasonTargetOptions();
 }
+

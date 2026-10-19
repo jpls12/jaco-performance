@@ -7,6 +7,8 @@ const virtualConsole=new VirtualConsole();
 virtualConsole.on('jsdomError',e=>consoleErrors.push(e.message));
 const dom=new JSDOM(html,{url:'https://jaco.test/',runScripts:'outside-only',pretendToBeVisual:true,virtualConsole});
 const w=dom.window;
+// This navigation test owns manual fixtures; automatic mutation has its own smoke suite.
+w.localStorage.setItem("jaco_auto_week_replan_v1","off");
 w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});
 w.scrollTo=()=>{};
 w.HTMLElement.prototype.scrollIntoView=function(){w.lastScrolled=this.id||this.className;};
@@ -54,3 +56,4 @@ const pause=()=>new Promise(r=>setTimeout(r,40));
  console.log('PASS: full DOM initialization, unique IDs, five routes, training structure, week navigation, availability save/back, move via editor, review routing, coach disclosure, sync errors, races, menu focus, offline state.');
  dom.window.close();
 })().catch(e=>{console.error(e);dom.window.close();process.exitCode=1;});
+

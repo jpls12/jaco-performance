@@ -11,11 +11,11 @@
   <meta name="apple-mobile-web-app-title" content="Jaco Performance">
   <meta name="format-detection" content="telephone=no">
   <title>Jaco Performance</title>
-  <link rel="manifest" href="/manifest.webmanifest?v=1147">
-  <link rel="icon" href="/icons/app-icon.svg?v=1147" type="image/svg+xml">
-  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1147">
-  <link rel="stylesheet" href="/css/app.css?v=1147">
-  <link rel="stylesheet" href="/css/visual-refresh.css?v=1147">
+  <link rel="manifest" href="/manifest.webmanifest?v=1148">
+  <link rel="icon" href="/icons/app-icon.svg?v=1148" type="image/svg+xml">
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/app-icon-180.png?v=1148">
+  <link rel="stylesheet" href="/css/app.css?v=1148">
+  <link rel="stylesheet" href="/css/visual-refresh.css?v=1148">
 </head>
 <body>
 <main>
@@ -134,6 +134,36 @@
     </article>
 
 
+
+    <article class="card" aria-labelledby="rollingCoachTitle">
+      <p class="label">Doorlopende coach</p><h2 id="rollingCoachTitle">Vandaag en de komende weken</h2>
+      <p id="rollingCoachStatus" role="status" aria-live="polite"></p>
+      <div class="rolling-quick-actions">
+        <button type="button" class="secondary" onclick="openTodayTimeAlternative()">Minder tijd</button>
+        <button type="button" class="secondary" onclick="rollingCoachQuickFeedback('tired')">Vermoeid</button>
+        <button type="button" class="secondary" onclick="rollingCoachQuickFeedback('pain')">Pijn</button>
+        <button type="button" class="secondary" onclick="rollingCoachMove()">Verplaatsen</button>
+        <button type="button" onclick="rollingCoachDone()">Training gedaan</button>
+      </div>
+      <p id="rollingCoachSummary" class="help"></p>
+      <details><summary>Wat is aangepast en waarom?</summary><div id="rollingCoachChanges"></div>
+        <button type="button" class="secondary" onclick="undoAutomaticWeekReplan()">Laatste aanpassing terugzetten</button>
+      </details>
+      <details><summary>Flexibele vooruitblik</summary><div id="rollingCoachForecast"></div></details>
+      <details><summary>Coachvoorkeuren</summary>
+        <form id="rollingCoachSettings" class="form-grid">
+          <label>Focus<select name="mode"><option value="run">Hardlopen</option><option value="triathlon">Triathlon</option></select></label>
+          <label>Hardloopsessies per week<input name="runDays" type="number" min="1" max="6" required></label>
+          <label>Fietssessies per week<input name="rideDays" type="number" min="0" max="4" required></label>
+          <label>Zwemsessies per week<input name="swimDays" type="number" min="0" max="4" required></label>
+          <label>Maximale weekgroei (%)<input name="growth" type="number" min="0" max="10" required></label>
+          <label>Dagen tussen zware sessies<input name="gap" type="number" min="2" max="4" required></label>
+          <button type="submit">Voorkeuren opslaan</button>
+        </form>
+        <p class="help">Frequenties zijn voorkeuren, geen verplicht volume. Maximaal één hoofdtraining per dag en zes per week. Aanvullende kracht en mobiliteit gebruiken alleen resterende tijd. De groeigrens (standaard 5%) is een instelbare voorzichtige vuistregel, geen individueel gemeten veilige grens.</p>
+      </details>
+      <p class="help">Geen verwerking wanneer de app gesloten is. Bij terugkomst haalt de coach de weekcontrole in. Een verouderde of onvolledige synchronisatie blijft zichtbaar bij Training Sync.</p>
+    </article>
 
     <details id="coachDetail" class="section-disclosure">
       <summary><strong>Coachadvies en herstel</strong><span>Onderbouwing, herstelcheck en weekaanpassingen</span></summary>
@@ -2873,28 +2903,29 @@
 <aside id="supportResume" class="support-resume" hidden><span>Je hebt een bewaarde aanvullende sessie.</span><button type="button" onclick="resumeSupportPlayer()">Hervatten / registreren</button><button class="secondary" type="button" onclick="discardSupportPlayer()">Stoppen</button></aside>
 <div id="supportActionStatus" class="support-toast" role="status" hidden></div>
 <dialog id="supportDialog" aria-labelledby="supportDialogTitle"><h2 id="supportDialogTitle">Kracht en mobiliteit</h2></dialog>
-<script src="/js/calibration-engine.js?v=1147" defer></script>
-<script src="/js/app.js?v=1147" defer></script>
-<script src="/js/training-sync.js?v=1147" defer></script>
-<script src="/js/activity-results.js?v=1147" defer></script>
-<script src="/js/training-quality.js?v=1147" defer></script>
-<script src="/js/performance-model.js?v=1147" defer></script>
-<script src="/js/training-response.js?v=1147" defer></script>
-<script src="/js/session-progression.js?v=1147" defer></script>
-<script src="/js/adaptive-block-planner.js?v=1147" defer></script>
-<script src="/js/race-readiness.js?v=1147" defer></script>
-<script src="/js/fuel-hydration.js?v=1147" defer></script>
-<script src="/js/race-strategy.js?v=1147" defer></script>
-<script src="/js/race-day.js?v=1147" defer></script>
-<script src="/js/race-debrief.js?v=1147" defer></script>
-<script src="/js/daily-decision.js?v=1147" defer></script>
-<script src="/js/adaptive-week-replanner.js?v=1147" defer></script>
-<script src="/js/fully-adaptive-coach.js?v=1147" defer></script>
-<script src="/js/support-training.js?v=1147" defer></script>
-<script src="/js/coach-state.js?v=1147" defer></script>
-<script src="/js/interface.js?v=1147" defer></script>
-<script src="/js/calibration.js?v=1147" defer></script>
-<script src="/js/bootstrap.js?v=1147" defer></script>
+<script src="/js/calibration-engine.js?v=1148" defer></script>
+<script src="/js/app.js?v=1148" defer></script>
+<script src="/js/training-sync.js?v=1148" defer></script>
+<script src="/js/activity-results.js?v=1148" defer></script>
+<script src="/js/training-quality.js?v=1148" defer></script>
+<script src="/js/performance-model.js?v=1148" defer></script>
+<script src="/js/training-response.js?v=1148" defer></script>
+<script src="/js/session-progression.js?v=1148" defer></script>
+<script src="/js/adaptive-block-planner.js?v=1148" defer></script>
+<script src="/js/race-readiness.js?v=1148" defer></script>
+<script src="/js/fuel-hydration.js?v=1148" defer></script>
+<script src="/js/race-strategy.js?v=1148" defer></script>
+<script src="/js/race-day.js?v=1148" defer></script>
+<script src="/js/race-debrief.js?v=1148" defer></script>
+<script src="/js/daily-decision.js?v=1148" defer></script>
+<script src="/js/adaptive-week-replanner.js?v=1148" defer></script>
+<script src="/js/fully-adaptive-coach.js?v=1148" defer></script>
+<script src="/js/support-training.js?v=1148" defer></script>
+<script src="/js/coach-state.js?v=1148" defer></script>
+<script src="/js/interface.js?v=1148" defer></script>
+<script src="/js/calibration.js?v=1148" defer></script>
+<script src="/js/rolling-coach.js?v=1148" defer></script>
+<script src="/js/bootstrap.js?v=1148" defer></script>
 
 <div id="visualWorkoutPlayer" class="workout-player" aria-hidden="true">
   <div class="player-shell">
@@ -2948,3 +2979,4 @@
 
 </body>
 </html>
+

@@ -1,36 +1,37 @@
-const CACHE_NAME="jaco-performance-shell-v1147";
+const CACHE_NAME="jaco-performance-shell-v1148";
 const APP_SHELL=[
   "/",
   "/index.html",
-  "/css/app.css?v=1147",
-  "/css/visual-refresh.css?v=1147",
-  "/js/app.js?v=1147",
-  "/js/calibration-engine.js?v=1147",
-  "/js/calibration.js?v=1147",
-  "/js/support-training.js?v=1147",
-  "/js/training-sync.js?v=1147",
-  "/js/activity-results.js?v=1147",
-  "/js/training-quality.js?v=1147",
-  "/js/performance-model.js?v=1147",
-  "/js/training-response.js?v=1147",
-  "/js/session-progression.js?v=1147",
-  "/js/adaptive-block-planner.js?v=1147",
-  "/js/race-readiness.js?v=1147",
-  "/js/fuel-hydration.js?v=1147",
-  "/js/race-strategy.js?v=1147",
-  "/js/race-day.js?v=1147",
-  "/js/race-debrief.js?v=1147",
-  "/js/daily-decision.js?v=1147",
-  "/js/adaptive-week-replanner.js?v=1147",
-  "/js/fully-adaptive-coach.js?v=1147",
-  "/js/coach-state.js?v=1147",
-  "/js/bootstrap.js?v=1147",
-  "/js/interface.js?v=1147",
-  "/manifest.webmanifest?v=1147",
-  "/icons/app-icon.svg?v=1147",
-  "/icons/app-icon-180.png?v=1147",
-  "/icons/app-icon-192.png?v=1147",
-  "/icons/app-icon-512.png?v=1147"
+  "/css/app.css?v=1148",
+  "/css/visual-refresh.css?v=1148",
+  "/js/app.js?v=1148",
+  "/js/calibration-engine.js?v=1148",
+  "/js/calibration.js?v=1148",
+  "/js/support-training.js?v=1148",
+  "/js/training-sync.js?v=1148",
+  "/js/activity-results.js?v=1148",
+  "/js/training-quality.js?v=1148",
+  "/js/performance-model.js?v=1148",
+  "/js/training-response.js?v=1148",
+  "/js/session-progression.js?v=1148",
+  "/js/adaptive-block-planner.js?v=1148",
+  "/js/race-readiness.js?v=1148",
+  "/js/fuel-hydration.js?v=1148",
+  "/js/race-strategy.js?v=1148",
+  "/js/race-day.js?v=1148",
+  "/js/race-debrief.js?v=1148",
+  "/js/daily-decision.js?v=1148",
+  "/js/adaptive-week-replanner.js?v=1148",
+  "/js/fully-adaptive-coach.js?v=1148",
+  "/js/coach-state.js?v=1148",
+  "/js/rolling-coach.js?v=1148",
+  "/js/bootstrap.js?v=1148",
+  "/js/interface.js?v=1148",
+  "/manifest.webmanifest?v=1148",
+  "/icons/app-icon.svg?v=1148",
+  "/icons/app-icon-180.png?v=1148",
+  "/icons/app-icon-192.png?v=1148",
+  "/icons/app-icon-512.png?v=1148"
 ];
 
 self.addEventListener("install",event=>{
@@ -96,3 +97,4 @@ self.addEventListener("fetch",event=>{
     })
   );
 });
+

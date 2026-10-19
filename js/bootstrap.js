@@ -637,6 +637,7 @@ async function initializeJacoPerformance(){
     );
   }
 
+  initializeRollingCoach();
   autoWeekReplanReady=true;
   refreshDerivedCoachViews();
 }
@@ -662,3 +663,4 @@ initializeJacoPerformance().catch(error=>{
     status.textContent=`Opstarten mislukt: ${error.message}`;
   }
 });
+
