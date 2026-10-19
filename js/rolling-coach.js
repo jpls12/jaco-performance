@@ -23,7 +23,7 @@ function rollingCoachStable(value){
   return value;
 }
 function rollingCoachSignature(){
-  return JSON.stringify(rollingCoachStable({date:todayDateString(),enabled:autoWeekReplanEnabled(),settings:rollingCoachSettings(),
+  return JSON.stringify(rollingCoachStable({version:"11.4.9",date:todayDateString(),enabled:autoWeekReplanEnabled(),settings:rollingCoachSettings(),
     profile:getProfile(),races,workouts:allWorkouts(),done:doneWorkouts,uploads:uploadedWorkouts,
     activities:syncedActivities,matches:activityPlanAssignments,reviews:activityReviews,
     wellness:getWellnessSnapshot(),recovery:loadObject(RECOVERY_CHECK_KEY),
@@ -49,7 +49,10 @@ function rollingCoachHistory(start){
   for(const sport of Object.keys(totals)){
     // No imported activity is not evidence for zero capacity. Use a disclosed low starting dose.
     if(!counts[sport]){budgets[sport]={minutes:{run:90,ride:60,swim:30}[sport],known:false};continue;}
-    const mean=totals[sport]/3;
+    const first=activities.filter(a=>syncedSportFamily(a.type)===sport&&finiteNumberOrNull(a.durationMinutes)>0)
+      .map(a=>a.date).sort()[0];
+    const observedWeeks=coverage?3:Math.max(1,Math.min(3,signedDateGapDays(start,first)/7));
+    const mean=totals[sport]/observedWeeks;
     const baseline=coverage?Math.min(mean,recent[sport]>0?recent[sport]:mean*.7):mean;
     budgets[sport]={minutes:Math.round(baseline*(1+rollingCoachSettings().growth/100)),known:Boolean(coverage&&counts[sport]>=3)};
   }
@@ -112,7 +115,7 @@ function rollingCoachShortenIntervals(workout,date,day){
 }
 function rollingCoachSeedWeek(start){
   const settings=rollingCoachSettings(),history=rollingCoachHistory(mondayOf(todayDateString()));
-  const plan=allWorkouts(),seeds={};
+  const plan=allWorkouts(),seeds={},reasons=new Set();
   const dates=Array.from({length:7},(_,i)=>addDays(start,i));
   const counts={run:settings.runDays,ride:settings.mode==="triathlon"?settings.rideDays:0,swim:settings.mode==="triathlon"?settings.swimDays:0};
   // Respect one main session per day and leave at least one recovery day in each week.
@@ -132,12 +135,15 @@ function rollingCoachSeedWeek(start){
     const budget=history.budgets[sport].minutes*phaseFactor*futureFactor;
     const used=existing.reduce((n,d)=>n+rollingCoachMinutes(current[d]),0);
     const left=budget-used,min={run:20,ride:20,swim:15}[sport];
-    if(left<min)continue;
+    if(left<min){reasons.add("De resterende weekomvang biedt geen ruimte voor nog een zinvolle sessie.");continue;}
     const candidates=dates.filter(d=>d>=todayDateString()&&!current[d]&&weekReplanProtection(d).kind!=="race"&&
       !doneWorkouts[d]&&!Object.values(syncedActivities).some(a=>a.date===d)&&availabilityForDate(d).available);
     candidates.sort((a,b)=>availabilityForDate(b).maxMinutes-availabilityForDate(a).maxMinutes||a.localeCompare(b));
-    const date=candidates[0];if(!date)continue;
-    const remainingCount=Math.max(1,counts[sport]-existing.length);
+    const date=candidates[0];if(!date){reasons.add("Geen lege beschikbare dag: bestaande sessies, wedstrijden en uitgevoerde trainingen blijven behouden.");continue;}
+    // Frequency is a preference, not a divisor that can make every session too short.
+    const usableDays=candidates.filter(d=>availabilityForDate(d).maxMinutes>=min);
+    if(!usableDays.length){reasons.add("De beschikbare tijd per vrije dag is te kort voor een sessie.");continue;}
+    const remainingCount=Math.max(1,Math.min(counts[sport]-existing.length,usableDays.length,Math.floor(left/min)));
     const day=availabilityForDate(date);
     let minutes=Math.floor(Math.min(day.maxMinutes,left/remainingCount,{run:120,ride:180,swim:60}[sport]));
     if(minutes<min)continue;
@@ -148,7 +154,7 @@ function rollingCoachSeedWeek(start){
     const w=rollingCoachSession(type,date,minutes,kind);
     seeds[date]=w;total++;
   }
-  return {seeds,history,phase:phase?.label||"Basis",start,end:addDays(start,6)};
+  return {seeds,history,reasons:[...reasons],phase:phase?.label||"Basis",start,end:addDays(start,6)};
 }
 function rollingCoachConstrain(schedule,original,bounds,stress,notes){
   const settings=rollingCoachSettings();
@@ -249,17 +255,21 @@ function rollingCoachRun(){
     if(stored.signature===before)return false;
     const result=rollingCoachBuild();
     if(rollingCoachSignature()!==before)return false;
+    const blocked=autoWeekReplanSafety(result.proposal);
     const applied=applyAutomaticWeekReplan(result.proposal);
     const week=mondayOf(todayDateString());
     const reviews=Array.isArray(stored.reviews)?stored.reviews:[];
     if(stored.reviewWeek!==week){reviews.push(result.review);recordCoachChange("Weekevaluatie",{reason:`${result.review.from}–${result.review.to}: ${result.review.actualMinutes} minuten geregistreerd versus ${result.review.plannedMinutes} gepland. ${result.review.note}`});}
     const conflicts=result.proposal.notes.filter(n=>/beschermd|vrij|vast/.test(n));
     saveObject(ROLLING_COACH_KEY,{signature:rollingCoachSignature(),reviewWeek:week,reviews:reviews.slice(-16),
-      updatedAt:new Date().toISOString(),conflicts,
+      updatedAt:new Date().toISOString(),conflicts,blocked,
+      emptyReason:result.weeks[0].reasons.join(" "),
       forecast:result.weeks.slice(1).map(w=>({start:w.start,end:w.end,phase:w.phase,workouts:Object.values(w.seeds)})),
       confidence:result.weeks[0].history.coverage?"Gebaseerd op beschikbare trainingshistorie":"Beperkt: trainingshistorie onvolledig; voorzichtige startomvang",
       lastChanges:applied?result.proposal.changes.map(c=>({date:c.date,before:c.before?.name||"Vrij",after:c.after?.name||"Rust",reason:c.reason})):stored.lastChanges||[]});
-    rollingCoachMessage=autoWeekReplanEnabled()?"Planning gecontroleerd. Updates vinden plaats bij openen, synchroniseren en nieuwe input.":"Automatisch aanpassen staat uit. Bestaande planning blijft staan.";
+    rollingCoachMessage=blocked?`Automatisch aanvullen geblokkeerd: ${blocked}`:autoWeekReplanEnabled()
+      ?applied?`${result.proposal.changes.length} dag(en) bijgewerkt. De planning staat hieronder.`:"Planning gecontroleerd; geen passende toevoeging of wijziging."
+      :"Automatisch aanpassen staat uit. Bestaande planning blijft staan.";
     renderRollingCoach();return applied;
   }finally{rollingCoachRunning=false;}
 }
@@ -278,7 +288,26 @@ function rollingCoachMove(){
   editWorkout(todayDateString());
   rollingCoachMessage="Open de training in de kalender om de datum te wijzigen.";
 }
+function rollingCoachPlanningControl(){
+  const state=loadObject(ROLLING_COACH_KEY);
+  let message=rollingCoachMessage||"De coach controleert de planning na het laden van je gegevens.";
+  let action='<button type="button" class="secondary" onclick="rollingCoachRetry()">Controleer en vul planning aan</button>';
+  if(rollingCoachStale){message="Planning gepauzeerd door gewijzigde gegevens in een ander tabblad.";action='<button type="button" class="secondary" onclick="location.reload()">Herlaad de actuele gegevens</button>';}
+  else if(!autoWeekReplanReady){message="Trainingsgegevens worden nog geladen. Daarna controleert de coach je planning.";action="";}
+  else if(!autoWeekReplanEnabled()){message="Automatisch aanvullen staat uit. Schakel het in om lege beschikbare dagen te laten beoordelen.";action='<button type="button" onclick="rollingCoachRetry(true)">Automatisch aanvullen inschakelen</button>';}
+  const empty=!Object.entries(allWorkouts()).some(([d,w])=>d>=todayDateString()&&d<=addDays(todayDateString(),6)&&w.type!=="Rest");
+  return `<div class="status" role="status"><p>${safe(message)}</p>${empty&&state.emptyReason?`<p>${safe(state.emptyReason)}</p>`:""}${action}</div>`;
+}
+function rollingCoachRetry(enable=false){
+  if(rollingCoachStale)return;
+  if(enable)localStorage.setItem(AUTO_WEEK_REPLAN_KEY,"on");
+  const state=loadObject(ROLLING_COACH_KEY);delete state.signature;saveObject(ROLLING_COACH_KEY,state);
+  rollingCoachMessage="Planning wordt opnieuw gecontroleerd…";
+  renderRollingCoach();requestRollingCoachUpdate();
+}
 function renderRollingCoach(){
+  const planning=document.getElementById("rollingCoachPlanningStatus");
+  if(planning)planning.innerHTML=rollingCoachPlanningControl();
   const host=document.getElementById("rollingCoachStatus");if(!host)return;
   const s=loadObject(ROLLING_COACH_KEY);
   host.textContent=rollingCoachStale?"Gegevens gewijzigd in een ander tabblad. Herlaad voordat de coach verder plant.":rollingCoachMessage||"De coach controleert je planning zodra de gegevens zijn geladen.";
