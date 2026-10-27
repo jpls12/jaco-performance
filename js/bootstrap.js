@@ -248,6 +248,7 @@ document.getElementById("recoveryType").onchange=()=>{
 };
 
 document.getElementById("parseSmartInput").onclick=parseSmartTraining;
+document.getElementById("loadBruggenloopWorkout").onclick=loadBruggenloopWorkout;
 document.getElementById("generateSmartWorkout").onclick=generateSmartWorkout;
 document.getElementById("clearExactRun").onclick=()=>{
   clearExactRunMode();

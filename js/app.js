@@ -4316,8 +4316,14 @@ function buildExactIntervalsDescription(blocks,notes=[]){
   const lines=[];
 
   blocks.forEach(block=>{
+    if(block.kind==="stride" || block.kind==="recovery"){
+      lines.push(block.kind==="stride"?"Ontspannen versnellen":"Rustig dribbelen",
+        `- ${block.seconds}s${block.kind==="recovery"?" Z1 Pace":""}`,"");
+      return;
+    }
+
     if(block.kind==="warmup"){
-      lines.push("Warmup",`- ${block.km}km Z1 Pace`,"");
+      lines.push("Warmup",`- ${block.km}km ${block.pace||"Z1"} Pace`,"");
       return;
     }
 
@@ -4343,7 +4349,7 @@ function buildExactIntervalsDescription(blocks,notes=[]){
     if(block.kind==="cooldown"){
       lines.push(
         "Cooldown",
-        `- ${block.deviceKm}km Z1 Pace`,
+        `- ${block.deviceKm}km ${block.pace||"Z1"} Pace`,
         ""
       );
     }
@@ -4360,6 +4366,10 @@ function estimateExactRunDistance(blocks){
   let distance=0;
 
   blocks.forEach(block=>{
+    if(block.kind==="stride" || block.kind==="recovery"){
+      distance+=block.seconds/(block.kind==="stride"?200:330);
+      return;
+    }
     if(["warmup","pace","float"].includes(block.kind)){
       distance+=Number(block.km)||0;
       return;
@@ -4391,8 +4401,9 @@ function estimateExactRunMinutes(blocks){
   let seconds=0;
 
   blocks.forEach(block=>{
+    if(block.kind==="stride" || block.kind==="recovery"){seconds+=block.seconds;return;}
     if(block.kind==="warmup"){
-      seconds+=block.km*315;
+      seconds+=block.km*(paceRangeAverageSeconds(block.paceStart,block.paceEnd)||315);
       return;
     }
 
@@ -4412,7 +4423,7 @@ function estimateExactRunMinutes(blocks){
     }
 
     if(block.kind==="cooldown"){
-      seconds+=block.deviceKm*315;
+      seconds+=block.deviceKm*(paceRangeAverageSeconds(block.paceStart,block.paceEnd)||315);
     }
   });
 
@@ -4435,11 +4446,13 @@ function parseMultiBlockRun(raw){
   };
 
   addMatches(
-    /(\d+(?:\.\d+)?)\s*km\s*(?:warming\s*up|warming-up|warmup|inlopen)/gi,
+    /(\d+(?:\.\d+)?)\s*km\s*(?:rustig\s+)?(?:warming\s*up|warming-up|warmup|inlopen)(?:\s+op\s+(\d:\d{2})(?:\s*-\s*(\d:\d{2}))?\s*\/km)?/gi,
     match=>({
       kind:"warmup",
       km:Number(match[1]),
-      display:`${match[1]} km rustig inlopen`
+      paceStart:match[2], paceEnd:match[3]||match[2],
+      pace:match[2]?displayPaceRange(match[2],match[3]):null,
+      display:`${match[1]} km rustig inlopen${match[2]?" @ "+displayPaceRange(match[2],match[3]):""}`
     })
   );
 
@@ -4476,7 +4489,7 @@ function parseMultiBlockRun(raw){
   );
 
   addMatches(
-    /(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*km\s*(?:uitlopen|cooldown|cool\s*down)/gi,
+    /(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*km\s*(?:rustig\s+)?(?:uitlopen|cooldown|cool\s*down)/gi,
     match=>{
       const minKm=Number(match[1]);
       const maxKm=Number(match[2]);
@@ -4492,12 +4505,23 @@ function parseMultiBlockRun(raw){
   );
 
   addMatches(
-    /(?:^|\s)(\d+(?:\.\d+)?)\s*km\s*(?:uitlopen|cooldown|cool\s*down)/gi,
+    /(?:^|\s)(\d+(?:\.\d+)?)\s*km\s*(?:rustig\s+)?(?:uitlopen|cooldown|cool\s*down)(?:\s+op\s+(\d:\d{2})(?:\s*-\s*(\d:\d{2}))?\s*\/km)?/gi,
     match=>({
       kind:"cooldown-single",
       km:Number(match[1]),
-      display:`${match[1]} km rustig uitlopen`
+      paceStart:match[2], paceEnd:match[3]||match[2],
+      pace:match[2]?displayPaceRange(match[2],match[3]):null,
+      display:`${match[1]} km rustig uitlopen${match[2]?" @ "+displayPaceRange(match[2],match[3]):""}`
     })
+  );
+
+  addMatches(
+    /(\d+(?:\.\d+)?)\s*(seconden|sec|s|minuten|min)\b\s*(?:ontspannen\s+|rustig\s+)?(versnellen|dribbelen|dribbel|herstel|pauze)\b/gi,
+    match=>{
+      const seconds=Number(match[1])*(/^min/i.test(match[2])?60:1);
+      const kind=/versnellen/i.test(match[3])?"stride":"recovery";
+      return {kind,seconds,display:`${seconds} sec ${kind==="stride"?"ontspannen versnellen":"rustig dribbelen"}`};
+    }
   );
 
   const hasRangeCooldown=blocks.some(block=>block.kind==="cooldown");
@@ -4664,7 +4688,7 @@ function parseSmartTraining(){
   const interval=text.match(/\b(\d{1,2})\s*x\s*(\d{2,4})\s*m\b/);
   const easyKm=text.match(/\b(\d+(?:\.\d+)?)\s*km\s*(?:herstel|rustig|easy|duurloop)?/);
   const warmup=text.match(/(\d+(?:\.\d+)?)\s*km\s*(?:inlopen|warming.?up)/);
-  const cooldown=text.match(/(\d+(?:\.\d+)?)\s*km\s*(?:uitlopen|cool.?down)/);
+  const cooldown=text.match(/(\d+(?:\.\d+)?)\s*km\s*(?:rustig\s+)?(?:uitlopen|cool.?down)/);
   const recoveryMin=text.match(/(\d+(?:\.\d+)?)\s*(?:min|minuten)\s*(?:herstel|pauze|dribbel)?/);
   const recoveryMeters=text.match(/(\d{2,4})\s*m\s*(?:herstel|dribbel|pauze)/);
 
@@ -14036,3 +14060,8 @@ async function loadServer(){
   renderFullSeasonTargetOptions();
 }
 
+
+function loadBruggenloopWorkout(){
+  document.getElementById("smartInput").value="3 km rustig inlopen op 5:15–5:45/km\n20 seconden ontspannen versnellen\n40 seconden rustig dribbelen\n20 seconden ontspannen versnellen\n40 seconden rustig dribbelen\n20 seconden ontspannen versnellen\n40 seconden rustig dribbelen\n20 seconden ontspannen versnellen\n40 seconden rustig dribbelen\n1 km op 3:52/km\n1 km op 3:52/km\n1 km op 3:52/km\n3 minuten rustig dribbelen\n1 km op 3:50/km\n1 km op 3:50/km\n1 km op 3:50/km\n3 minuten rustig dribbelen\n1 km op 3:48/km\n1 km op 3:48/km\n1 km op 3:48/km\n2 km rustig uitlopen op 5:20–6:00/km";
+  parseSmartTraining();
+}
